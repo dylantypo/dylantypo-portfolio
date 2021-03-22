@@ -22,7 +22,7 @@
             background-color: #265570;
         }
 
-        p.title {
+        #title {
             font-size: 5vw;
             font-style: italic;
             margin-bottom: 55px;
@@ -34,7 +34,7 @@
             margin: 0;
         }
 
-        .description {
+        #description {
             padding: 5px;
             margin-left: 30%;
             margin-right: 30%;
@@ -47,13 +47,14 @@
         }
 
         #showPhoto {
+            /* position: -webkit-sticky; */
             font-size:30px; 
             cursor: pointer; 
             background-color: inherit;
             border: 4px;
             border-style: solid;
             border-color: #01080D;
-            margin: 25PX;
+            margin: 25px;
         }
 
         #showPhoto:hover {
@@ -67,6 +68,14 @@
             width: 90%;
             height: 90%;
             text-align: center;
+        }
+
+        #bouncer {
+            background-color: inherit;
+            height: 30px;
+            border: 4px;
+            padding: 10%;
+            display: inherit;
         }
 
         #footer {
@@ -100,6 +109,7 @@
     <!-- Resume Overlay -->
     <style>
         #resumeShow {
+            /* position: -webkit-sticky; */
             font-size:30px; 
             cursor: pointer; 
             background-color: inherit;
@@ -157,9 +167,10 @@
 </head>
 <body>
     <!-- Title -->
-    <p class="title">wikiDylan</p>
-    
-    <div class="description">
+    <p id="title">wikiDylan</p>
+
+    <!--Description-->
+    <div id="description">
         <p>
             <p id="intro"> Hi Internet, my name is Dylan Posner. </p> 
             I am a Virginia Tech student graduating this May, 2021. 
@@ -170,11 +181,12 @@
         </p>
     </div>
 
-    <button id="showPhoto">Photography</button>
+    <!--Photography Button-->
+    <!-- <button id="showPhoto">Photography</button> -->
 
-    </br>
-    
-    <button id="resumeShow" onclick="openNav()">Resume</button>
+    <!-- </br> -->
+    <!--Resume Button-->
+    <!-- <button id="resumeShow" onclick="openNav()">Resume</button> -->
 
     <!-- Java for displaying resume overlay -->
     <script>
@@ -191,6 +203,10 @@
     <div id="resume-container" class="overlay">
         <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
         <iframe id="resume" src="RESUME_DylanPosner2021.pdf" height="842" width="595" title="Resume"></iframe>
+    </div>
+
+    <div id="bouncer">
+        <!-- blank div to keep things above the menu -->
     </div>
 
     <!-- Footer -->
