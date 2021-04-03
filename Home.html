@@ -11,110 +11,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Reenie+Beanie&family=Source+Sans+Pro&display=swap" rel="stylesheet">
-    <style>
-        * {
-            color: white;
-            text-align: center;
-            font-family: 'Source Sans Pro', sans-serif;
-        }
-
-        body {
-            background-color: #265570;
-        }       
-
-        p.title {
-            font-size: 5vw;
-            font-style: italic;
-            margin-bottom: 55px;
-        }        
-
-        #outer {
-            /* centers links */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #balls {
-            /* sets div border */
-            padding: 5px;
-            width:  fit-content;
-            height: fit-content;
-            border: 4px;
-            border-style: solid;
-            border-color: #01080D;
-            position: static;
-            /* setting z index of all links */
-            z-index: 1;
-        }
-
-        #git {
-            z-index: 0;
-        }
-
-        .fa {
-            padding: 10px;
-            font-size: 30px;
-            width: 30px;
-            text-align: center;
-            text-decoration: none;
-            margin: 5px 2px;
-            border-radius: 50%;
-        }
-
-        .fa:hover {
-            opacity: 0.7;
-        }
-
-        .fa-twitter {
-            background: #55ACEE;
-            color: white;
-
-        }
-
-        .fa-linkedin {
-            background: #007bb5;
-            color: white;
-        }
-
-        .fa-github {
-            background: inherit;
-            color: white;
-            transform: scale(2);
-        }
-
-        #footer {
-            background-color: #051D2B;
-            text-align: center;
-            position: fixed;
-            width: 100%;
-            left: 0px;
-            bottom: 0px;
-            border-top: 12px;
-            border-bottom: 12px;
-            border-left: 0px;
-            border-right: 0px;
-            border-style: solid;
-            border-color: #01080D;
-        }
-
-        #btnAM {
-            border: none;
-            background-color: inherit;
-            padding: 14px 28px;
-            cursor: pointer;
-            display: inline-block;
-        }
-
-        #btnAM:hover {
-            background-color: #1484C4;
-        }
-    </style>
+    <link rel="stylesheet" href="CSS/style.css">
 </head>
 <body>
     <!-- Intro/Welcome -->
     <div>
-        <p class="title">dylanposner</p>
+        <p id="title">dylanposner</p>
         <h4>Lets Connect &#9759;</h4>
     </div>
 
@@ -129,7 +31,7 @@
 
     <!-- Footer -->
     <div id="footer">
-        <a href="AboutMe.html"><button id="btnAM">About Me</button></a>
+        <a href="AboutMe.html"><button id="btnHM">About Me</button></a>
     </div>
 </body>
 </html>
