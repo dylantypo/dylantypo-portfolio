@@ -44,6 +44,12 @@
             border-style: solid;
             border-color: #01080D;
             position: static;
+            /* setting z index of all links */
+            z-index: 1;
+        }
+
+        #git {
+            z-index: 0;
         }
 
         .fa {
@@ -109,22 +115,19 @@
     <!-- Intro/Welcome -->
     <div>
         <p class="title">dylanposner</p>
-
         <h4>Lets Connect &#9759;</h4>
     </div>
 
     <!-- Links -->
     <div id="outer">
         <div id="balls">
-            <a href="https://www.linkedin.com/in/dylan-posner-3a0034152/" class="fa fa-linkedin"></a>
-            <a href="https://github.com/dylantypo" class="fa fa-github"></a> 
-            <a href="https://twitter.com/superdopedylan" class="fa fa-twitter"></a>
+            <span id="lkn"><a href="https://www.linkedin.com/in/dylan-posner-3a0034152/" class="fa fa-linkedin"></a></span>
+            <span id="git"><a href="https://github.com/dylantypo" class="fa fa-github"></a></span> 
+            <span id="twr"><a href="https://twitter.com/superdopedylan" class="fa fa-twitter"></a></span>
         </div>
     </div>
 
     <!-- Footer -->
-    <p class="copyright">&#169; Copyright 2021</p>
-
     <div id="footer">
         <a href="AboutMe.html"><button id="btnAM">About Me</button></a>
     </div>
