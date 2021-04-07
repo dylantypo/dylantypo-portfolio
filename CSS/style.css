@@ -133,11 +133,12 @@ body {
 /* <!-- Resume Overlay --> */
 
 #resumeShow {
-    /* position: -webkit-sticky; */
+    padding: 20px;
     font-size:30px; 
     cursor: pointer; 
     background-color: inherit;
-    border: 4px;
+    border: 6px;
+    border-radius: 100%;
     border-style: solid;
     border-color: #01080D;
 }
