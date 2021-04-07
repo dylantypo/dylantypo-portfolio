@@ -84,9 +84,9 @@ body {
     padding: 5px;
     margin-left: 30%;
     margin-right: 30%;
-    border-top: 0px;
+    border-top: 2px;
     border-left: 2px;
-    border-right: 0px;
+    border-right: 4px;
     border-bottom: 8px;
     border-color: #1484C4;
     border-style: outset;
@@ -95,7 +95,7 @@ body {
 #outro {
     font-family: 'Reenie Beanie', cursive;
     font-size: 25pt;
-    margin: 0;
+    margin: 25%;
 }
 
 #showPhoto {
@@ -144,6 +144,8 @@ body {
 
 #resumeShow:hover {
     border-color: white;
+    font-weight: bolder;
+    font-style: italic;
 }
 
 .overlay {
