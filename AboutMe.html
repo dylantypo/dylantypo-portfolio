@@ -15,7 +15,7 @@
 </head>
 <body>
     <!-- Title -->
-    <p id="title">wikiDylan</p>
+    <p id="animatedTitle"></p>
 
     <!--Description-->
     <div id="description">
@@ -52,6 +52,14 @@
     <div id="bouncer">
         <!-- blank div to keep things above the menu -->
     </div>
+
+    <!-- Load React. -->
+    <!-- Note: when deploying, replace "development.js" with "production.min.js". -->
+    <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+
+    <!-- Load our React component. -->
+    <script src="js/AnimatedTitle.js"></script>
 
     <!-- Footer -->
     <div id="footer">

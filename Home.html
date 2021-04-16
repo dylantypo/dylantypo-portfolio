@@ -16,9 +16,10 @@
     <link rel="stylesheet" type="text/css" href="css/style.css" />
 </head>
 <body>
+    <div id="animatedName"></div>
+
     <!-- Intro/Welcome -->
     <div>
-        <p id="title">dylanposner</p>
         <h4>Lets Connect &#9759;</h4>
     </div>
 
@@ -32,6 +33,15 @@
     </div>
 
     <p>Copyright &#169; 2021</p>
+
+    <!-- Load React. -->
+    <!-- Note: when deploying, replace "development.js" with "production.min.js". -->
+    <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+
+    <!-- Load our React component. -->
+    <script src="js/AnimatedName.js"></script>
+
     <!-- Footer -->
     <div id="footer">
         <a href="AboutMe.html"><button id="btnHM">About Me</button></a>
