@@ -7,7 +7,14 @@
 }
 
 body {
+    padding: 5em;
+    padding-top: 10em;
     background-color: #265570;
+}
+
+#wrapper {
+    padding: 0;
+    margin: 0;
 }
 
 /* Animated Name from https://codepen.io/fossheim/pen/vYEyJOO */
@@ -15,6 +22,8 @@ h1 {
     font-size: 5vw;
     font-style: italic;
     color: #353239;
+    margin: 10;
+    padding: 2;
 }
   
 h1 span span {
