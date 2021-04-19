@@ -56,12 +56,6 @@ h1 span span:nth-child(5n) { color: #01080D; } */
     }
 }
 
-
-@media screen and (max-width: 500px) {
-    body {
-        transform: scale(0.75);
-    }
-}
 /* End Animated Name Code */
 
 /* Home Page */
