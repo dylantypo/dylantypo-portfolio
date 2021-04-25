@@ -1,71 +1,99 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="description" content="Dylan's Personal Website About Me Page (In-Progress)">
+    
     <meta name="keywords" content="Dylan Posner, Dylan, Posner, HTML, CSS, About, Me, dylanposner">
+
     <meta name="author" content="Dylan Posner">
+
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
+
     <title>Dylan Posner - About Me</title>
+
     <link rel="icon" type="image/png" href="/avi.png">
+
     <link rel="preconnect" href="https://fonts.gstatic.com">
+
     <link href="https://fonts.googleapis.com/css2?family=Reenie+Beanie&family=Source+Sans+Pro&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" type="text/css" href="css/style.css" />
+
 </head>
+
 <body>
+
     <div id="wrapper">
         <!-- Animated Title -->
         <p id="animatedTitle"></p>
-
         <!--Description-->
         <div id="description">
+            <!-- Old Bio -->
+            <!--
             I am a student graduating this May (2021). This is my personal website and it is still a work in progress.
             I want to use this platform to eventually display my work. Feel free to reach out to me with
-            the links on the home page!
-        </div>
-        <p id="outro"> More to come... </p> 
+            the links on the home page! -->
+            <!-- New Bio -->
 
+
+        </div>
+
+        <p id="outro"> More to come... </p> 
         <!--Photography Button-->
         <!-- <button id="showPhoto">Photography</button> -->
-
         <!-- </br> -->
         <!--Resume Button-->
         <button id="resumeShow" onclick="openNav()">Resume</button>
-
         <!-- Java for displaying resume overlay -->
         <script>
+
             function openNav() {
+
             document.getElementById("resume-container").style.display = "block";
+
             }
             
             function closeNav() {
+
             document.getElementById("resume-container").style.display = "none";
+
             }
+
         </script>   
-        
         <!--This will display resume-->
         <div id="resume-container" class="overlay">
+
             <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+
             <iframe id="resume" src="RESUME_DylanPosner2021.pdf" height="842" width="595" title="Resume"></iframe>
+            
         </div>
 
         <div id="bouncer">
             <!-- blank div to keep things above the menu -->
         </div>
-
         <!-- Load React. -->
         <!-- Note: when deploying, replace "development.js" with "production.min.js". -->
         <script src="https://unpkg.com/react@17/umd/react.production.min.js" crossorigin></script>
         <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js" crossorigin></script>
-
         <!-- Load our React component. -->
         <script src="js/AnimatedTitle.js"></script>
-
         <!-- Footer -->
         <div id="footer">
+
             <a href="Home.html"><button id="btnHM">Home</button></a>
+
         </div>
+
     </div>
+
 </body>
+
 </html>
