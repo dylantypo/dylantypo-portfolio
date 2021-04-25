@@ -117,12 +117,6 @@ h1 span span:nth-child(5n) { color: #01080D; } */
 
 /* About Me */
 
-#intro {
-    font-family: 'Reenie Beanie', cursive;
-    font-size: 25pt;
-    margin: 0;
-}
-
 #description {
     padding: 5px;
     margin-left: 30%;
