@@ -32,7 +32,7 @@ h1 span span {
       bottom: -1em;
       opacity: 0;
       animation: move-text 0.75s forwards;
-    }
+}
 
 /* Edits individual letters' color */
 /* h1 span span:nth-child(2n) { color: white; }
