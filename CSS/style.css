@@ -117,16 +117,26 @@ h1 span span:nth-child(5n) { color: #01080D; } */
 
 /* About Me */
 
+#dylanPic img {
+    /* border-radius: 18%; */
+    margin-left: 65%;
+    display: flexbox    ; 
+    box-shadow: -2px 5px 20px 1px #01080D;
+    min-width: 155px;
+}
+
 #description {
+    /* text-align: left; */
     padding: 5px;
-    margin-left: 30%;
-    margin-right: 30%;
+    margin-left: 20%;
+    margin-right: 42%;
     border-top: 2px;
     border-left: 2px;
     border-right: 4px;
     border-bottom: 8px;
     border-color: #1484C4;
     border-style: outset;
+    min-width: 255.81px;
 }
 
 #outro {
@@ -159,6 +169,7 @@ h1 span span:nth-child(5n) { color: #01080D; } */
     text-align: center;
 }
 
+/* to create space between bottom object and the footer */
 #bouncer {
     background-color: inherit;
     height: 30px;
