@@ -125,17 +125,22 @@ h1 span span:nth-child(5n) { color: #01080D; } */
     width: 155px; 
 } */
 
+#mainTable {
+    margin-left: auto;
+    margin-right: auto;
+}
+
 #description {
     /* text-align: left; */
     padding: 5px;
-    margin-left: 55%;
     border-top: 2px;
     border-left: 2px;
     border-right: 4px;
     border-bottom: 8px;
     border-color: #1484C4;
     border-style: outset;
-    min-width: 255.81px;
+    min-width: 100px;
+    max-width: 300px;
 }
 
 #outro {
