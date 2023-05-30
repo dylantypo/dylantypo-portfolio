@@ -31,6 +31,7 @@
 	"dependencies": {
 		"@sveltejs/adapter-static": "^2.0.2",
 		"firebase": "^9.22.1",
+		"fontawesome": "^5.6.3",
 		"gsap": "^3.11.5",
 		"node.js": "^0.0.1-security",
 		"three": "^0.152.2",
