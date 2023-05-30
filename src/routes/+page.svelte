@@ -3,13 +3,6 @@
 	import ToolBar from '$lib/ToolBar.svelte';
     import MainContent from '$lib/mainContent.svelte';
     import { onMount } from 'svelte';
-
-    onMount(() => {
-        window.scrollTo(0, 0);
-        window.addEventListener('resize', function(){
-            location.reload();
-        });
-    });
 </script>
 
 <main>
