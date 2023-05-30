@@ -36,7 +36,7 @@
         const directionalLightFront = new THREE.DirectionalLight(0xffffff, 0.45);
         directionalLightFront.position.set( 0, -1, 1 );
         scene.add( directionalLightFront );
-        scene.add(new THREE.DirectionalLight(0xffffff, 0.65))
+        scene.add(new THREE.DirectionalLight(0xfffffb, 0.65))
 
         // Configure renderer
         renderer.setPixelRatio( window.devicePixelRatio * 2.5 );
