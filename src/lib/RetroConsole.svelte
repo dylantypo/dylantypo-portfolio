@@ -60,7 +60,7 @@
                 const tl = gsap.timeline();
 
                 // Animate the object falling down
-                tl.to(object.position, { y: -25, duration: 1, ease: "bounce" });
+                tl.to(object.position, { y: -25, duration: 0.75, ease: "bounce" });
 
                 // Set camera position and look at center of scene
                 camera.position.set(0, 0, 800); // position camera
@@ -82,7 +82,7 @@
                 }
 
                 // After the object has landed, move the camera closer
-                tl.to(camera.position, { y: 75, z: getZValue(), duration: 2, onUpdate: () => camera.lookAt(scene.position), ease: "slow" }, "+=0.5");
+                tl.to(camera.position, { y: 75, z: getZValue(), duration: 1.15, onUpdate: () => camera.lookAt(scene.position), ease: "slow" }, "+=0.5");
 
                 const fontLoader = new FontLoader();
 
@@ -111,7 +111,7 @@
 
                     object.add(textMesh);
 
-                    tl.to(textMesh.position, { y: 45, z: 0, duration: 1, ease: "power4" });
+                    tl.to(textMesh.position, { y: 45, z: 0, duration: 0.75, ease: "power4" });
                 });
 
                 // Set flag when animation is completed
