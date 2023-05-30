@@ -8,30 +8,6 @@
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
-		<div style="display: contents">%sveltekit.body%</div>
-
-        <script type="module">
-            // Import the functions you need from the SDKs you need
-            import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-            import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-analytics.js";
-            // TODO: Add SDKs for Firebase products that you want to use
-            // https://firebase.google.com/docs/web/setup#available-libraries
-            
-            // Your web app's Firebase configuration
-            // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-            const firebaseConfig = {
-                apiKey: "AIzaSyDeOs4EBO2Mbk10QrNXM0nyeD3-rw_T8E0",
-                authDomain: "portfolio-dylantypo.firebaseapp.com",
-                projectId: "portfolio-dylantypo",
-                storageBucket: "portfolio-dylantypo.appspot.com",
-                messagingSenderId: "89958975506",
-                appId: "1:89958975506:web:4040e4ffa50b725522f0cb",
-                measurementId: "G-7VLZ90NXY4"
-            };
-            
-            // Initialize Firebase
-            const app = initializeApp(firebaseConfig);
-            const analytics = getAnalytics(app);
-        </script>
+		<div id="svelte" style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>
