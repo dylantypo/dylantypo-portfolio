@@ -16,6 +16,22 @@
     const maxRotation = Math.PI / 8.5; // maximum rotation
     let animationFinished = false; // flag to check if animation is finished
 
+    // change camera position based on window width
+    function getZValue() {
+        const width = window.innerWidth;
+        if (width <= 480) {
+            return 350;
+        } else if (width <= 610) {
+            return 250;
+        } else if (width <= 925) {
+            return 210;
+        } else if (width <= 1052) {
+            return 195;
+        } else {
+            return 175;
+        }
+    }
+
     onMount(async () => {
         // Check if we are in the browser
         if (typeof window === 'undefined') return;
@@ -60,29 +76,14 @@
                 const tl = gsap.timeline();
 
                 // Animate the object falling down
-                tl.to(object.position, { y: -25, duration: 0.75, ease: "bounce" });
+                tl.to(object.position, { y: -25, duration: 1, ease: "bounce" });
 
                 // Set camera position and look at center of scene
                 camera.position.set(0, 0, 800); // position camera
                 camera.lookAt(scene.position);
 
-                function getZValue() {
-                    const width = window.innerWidth;
-                    if (width <= 480) {
-                        return 350;
-                    } else if (width <= 610) {
-                        return 250;
-                    } else if (width <= 925) {
-                        return 210;
-                    } else if (width <= 1052) {
-                        return 195;
-                    } else {
-                        return 175;
-                    }
-                }
-
                 // After the object has landed, move the camera closer
-                tl.to(camera.position, { y: 75, z: getZValue(), duration: 1.15, onUpdate: () => camera.lookAt(scene.position), ease: "slow" }, "+=0.5");
+                tl.to(camera.position, { y: 75, z: getZValue(), duration: 1, onUpdate: () => camera.lookAt(scene.position), ease: "slow" }, "+=0.5");
 
                 const fontLoader = new FontLoader();
 
@@ -91,13 +92,22 @@
                         font: font,
                         size: 18,  // size of the text
                         height: 3,  // thickness to extrude text
-                        curveSegments: 12,  // number of points on the curves
+                        curveSegments: 24,  // number of points on the curves
                         bevelEnabled: true,  // turn on bevel
-                        bevelThickness: 0.5,  // how deep into text bevel goes
+                        bevelThickness: 0.75,  // how deep into text bevel goes
                         bevelSize: 0.5,  // how far from text outline is bevel
                         bevelOffset: 0,  // how far from text outline bevel starts
-                        bevelSegments: 10  // number of bevel segments
+                        bevelSegments: 100  // number of bevel segments
                     });
+
+                    // compute the bounding box of the text geometry
+                    textGeometry.computeBoundingBox();
+
+                    // get the bounding box dimensions
+                    const { min, max } = textGeometry.boundingBox;
+
+                    // calculate offsets for each dimension
+                    const offsetX = (max.x - min.x) / 2;
 
                     let textMaterial = new THREE.MeshPhongMaterial({
                         color: 0xfffffe,
@@ -107,7 +117,7 @@
 
                     let textMesh = new THREE.Mesh(textGeometry, textMaterial);
 
-                    textMesh.position.set(-65, 400, 900);
+                    textMesh.position.set(-offsetX, 400, 900);
 
                     object.add(textMesh);
 
@@ -191,7 +201,7 @@
     .container {
         width: 100vw; /* viewport width */
         height: 100vh; /* viewport height */
-        margin-bottom: 5rem;
+        margin-bottom: 2rem;
     }
 
     @media (max-width: 1052px) {
