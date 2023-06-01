@@ -65,7 +65,7 @@
     
     <div class="section">
         <p class="text header">Experience</p>
-        <h1 class="text long-text fade-in">Almost <span class="highlighted-text">half a decade</span> of diverse experience, enhancing data-driven decisions with my unique blend of creativity and innovation.</h1>
+        <h1 class="text long-text fade-in">Nearly <span class="highlighted-text">half a decade</span> of diverse experience, enhancing data-driven decisions with a unique blend of creativity and innovation.</h1>
     </div>
     
     <div class="section">
