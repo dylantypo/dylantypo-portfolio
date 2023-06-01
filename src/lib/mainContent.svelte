@@ -50,7 +50,7 @@
                     end: "bottom 25%",
                     scrub: true
                 },
-                autoAlpha: 0.05, // start at 5% opacity
+                autoAlpha: 0.025, // start at 5% opacity
                 duration: 1, // animate over 1 second
             });
         });
@@ -101,15 +101,27 @@
         </div>
     </div>
 
+    <!-- Skills to Include -->
+    <!-- <dl id="skills">
+        <dt>Python</dt>
+            <dd>NumPy</dd>
+            <dd>SciPy</dd>
+            <dd>Pandas</dd>
+            <dd>Matplotlib</dd>
+            <dd>Seaborn</dd>
+            <dd>SciKit-learn</dd>
+            <dd>OpenCV</dd>
+            <dd>PyTorch</dd>
+        <dt>SQL</dt>
+        <dt>R</dt>
+            <dd>dplyr</dd>
+            <dd>ggplot2</dd>
+        <dt>Excel</dt>
+        <dt>D3.js</dt>
+    </dl> -->
     <!-- NEED TO REDESIGN SKILLS SECTION -->
     <!-- <div class="section">
         <p class="text header">Skills</p>
-        <dl id="skills">
-            <dt>Cloud</dt>
-            <dt>Data Science</dt>
-            <dt>Web Development</dt>
-            <dt>Software Development</dt>
-        </dl>
     </div> -->
 
     <div class="section">
@@ -122,19 +134,6 @@
         margin-top: 2rem;
         color: #e8e4e6;
     }
-
-    /* #skills {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
-
-    #skills dt {
-        padding: 2vh;
-        font-size: 30px;
-        font-weight: 700;
-    } */
 
     #copyright {
         font-family: sans-serif;
