@@ -121,7 +121,7 @@
 
                     object.add(textMesh);
 
-                    tl.to(textMesh.position, { y: 45, z: 0, duration: 0.75, ease: "power4" });
+                    tl.to(textMesh.position, { y: 45, z: 0, duration: 1, ease: "expo" });
                 });
 
                 // Set flag when animation is completed
