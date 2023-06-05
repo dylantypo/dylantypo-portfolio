@@ -1,4 +1,5 @@
 <script lang="ts">
+    // import SnakeGame from '$lib/snakeGame.svelte';
     import RetroConsole from '$lib/RetroConsole.svelte';
 	import ToolBar from '$lib/ToolBar.svelte';
     import MainContent from '$lib/mainContent.svelte';
@@ -6,6 +7,8 @@
 </script>
 
 <main>
+    <!-- <SnakeGame /> -->
+
     <ToolBar />
 
     <RetroConsole />
@@ -31,24 +34,6 @@
         margin: 0;
         padding: 0;
     }
-
-    /* Customize the scrollbar in Webkit browsers */
-    /* ::-webkit-scrollbar {
-        width: 20px;
-    }
-
-    ::-webkit-scrollbar-track {
-        background: rgba(0, 70, 67, 0.5);
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background: rgba(0, 30, 29, 0.1);
-        border-radius: 12px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-        background: rgba(171, 209, 198, 0.15);
-    } */
 
     /* Hide scrollbar for non-webkit browsers */
     :global(html) {

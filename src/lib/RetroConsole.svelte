@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte';
+    import { onMount } from 'svelte';
     import * as THREE from 'three';
     import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
     import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
@@ -55,7 +55,7 @@
         scene.add(new THREE.DirectionalLight(0xfffffb, 0.65))
 
         // Configure renderer
-        renderer.setPixelRatio( window.devicePixelRatio * 2.5 );
+        renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize(window.innerWidth, window.innerHeight);
         container.appendChild(renderer.domElement);
 
@@ -131,23 +131,6 @@
             });
         });
 
-        // Resize function
-        resize = () => {
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-
-            camera.aspect = width / height;
-            camera.updateProjectionMatrix();
-
-            renderer.setSize(width, height);
-
-            // Reset the camera position
-            camera.position.z = getZValue();
-        };
-
-        // Add event listeners
-        window.addEventListener('resize', resize);
-
         // Initialize the previous mouse position
         let prevMouseX = null;
 
@@ -171,8 +154,34 @@
             }
         });
 
+        const resizeRendererToDisplaySize = (renderer) => {
+            const canvas = renderer.domElement;
+            const pixelRatio = window.devicePixelRatio;
+            const width  = canvas.clientWidth  * pixelRatio | 0;
+            const height = canvas.clientHeight * pixelRatio | 0;
+            const needResize = canvas.width !== width || canvas.height !== height;
+            if (needResize) {
+                renderer.setSize(width, height, false);
+            }
+            return needResize;
+        }
+
         const animate = function () {
             requestAnimationFrame(animate);
+
+            if (resizeRendererToDisplaySize(renderer)) {
+                const canvas = renderer.domElement;
+                camera.aspect = canvas.clientWidth / canvas.clientHeight;
+                camera.updateProjectionMatrix();
+
+                // Only update camera position if animation is finished
+                if(animationFinished) {
+                    camera.position.set(0, 75, getZValue());
+                }
+
+                // Ensure camera is always looking at the center of the scene
+                camera.lookAt(object.position);
+            }
 
             // Update object rotation if animation is finished
             if (object && animationFinished) {
@@ -184,14 +193,6 @@
         };
 
         animate();
-
-    });
-
-    // Remove event listener on component destruction
-    onDestroy(() => {
-        if (typeof window === 'undefined') return; // Check if we are in the browser
-
-        window.removeEventListener('resize', resize);
     });
 </script>
 
@@ -202,29 +203,5 @@
         width: 100vw; /* viewport width */
         height: 100vh; /* viewport height */
         margin-bottom: 2rem;
-    }
-
-    @media (max-width: 1052px) {
-        .container {
-            margin-bottom: 12vh;
-        }
-    }
-
-    @media (max-width: 925px) {
-        .container {
-            margin-bottom: 14vh;
-        }
-    }
-
-    @media (max-width: 610px) {
-        .container {
-            margin-bottom: 16vh;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .container {
-            margin-bottom: 18vh;
-        }
     }
 </style>

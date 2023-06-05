@@ -1,14 +1,17 @@
 <script lang="ts">
     import gsap from 'gsap';
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
 
-    let expanded = false;
+    let expandedTool = false;
+
     let toolbar; // Declare the variable toolbar
 
+    // Toggle function for toolbar
     function toggleToolbar() {
-        expanded = !expanded;
+        expandedTool = !expandedTool;
     }
 
+    // Keypress functions for each bubble
     function handleKeydown(event: { key: string; }) {
         if (event.key === 'Enter' || event.key === ' ') {
             toggleToolbar();
@@ -20,14 +23,15 @@
     });
 </script>
 
+<!-- Connections Bubble -->
 <div
     bind:this={toolbar}
-    class="toolbar {expanded ? 'expanded' : ''}"
+    class="toolbar {expandedTool ? 'expandedTool' : ''}"
     on:click={toggleToolbar}
     on:keydown={handleKeydown}
     tabindex="0"
     role="button"
-    aria-pressed="{expanded}"
+    aria-pressed="{expandedTool}"
 >
     <div class="toolbar-content">
         <a href="https://www.linkedin.com/in/dylan-posner-3a0034152/" target="_blank" class="toolbar-link">
@@ -39,10 +43,10 @@
         <a href="/Resume_0523.pdf" target="_blank" class="toolbar-link">
             <div class="wrapper"><i class="fa-regular fa-file fa-2xl"></i></div>
         </a>
-        <div class="wrapper"><i class="fa-solid fa-angle-down fa-beat-fade fa-2xl"></i></div>
+        <div class="wrapper"><i class="fa-solid fa-angle-down fa-beat-fade fa-2xl" style="--fa-animation-delay: 5s"></i></div>
     </div>
-    {#if !expanded}
-        <i class="fa-solid fa-gear fa-spin fa-2xl"></i>
+    {#if !expandedTool}
+        <i class="fa-solid fa-gear fa-spin fa-2xl" style="--fa-animation-duration: 3s"></i>
     {/if}
 </div>
 
@@ -60,7 +64,8 @@
         position: fixed;
         bottom: 5em;
         right: 5em;
-        background: #f9bc60ad;
+        background: #f9bc60;
+        opacity: 65%;
         border-radius: 50%;
         width: 50px;
         height: 50px;
@@ -72,14 +77,14 @@
         cursor: pointer;
         z-index: 3;
     }
-    .toolbar.expanded {
+    .toolbar.expandedTool {
         height: 228px;
         border-radius: 25px;
     }
     .toolbar-content {
         display: none;
     }
-    .toolbar.expanded .toolbar-content {
+    .toolbar.expandedTool .toolbar-content {
         display: flex;
         flex-direction: column;
         align-content: space-around;
@@ -96,7 +101,7 @@
             bottom: 2em;
             right: 1em;
         }
-        .toolbar.expanded {
+        .toolbar.expandedTool {
             opacity: 100%;
         }
     }
