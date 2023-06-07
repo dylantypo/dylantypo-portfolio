@@ -126,7 +126,7 @@
 
     <div id="footer-content">
         <p class="footer"><span id="copyright">&#169</span> Dylan Posner 2023</p>
-        <div class="headshot"><img src="/favicon.png" alt="avatar headshot by midjourney"></div>
+        <div class="headshot"><img src="favicon.png" alt="avatar headshot by midjourney"></div>
     </div>
 </div>
 

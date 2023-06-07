@@ -82,8 +82,9 @@
                 camera.position.set(0, 0, 800); // position camera
                 camera.lookAt(scene.position);
 
+                const current_Z = getZValue() // get current Z value
                 // After the object has landed, move the camera closer
-                tl.to(camera.position, { y: 75, z: getZValue(), duration: 1, onUpdate: () => camera.lookAt(scene.position), ease: "slow" }, "+=0.5");
+                tl.to(camera.position, { y: 75, z: current_Z, duration: 1, onUpdate: () => camera.lookAt(scene.position), ease: "slow" }, "+=0.5");
 
                 const fontLoader = new FontLoader();
 
