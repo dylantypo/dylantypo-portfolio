@@ -165,7 +165,7 @@
         border-radius: 50%;
         opacity: 0.75;
         box-shadow: 0px 3px 6px rgba(0, 0, 0, 1);
-        transition: transform 1s, opacity 0.5s, box-shadow 1s;
+        transition: transform 0.5s, opacity 0.5s, box-shadow 0.5s;
     }
 
     .headshot img:hover {

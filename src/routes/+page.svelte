@@ -24,6 +24,7 @@
     @font-face {
         font-family: 'KenneyFuture';
         src: url('/Kenney Future.ttf') format('truetype');
+        font-display: swap;
     }
 
     /* Hide scrollbar for all elements */
