@@ -205,7 +205,6 @@
 
     .position {
         width: 100%;
-        text-align: center;
         padding-right: 20vw;
     }
 
