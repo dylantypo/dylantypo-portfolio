@@ -1,11 +1,19 @@
 <script lang="ts">
-    // import SnakeGame from '$lib/snakeGame.svelte';
-    import RetroConsole from '$lib/RetroConsole.svelte';
-	import ToolBar from '$lib/ToolBar.svelte';
-    import MainContent from '$lib/mainContent.svelte';
     import { onMount } from 'svelte';
+    // let SnakeGame;
+    let RetroConsole;
+	let ToolBar;
+    let MainContent;
 
-    onMount(() => {
+    onMount(async () => {
+        // const sgModule = await import('$lib/snakeGame.svelte');
+        // SnakeGame = sgModule.default;
+        const rcModule = await import('$lib/RetroConsole.svelte');
+        RetroConsole = rcModule.default;
+        const tbModule = await import('$lib/ToolBar.svelte');
+        ToolBar = tbModule.default;
+        const mcModule = await import('$lib/mainContent.svelte');
+        MainContent = mcModule.default;
         window.scrollTo(0, 0);
     });
 </script>
