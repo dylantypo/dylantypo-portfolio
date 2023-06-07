@@ -73,8 +73,8 @@
         <div class="job">
             <h1 class="year">Now</h1>
             <div class="position">
-                <h1>Booz Allen Hamilton Inc.</h1>
-                <p>Data Scientist (Senior Consultant)</p>
+                <h1 class="company">Booz Allen Hamilton</h1>
+                <p class="role">Data Scientist (Senior Consultant)</p>
             </div>
             <!-- <p class="text">Advanced data validation and analysis tools using Python, optimized project timelines, and automated data extraction for financial performance assessment.</p> -->
             <div class="background"></div>
@@ -83,8 +83,8 @@
         <div class="job">
             <h1 class="year">2019</h1>
             <div class="position">
-                <h1>Interos Inc.</h1>
-                <p class="text">Data Analytics Intern</p>
+                <h1 class="company">Interos</h1>
+                <p class="role">Data Analytics Intern</p>
             </div>
             <!-- <p class="text">Excelled in Snowflake to boost data handling, developed efficient data schema and SQL queries for optimized data relationships and processing.</p> -->
             <div class="background"></div>
@@ -93,8 +93,8 @@
         <div class="job">
             <h1 class="year">2018</h1>
             <div class="position">
-                <h1>The Phoenix Team</h1>
-                <p>Product Development Intern</p>
+                <h1 class="company">The Phoenix Team</h1>
+                <p class="role">Product Development Intern</p>
             </div>
             <!-- <p class="text">Drove agile product development and led interns in delivering a detailed white paper on effective product management.</p> -->
             <div class="background"></div>
@@ -124,14 +124,14 @@
         <p class="text header">Skills</p>
     </div> -->
 
-    <div class="section">
+    <div id="footer-content">
         <p class="footer"><span id="copyright">&#169</span> Dylan Posner 2023</p>
+        <div class="headshot"><img src="/favicon.png" alt="avatar headshot by midjourney"></div>
     </div>
 </div>
 
 <style>
     #content {
-        margin-top: 2rem;
         color: #e8e4e6;
         user-select: none;
     }
@@ -140,16 +140,45 @@
         font-family: sans-serif;
     }
 
+    #footer-content {
+        margin-bottom: 12.5vh;
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+    }
+
     .section {
         margin-bottom: 12.5vh;
         display: flex;
         flex-direction: column;
     }
 
+    .headshot {
+        display: inline-block;
+    }
+
+    .headshot img {
+        width: 10vmin;
+        height: auto;
+        margin-left: 1em;
+        border-radius: 50%;
+        opacity: 0.75;
+        box-shadow: 0px 3px 6px rgba(0, 0, 0, 1);
+        transition: transform 1s, opacity 0.5s, box-shadow 1s;
+    }
+
+    .headshot img:hover {
+        transform: scale(1.2);
+        opacity: 1;
+        box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.5);
+    }
+
+
     .header, .footer{
         width: max-content;
         padding-left: 20vw;
-        font-size: 26px;
+        font-size: 3.5vmin;
     }
 
     .long-text {
@@ -180,6 +209,14 @@
         padding-right: 20vw;
     }
 
+    .company, .year {
+        font-size: 4vmin;
+    }
+
+    .role {
+        font-size: 2vmin;
+    }
+
     .background {
         position: absolute;
         left: 0;
@@ -206,14 +243,8 @@
             padding-right: 12vw;
         }
 
-        .job h1 {
+        .section p, .job h1 {
             padding-left: 12vw;
-            font-size: 22px;
-        }
-
-        .section p {
-            padding-left: 12vw;
-            font-size: 14px;
         }
 
         .position {
@@ -228,14 +259,8 @@
             padding-right: 5vw;
         }
 
-        .job h1 {
+        .section p, .job h1 {
             padding-left: 5vw;
-            font-size: 18px;
-        }
-
-        .section p {
-            padding-left: 5vw;
-            font-size: 10px;
         }
 
         .position {
@@ -245,12 +270,17 @@
     }
 
     @media (max-width: 480px) {
-        .job h1 {
-            font-size: 14px;
+        #footer-content {
+            flex-direction: column-reverse;
+            margin-bottom: 5vh;
+        }
+
+        .footer {
+            padding-left: 0;
         }
 
         .position {
-            padding-right: 0vw;
+            padding-right: 0;
         }
     }
 </style>

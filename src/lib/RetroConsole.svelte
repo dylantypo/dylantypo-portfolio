@@ -202,6 +202,5 @@
     .container {
         width: 100vw; /* viewport width */
         height: 100vh; /* viewport height */
-        margin-bottom: 2rem;
     }
 </style>
