@@ -164,14 +164,14 @@
         margin-left: 1em;
         border-radius: 50%;
         opacity: 0.75;
-        box-shadow: 0px 3px 6px rgba(0, 0, 0, 1);
+        box-shadow: 0px 10px 10px rgba(0, 0, 0, 1);
         transition: transform 0.5s, opacity 0.5s, box-shadow 0.5s;
     }
 
     .headshot img:hover {
         transform: scale(1.2);
         opacity: 1;
-        box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.5);
+        box-shadow: 0px 12px 14px rgba(0, 0, 0, 0.75);
     }
 
 

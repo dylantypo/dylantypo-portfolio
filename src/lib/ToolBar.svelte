@@ -1,6 +1,6 @@
 <script lang="ts">
     import gsap from 'gsap';
-    import { onMount, onDestroy } from 'svelte';
+    import { onMount } from 'svelte';
 
     let expandedTool = false;
 
@@ -43,7 +43,7 @@
         <a href="/Resume_0523.pdf" target="_blank" class="toolbar-link">
             <div class="wrapper"><i class="fa-regular fa-file fa-2xl"></i></div>
         </a>
-        <div class="wrapper"><i class="fa-solid fa-angle-down fa-beat-fade fa-2xl" style="--fa-animation-delay: 5s"></i></div>
+        <div class="wrapper"><i class="fa-solid fa-angle-down fa-beat-fade fa-2xl" style="--fa-animation-delay: 3s"></i></div>
     </div>
     {#if !expandedTool}
         <i class="fa-solid fa-gear fa-spin fa-2xl" style="--fa-animation-duration: 3s"></i>

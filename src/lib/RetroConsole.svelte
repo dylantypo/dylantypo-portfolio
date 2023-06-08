@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import * as THREE from 'three';
     import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
     import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
@@ -194,6 +194,33 @@
         };
 
         animate();
+
+        let resizeTimeout;
+
+        let handleResize = () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                // Update camera aspect ratio and projection matrix
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+
+                // Resize renderer to match new window size
+                renderer.setSize(window.innerWidth, window.innerHeight);
+
+                // Keep the camera and object at a constant distance
+                camera.position.set(0, 75, getZValue());
+                camera.lookAt(scene.position);
+            }, 200); // Debounce time in milliseconds
+        };
+
+        window.addEventListener('resize', handleResize, false);
+    });
+
+    onDestroy(() => {
+        // Check if we are in the browser
+        if (typeof window === 'undefined') return;
+
+        window.removeEventListener('resize', handleResize);
     });
 </script>
 
@@ -201,7 +228,7 @@
 
 <style>
     .container {
-        width: 100vw; /* viewport width */
-        height: 100vh; /* viewport height */
+        width: 100%;
+        height: 100%;
     }
 </style>
