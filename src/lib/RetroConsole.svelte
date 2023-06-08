@@ -197,20 +197,38 @@
 
         let resizeTimeout;
 
+        let prevWindowSize = {
+            width: window.innerWidth,
+            height: window.innerHeight
+        };
+
+        const threshold = 100; // set your threshold value
+
         let handleResize = () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                // Update camera aspect ratio and projection matrix
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
+            let widthChange = Math.abs(window.innerWidth - prevWindowSize.width);
+            let heightChange = Math.abs(window.innerHeight - prevWindowSize.height);
 
-                // Resize renderer to match new window size
-                renderer.setSize(window.innerWidth, window.innerHeight);
+            if (widthChange > threshold || heightChange > threshold) {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    // Update camera aspect ratio and projection matrix
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
 
-                // Keep the camera and object at a constant distance
-                camera.position.set(0, 75, getZValue());
-                camera.lookAt(scene.position);
-            }, 200); // Debounce time in milliseconds
+                    // Resize renderer to match new window size
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+
+                    // Keep the camera and object at a constant distance
+                    camera.position.set(0, 75, getZValue());
+                    camera.lookAt(scene.position);
+                }, 200); // Debounce time in milliseconds
+            }
+
+            // update previous window size
+            prevWindowSize = {
+                width: window.innerWidth,
+                height: window.innerHeight
+            };
         };
 
         window.addEventListener('resize', handleResize, false);
