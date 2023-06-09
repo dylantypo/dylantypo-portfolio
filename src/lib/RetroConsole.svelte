@@ -16,6 +16,8 @@
     const minRotation = -Math.PI / 8.5; // minimum rotation
     const maxRotation = Math.PI / 8.5; // maximum rotation
     let animationFinished = false; // flag to check if animation is finished
+    
+    let handleResize;
 
     // change camera position based on window width
     function getZValue() {
@@ -36,8 +38,6 @@
     onMount(async () => {
         // Check if we are in the browser
         if (typeof window === 'undefined') return;
-
-        console.log("Hero Text :: " + hero_text)
 
         // Initialize scene, camera, and renderer
         const scene = new THREE.Scene();
@@ -207,7 +207,7 @@
 
         const threshold = 100; // set your threshold value
 
-        let handleResize = () => {
+        handleResize = () => {
             let widthChange = Math.abs(window.innerWidth - prevWindowSize.width);
             let heightChange = Math.abs(window.innerHeight - prevWindowSize.height);
 

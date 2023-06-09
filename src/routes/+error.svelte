@@ -62,7 +62,7 @@
     }
 
     .message button i {
-        padding-left: 3vmin;
-        padding-right: 3vmin;
+        padding-left: 10vmin;
+        padding-right: 10vmin;
     }
 </style>
