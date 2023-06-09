@@ -8,6 +8,7 @@
     import { gsap } from 'gsap';
 
     // Declare variables
+    export let hero_text;
     let container;
     let resize;
     let object;
@@ -35,6 +36,8 @@
     onMount(async () => {
         // Check if we are in the browser
         if (typeof window === 'undefined') return;
+
+        console.log("Hero Text :: " + hero_text)
 
         // Initialize scene, camera, and renderer
         const scene = new THREE.Scene();
@@ -89,7 +92,7 @@
                 const fontLoader = new FontLoader();
 
                 fontLoader.load('/Kenney Future_Regular.json', function(font) {
-                    let textGeometry = new TextGeometry('Dylan P.', {
+                    let textGeometry = new TextGeometry(hero_text, {
                         font: font,
                         size: 18,  // size of the text
                         height: 3,  // thickness to extrude text
