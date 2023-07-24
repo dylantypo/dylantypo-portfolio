@@ -4,7 +4,7 @@
 
     let expandedTool = false;
 
-    let toolbar; // Declare the variable toolbar
+    let toolbar: gsap.TweenTarget; // Declare the variable toolbar
 
     // Toggle function for toolbar
     function toggleToolbar() {

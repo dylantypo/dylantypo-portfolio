@@ -3,7 +3,7 @@
     import gsap from 'gsap';
 
     let ScrollTrigger;
-    let elements;
+    let elements: NodeListOf<HTMLElement> | undefined;
 
     onMount(async () => {
         const module = await import('gsap/ScrollTrigger');

@@ -4,9 +4,9 @@
     import { browser } from '$app/environment';
 
     let expandedGame = false;
-    let game;
-    let gameBoard; // Variable to bind to the board element
-    let resizeObserver;
+    let game: gsap.TweenTarget;
+    let gameBoard: Element; // Variable to bind to the board element
+    let resizeObserver: ResizeObserver;
 
     let isScrollDisabled = false; // New variable to control the scroll behavior
 
@@ -93,7 +93,7 @@
         board = newBoard;
     };
 
-    let gameInterval: number; // Declare a variable to store the reference to the interval
+    let gameInterval: string | number | NodeJS.Timer | undefined; // Declare a variable to store the reference to the interval
 
     // Toggle function for snake game
     function toggleGame() {
@@ -124,7 +124,7 @@
         }
     }
     
-    function handleArrowKeys(e) {
+    function handleArrowKeys(e: { key: any; }) {
         switch(e.key) {
             case 'ArrowUp':    snakeGame.setDirection('UP'); break;
             case 'ArrowDown':  snakeGame.setDirection('DOWN'); break;

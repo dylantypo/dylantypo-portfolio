@@ -8,16 +8,16 @@
     import { gsap } from 'gsap';
 
     // Declare variables
-    export let hero_text;
-    let container;
+    export let hero_text: String;
+    let container: HTMLDivElement;
     let resize;
-    let object;
+    let object: { position: gsap.TweenTarget; add: (arg0: any) => void; rotation: { y: number; }; };
     let targetRotation = 0;
     const minRotation = -Math.PI / 8.5; // minimum rotation
     const maxRotation = Math.PI / 8.5; // maximum rotation
     let animationFinished = false; // flag to check if animation is finished
     
-    let handleResize;
+    let handleResize: { (): void; (this: Window, ev: UIEvent): any; (this: Window, ev: UIEvent): any; };
 
     // change camera position based on window width
     function getZValue() {
@@ -64,12 +64,12 @@
 
         // Load materials and object
         const mtlLoader = new MTLLoader();
-        mtlLoader.load('Retro_Console.mtl', (materials) => {
+        mtlLoader.load('Retro_Console.mtl', (materials: { preload: () => void; }) => {
             materials.preload();
 
             const objLoader = new OBJLoader();
             objLoader.setMaterials(materials);
-            objLoader.load('Retro_Console.obj', (objectLoader) => {
+            objLoader.load('Retro_Console.obj', (objectLoader: { position: gsap.TweenTarget; add: (arg0: any) => void; rotation: { y: number; }; }) => {
                 // Set object position and add to scene
                 object = objectLoader
                 object.position.set(0, 500, 0);
@@ -91,7 +91,7 @@
 
                 const fontLoader = new FontLoader();
 
-                fontLoader.load('/Kenney Future_Regular.json', function(font) {
+                fontLoader.load('/Kenney Future_Regular.json', function(font: any) {
                     let textGeometry = new TextGeometry(hero_text, {
                         font: font,
                         size: 18,  // size of the text
@@ -136,7 +136,7 @@
         });
 
         // Initialize the previous mouse position
-        let prevMouseX = null;
+        let prevMouseX: number | null = null;
 
         // Update target rotation based on mouse movement
         window.addEventListener('mousemove', (event) => {
@@ -158,7 +158,7 @@
             }
         });
 
-        const resizeRendererToDisplaySize = (renderer) => {
+        const resizeRendererToDisplaySize = (renderer: { domElement: any; setSize: (arg0: number, arg1: number, arg2: boolean) => void; }) => {
             const canvas = renderer.domElement;
             const pixelRatio = window.devicePixelRatio;
             const width  = canvas.clientWidth  * pixelRatio | 0;
@@ -198,7 +198,7 @@
 
         animate();
 
-        let resizeTimeout;
+        let resizeTimeout: string | number | NodeJS.Timeout | undefined;
 
         let prevWindowSize = {
             width: window.innerWidth,

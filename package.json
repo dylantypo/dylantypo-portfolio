@@ -17,6 +17,7 @@
 		"@playwright/test": "^1.28.1",
 		"@sveltejs/adapter-auto": "^1.0.3",
 		"@sveltejs/kit": "^1.0.0-next.587",
+		"@types/three": "^0.154.0",
 		"prettier": "^2.8.0",
 		"prettier-plugin-svelte": "^2.8.1",
 		"svelte": "^3.54.0",
@@ -29,11 +30,15 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@firebase/firestore": "^2.3.7",
+		"@grpc/proto-loader": "^0.7.8",
 		"@sveltejs/adapter-static": "^2.0.2",
-		"firebase": "^9.22.1",
+		"firebase": "^8.6.8",
 		"fontawesome": "^5.6.3",
 		"gsap": "^3.11.5",
 		"node.js": "^0.0.1-security",
+		"open-simplex-noise": "^2.5.0",
+		"protobufjs": "^7.2.4",
 		"three": "^0.152.2",
 		"three-obj-mtl-loader": "^1.0.3"
 	}

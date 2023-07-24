@@ -7,10 +7,10 @@
       "**/node_modules/**"
     ],
     "rewrites": [
-      {
-        "source": "**",
-        "destination": "/200.html"
-      }
+        {
+            "source": "**",
+            "destination": "/200.html"
+        }
     ]
   }
 }
