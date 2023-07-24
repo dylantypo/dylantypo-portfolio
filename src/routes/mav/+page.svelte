@@ -207,7 +207,7 @@
         transition: background-color 0.75s ease;
     }
 
-    @media (max-width: 925px) {
+    @media (max-width: 1905px) {
         main h1 {
             display: none;
         }
