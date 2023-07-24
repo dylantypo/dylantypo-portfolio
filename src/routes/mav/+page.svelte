@@ -206,4 +206,10 @@
         padding: 0;
         transition: background-color 0.75s ease;
     }
+
+    @media (max-width: 925px) {
+        main h1 {
+            display: none;
+        }
+    }
 </style>
