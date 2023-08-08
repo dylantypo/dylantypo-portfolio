@@ -1,38 +1,40 @@
-# create-svelte
+# Dylan's Personal Website
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+Welcome to the repository for DylanTypo's personal website! This site is built using SvelteKit.
 
-## Creating a project
+## 🌐 Site Structure
 
-If you're seeing this, you've probably already done this step. Congrats!
+Below is a sitemap of the website:
+
+- [Home](https://dylanposner.com/)
+  - [Microphone Audio Visualizer (Mav)](https://dylanposner.com/mav)
+  - [Ballz - Ball Based Physics Simulator](https://dylanposner.com/ballz)
+- [Error Page](https://dylanposner.com/error)
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+1. Node.js
+2. npm
+
+### Installation
+
+1. Clone the repository.
+2. Navigate to the root directory and run `npm install`.
+3. To start a local development server, run `npm run dev`.
+
+### Deployment
+
+The site is configured for deployment with Firebase. Ensure you have the Firebase CLI installed, then run:
 
 ```bash
-# create a new project in the current directory
-npm create svelte@latest
-
-# create a new project in my-app
-npm create svelte@latest my-app
+firebase deploy
 ```
 
-## Developing
+## ✨ Projects
+- Microphone Audio Visualizer (Mav): A tool that visualizes audio input from a microphone.
+- Ballz - Ball Based Physics Simulator: Experiment with various ball physics simulations.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+## 📜 License
+This project is licensed under the MIT License.
