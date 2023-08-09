@@ -353,6 +353,11 @@
     });
 </script>
 
+<svelte:head>
+    <title>Ballz: A Ball Based Physics Simulator</title>
+    <link rel="icon" href="\ballz_icon.ico" />
+</svelte:head>
+
 <div id="stats-wrapper">
     <div id="stats-container">
         <label for="frames-sec" style="display: flex; justify-content: center; color: rgb(61, 169, 252);">{fps} fps</label>

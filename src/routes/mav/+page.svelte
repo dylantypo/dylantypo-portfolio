@@ -141,6 +141,11 @@
     });
 </script>
 
+<svelte:head>
+    <title>Microphone Audio Visualizer</title>
+    <link rel="icon" href="\mav_icon.ico" />
+</svelte:head>
+
 <main>
     <h1>Microphone Audio Visualizer</h1>
     <button on:click={toggleFlashing} style="opacity: {isFlashingEnabled ? 1 : 0.5};">Intensify</button>
