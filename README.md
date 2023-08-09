@@ -1,6 +1,6 @@
 # Dylan's Personal Website
 
-Welcome to the repository for DylanTypo's personal website! This site is built using SvelteKit.
+Welcome to the repository for Dylan Posner's personal website! This site is built using SvelteKit with help from GPT-4.
 
 ## 🌐 Site Structure
 
@@ -32,9 +32,9 @@ The site is configured for deployment with Firebase. Ensure you have the Firebas
 firebase deploy
 ```
 
-## ✨ Projects
-- Microphone Audio Visualizer (Mav): A tool that visualizes audio input from a microphone.
-- Ballz - Ball Based Physics Simulator: Experiment with various ball physics simulations.
+## ✨ Project Wikis
+- [Microphone Audio Visualizer (Mav): A tool that visualizes audio input from a microphone.](https://github.com/dylantypo/dylantypo.github.io/wiki/Microphone-Audio-Visualizer)
+- [Ballz - Ball Based Physics Simulator: Experiment with various ball physics simulations.](https://github.com/dylantypo/dylantypo.github.io/wiki/A-Ball-Based-Physics-Simulator)
 
 ## 📜 License
 This project is licensed under the MIT License.
