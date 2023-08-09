@@ -1,5 +1,7 @@
 # Dylan's Personal Website
 
+![website_demo_reduced](https://github.com/dylantypo/dylantypo.github.io/assets/53228244/53396b58-e950-4cfd-9cc8-4b15f624a204)
+
 Welcome to the repository for Dylan Posner's personal website! This site is built using SvelteKit with help from GPT-4.
 
 ## 🌐 Site Structure
