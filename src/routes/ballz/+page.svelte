@@ -16,7 +16,7 @@
     let bounce: number = 0.5;
     $: bounceLabel = `Bounce: ${formatNumber(bounce)}`;
 
-    let friction: number = 0.01; // friction coefficient
+    let friction: number = 0.1; // friction coefficient
     let drag: number = friction; // drag coefficient
     $: frictionLabel = `Friction: ${formatNumber(friction)}`
 
