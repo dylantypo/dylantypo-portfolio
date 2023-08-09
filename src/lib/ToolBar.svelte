@@ -37,7 +37,7 @@
         <a href="https://www.linkedin.com/in/dylan-posner-3a0034152/" target="_blank" class="toolbar-link">
             <div class="wrapper"><i class="fab fa-linkedin-in fa-2xl"></i></div>
         </a>
-        <a href="https://github.com/dylantypo" target="_blank" class="toolbar-link">
+        <a href="https://github.com/dylantypo/dylantypo.github.io" target="_blank" class="toolbar-link">
             <div class="wrapper"><i class="fab fa-github fa-2xl"></i></div>
         </a>
         <a href="/Resume_0523.pdf" target="_blank" class="toolbar-link">
