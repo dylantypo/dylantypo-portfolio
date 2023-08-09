@@ -156,7 +156,6 @@
 
 <style>
     main {
-        user-select: none;
         font-size: 1.5em;
         position: fixed;
         top: 50%;
@@ -202,6 +201,7 @@
 
     /* Body color and other properties */
     :global(body) {
+        user-select: none;
         overflow: hidden;
         font-family: 'KenneyFuture';
         color: rgba(255, 255, 255, 0.8);

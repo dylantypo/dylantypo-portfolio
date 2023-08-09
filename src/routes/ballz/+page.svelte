@@ -488,6 +488,7 @@
 
     /* Body color and other properties */
     :global(body) {
+        overflow: hidden;
         user-select: none;
         color: white;
         margin: 0;
