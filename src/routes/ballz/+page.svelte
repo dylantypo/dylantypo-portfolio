@@ -13,7 +13,7 @@
     let gravity: number = 0.2;
     $: gravityLabel = `Gravity: ${formatNumber(gravity)}`;
 
-    let bounce: number = 0.8;
+    let bounce: number = 0.5;
     $: bounceLabel = `Bounce: ${formatNumber(bounce)}`;
 
     let friction: number = 0.01; // friction coefficient
@@ -377,13 +377,15 @@
         <input id="gravity-slider" type="range" min="0" max="2" step="0.05" bind:value={gravity} />
 
         <label for="friction-slider">{frictionLabel}</label>
-        <input id="friction-slider" type="range" min="0" max="1" step="0.001" bind:value={friction} />
+        <input id="friction-slider" type="range" min="0" max="1" step="0.1" bind:value={friction} />
+
+        <!-- <div style="display: block; height: 100px;"></div> -->
 
         <label for="bounce-slider">{bounceLabel}</label>
         <input id="bounce-slider" type="range" min="0" max="1" step="0.05" bind:value={bounce} />
 
         <label for="size-slider">{sizeLabel}</label>
-        <input id="size-slider" type="range" min="10" max="250" step="0.001" bind:value={radius} />
+        <input id="size-slider" type="range" min="10" max="250" step="0.1" bind:value={radius} />
 
         <button on:click={dropFloor} style="opacity: {floorDrop? 1 : 0.5};">Floor <i class="fa-solid fa-person-falling"></i> Toggle</button>
     </div>
@@ -423,20 +425,24 @@
         opacity: 0.5;
         padding: 10px;
         border-radius: 5px;
-        transition: opacity 0.75s;
+        transform: translateX(0);
+        transition: opacity 0.65s, transform 0.75s;
         position: absolute;
         top: 50%;
         left: 50%;
+        z-index: 0;
     }
 
     #stats-wrapper:hover #stats-placeholder {
         opacity: 0;
+        transform: translateX(200%);
     }
 
     #slider-wrapper {
         position: fixed;
         bottom: 2%;
         right: 2%;
+        z-index: 2;
     }
 
     #slider-container {
@@ -459,19 +465,23 @@
         padding: 10px;
         border-radius: 5px;
         cursor: pointer;
-        transition: opacity 0.65s;
+        transform: translateX(0);
+        transition: opacity 0.55s, transform 0.65s;
         position: absolute;
         top: 50%;
         left: 25%;
+        z-index: 0;
     }
 
     #slider-wrapper:hover #slider-placeholder {
         opacity: 0;
+        transform: translateX(200%);
     }
 
     #slider-container input, button {
         margin: 5px;
         cursor: pointer;
+        z-index: 1;
     }
 
     #slider-container button {
@@ -491,6 +501,7 @@
         overflow: hidden;
         user-select: none;
         color: white;
+        background-color: #90b4ce;
         margin: 0;
         padding: 0;
     }
