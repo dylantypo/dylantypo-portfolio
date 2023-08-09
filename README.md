@@ -37,6 +37,3 @@ firebase deploy
 ## ✨ Project Wikis
 - [Microphone Audio Visualizer (Mav): A tool that visualizes audio input from a microphone.](https://github.com/dylantypo/dylantypo.github.io/wiki/Microphone-Audio-Visualizer)
 - [Ballz - Ball Based Physics Simulator: Experiment with various ball physics simulations.](https://github.com/dylantypo/dylantypo.github.io/wiki/A-Ball-Based-Physics-Simulator)
-
-## 📜 License
-This project is licensed under the MIT License.
