@@ -356,6 +356,9 @@
 <svelte:head>
     <title>Ballz: A Ball Based Physics Simulator</title>
     <link rel="icon" href="\ballz_icon.ico" />
+
+    <!-- IOS Icon Tag -->
+    <link rel="apple-touch-icon" href="\ballz_icon.ico">
 </svelte:head>
 
 <div id="stats-wrapper">

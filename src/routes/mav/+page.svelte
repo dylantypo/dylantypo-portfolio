@@ -144,6 +144,9 @@
 <svelte:head>
     <title>Microphone Audio Visualizer</title>
     <link rel="icon" href="\mav_icon.ico" />
+
+    <!-- IOS Icon Tag -->
+    <link rel="apple-touch-icon" href="\mav_icon.ico">
 </svelte:head>
 
 <main>
