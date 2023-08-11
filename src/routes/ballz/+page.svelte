@@ -83,9 +83,13 @@
     function handleDeviceOrientation(event: DeviceOrientationEvent) {
         deviceOrientation = {
             alpha: event.alpha ?? 0,
-            beta: event.beta ?? 0,
-            gamma: event.gamma ?? 0
+            beta: event.beta ?? 0,  // x-axis tilt [-180,180]
+            gamma: event.gamma ?? 0 // y-axis tilt [-90,90]
         };
+
+        // Convert the [-90, 90] range to a [0, 1] range for gamma and [-180, 180] to [-1, 1] for beta
+        gravityX = deviceOrientation.gamma / 90;
+        gravityY = deviceOrientation.beta / 180;
     }
 
     function isMobileDevice() {
@@ -261,23 +265,33 @@
         }
     }
 
-    function requestOrientationPermission() {
+    async function requestOrientationPermission() {
         if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-            (DeviceOrientationEvent as any).requestPermission().then((permissionState: string) => {
+            try {
+                const permissionState = await (DeviceOrientationEvent as any).requestPermission();
                 if (permissionState === 'granted') {
                     window.addEventListener('deviceorientation', handleDeviceOrientation);
                 }
-            })
-            .catch(console.error);
-        } else if (typeof (window.DeviceMotionEvent as any).requestPermission === 'function') { // Check for DeviceMotionEvent
-            (window.DeviceMotionEvent as any).requestPermission().then((permissionState: string) => {
-                if (permissionState === 'granted') {
-                    window.addEventListener('deviceorientation', handleDeviceOrientation);
-                }
-            })
-            .catch(console.error);
+            } catch (error) {
+                console.error(error);
+            }
         } else {
+            // For non-iOS 13+ devices
             window.addEventListener('deviceorientation', handleDeviceOrientation);
+        }
+
+        if (typeof (DeviceMotionEvent as any).requestPermission === 'function') {
+            try {
+                const permissionState = await (DeviceMotionEvent as any).requestPermission();
+                if (permissionState === 'granted') {
+                    window.addEventListener('devicemotion', handleDeviceMotion);
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        } else {
+            // For non-iOS 13+ devices
+            window.addEventListener('devicemotion', handleDeviceMotion);
         }
     }
 
@@ -296,12 +310,16 @@
             });
 
             if (isMobileDevice()) {
-                if (window.DeviceOrientationEvent) {
+                const hasOrientationEvent = 'DeviceOrientationEvent' in window;
+                const hasMotionEvent = 'DeviceMotionEvent' in window;
+
+                if (hasOrientationEvent) {
                     window.addEventListener('deviceorientation', handleDeviceOrientation);
                 }
-                if (window.DeviceMotionEvent) {
+                if (hasMotionEvent) {
                     window.addEventListener('devicemotion', handleDeviceMotion);
                 }
+                
                 // Add touch event listeners
                 canvas.addEventListener('touchstart', touchStartHandler);
                 canvas.addEventListener('touchend', touchEndHandler);
