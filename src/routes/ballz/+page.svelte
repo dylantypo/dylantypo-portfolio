@@ -230,9 +230,6 @@
     function touchEndHandler(event: TouchEvent) {
         event.preventDefault();
         let touch = event.changedTouches[0];  // Use changedTouches for the end event
-        if (!dragging) {
-            spawnBall(touch.clientX, touch.clientY);
-        }
         if (dragging && dragBall) {
             dragBall.vx = touch.clientX - lastMouseX;
             dragBall.vy = touch.clientY - lastMouseY;
@@ -241,6 +238,8 @@
             dragging = false;
             dragOffsetX = 0;
             dragOffsetY = 0;
+        } else {
+            spawnBall(touch.clientX, touch.clientY);
         }
     }
 
