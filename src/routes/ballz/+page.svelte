@@ -36,7 +36,10 @@
     let lastMouseY = 0;
 
     let floorY: number;
-    let floorDrop: boolean = false; // Whether the floor is dropping
+    let floorDrop: boolean = false;
+
+    let isMobileDevice: boolean = false;
+    let permissionGranted: boolean = false; // Whether orientation permissions are granted
 
     $: numBalls = balls.length;
     $: modeBallSize = calculateModeBallSize(balls);
@@ -65,10 +68,14 @@
                 try {
                     const permissionState = await eventType.requestPermission();
                     if (permissionState === 'granted') {
+                        permissionGranted = true;
                         window.addEventListener(eventType.name, handler);
+                    } else {
+                        permissionGranted = false;
                     }
                 } catch (error) {
                     console.error(error);
+                    permissionGranted = false;
                 }
             } else {
                 window.addEventListener(eventType.name, handler);
@@ -107,10 +114,6 @@
             y: acceleration?.y || 0,
             z: acceleration?.z || 0
         };
-    }
-
-    function isMobileDevice() {
-        return window.innerWidth <= 800;
     }
 
     function formatNumber(num: number) {
@@ -222,14 +225,10 @@
     }
 
     function touchStartHandler(event: TouchEvent) {
-        event.preventDefault();  // Prevents default behavior like scrolling
-        
         let touch = event.touches[0];
         let x = touch.clientX;
         let y = touch.clientY;
 
-        // Similar logic as in the mousedown event listener
-        // For instance:
         for (let i = 0; i < balls.length; i++) {
             let ball = balls[i];
             let dx = x - ball.x;
@@ -265,8 +264,6 @@
     }
 
     function touchMoveHandler(event: TouchEvent) {
-        event.preventDefault();
-
         let touch = event.touches[0];
         let x = touch.clientX;
         let y = touch.clientY;
@@ -285,7 +282,7 @@
     onMount(() => {
         if (!browser || !canvas) return;
 
-        requestOrientationPermission();
+        isMobileDevice = window.innerWidth <= 800;
         
         // Set canvas dimensions
         const setCanvasDimensions = () => {
@@ -296,7 +293,7 @@
 
         window.addEventListener('resize', setCanvasDimensions);
 
-        if (isMobileDevice()) {
+        if (isMobileDevice) {
             if ('DeviceOrientationEvent' in window) {
                 window.addEventListener('deviceorientation', handleDeviceOrientation);
             }
@@ -304,9 +301,9 @@
                 window.addEventListener('devicemotion', handleDeviceMotion);
             }
             
-            canvas.addEventListener('touchstart', touchStartHandler);
+            canvas.addEventListener('touchstart', touchStartHandler, { passive: true });
             canvas.addEventListener('touchend', touchEndHandler);
-            canvas.addEventListener('touchmove', touchMoveHandler);
+            canvas.addEventListener('touchmove', touchMoveHandler, { passive: true });
         } else {
             const detectBallUnderCursor = (event: MouseEvent) => {
                 for (let ball of balls) {
@@ -378,7 +375,7 @@
 
             floorY = floorDrop ? floorY + 10 : canvas.height; // Adjust this value to change the speed of the floor dropping
 
-            if (isMobileDevice()) {
+            if (isMobileDevice) {
                 gravityX = deviceOrientation.gamma / 90;  // Normalize between -1 and 1
                 gravityY = deviceOrientation.beta / 90;   // Normalize between -1 and 1
             } else {
@@ -523,6 +520,10 @@
     <div class="menu">
         <div id="slider-placeholder"> Settings </div>
         <div id="slider-container">
+            {#if isMobileDevice}
+                <button on:click={requestOrientationPermission} style="opacity: {permissionGranted? 1 : 0.5};">Mobile <i class="fa-solid fa-cube"></i> Motion</button>
+            {/if}
+
             <label for="gravity-slider">{gravityLabel}</label>
             <input id="gravity-slider" type="range" min="0" max="2" step="0.05" bind:value={gravity} />
 
