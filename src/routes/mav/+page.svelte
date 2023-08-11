@@ -145,8 +145,9 @@
     <title>Microphone Audio Visualizer</title>
     <link rel="icon" href="\mav_icon.ico" />
 
-    <!-- IOS Icon Tag -->
+    <!-- IOS Tags -->
     <link rel="apple-touch-icon" href="\mav_icon.ico">
+    <meta name="apple-mobile-web-app-status-bar-style" content="white">
 </svelte:head>
 
 <main>
@@ -158,6 +159,32 @@
 <canvas bind:this={canvas}></canvas>
 
 <style>
+    :root {
+        --font-family-kenney: 'KenneyFuture';
+        --color-text: rgba(255, 255, 255, 0.8);
+        --text-shadow-light: -1px 1px 1px rgba(0, 0, 0, 0.5);
+        --text-shadow-heavy: -8px 1px 18px rgba(0, 0, 0, 0.8);
+        --transition-time: 0.75s;
+    }
+
+    @font-face {
+        font-family: var(--font-family-kenney);
+        src: url('/Kenney Future.ttf') format('truetype');
+        font-display: swap;
+    }
+
+    :global(body) {
+        user-select: none;
+        overflow: hidden;
+        font-family: var(--font-family-kenney);
+        color: var(--color-text);
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        transition: background-color var(--transition-time) ease;
+    }
+
     main {
         font-size: 1.5em;
         position: fixed;
@@ -170,15 +197,15 @@
         justify-content: center;
         align-items: center;
         height: 100vh;
-        text-shadow: -8px 1px 18px rgba(0, 0, 0, 0.8);
+        text-shadow: var(--text-shadow-heavy);
     }
 
     button {
-        scale: 2;
-        font-family: 'KenneyFuture';
-        color: rgba(255, 255, 255, 0.5);
+        transform: scale(2);
+        font-family: var(--font-family-kenney);
+        color: var(--color-text);
         background-color: transparent;
-        text-shadow: -1px 1px 1px rgba(0, 0, 0, 0.5);
+        text-shadow: var(--text-shadow-light);
         border: none;
         margin: 1rem 0; /* 1rem margin on the top and bottom, 0 on the sides */
         transition: transform 0.5s ease;
@@ -194,25 +221,6 @@
         left: 0;
         z-index: 1;
         opacity: 0.085;
-    }
-
-    @font-face {
-        font-family: 'KenneyFuture';
-        src: url('/Kenney Future.ttf') format('truetype');
-        font-display: swap;
-    }
-
-    /* Body color and other properties */
-    :global(body) {
-        user-select: none;
-        overflow: hidden;
-        font-family: 'KenneyFuture';
-        color: rgba(255, 255, 255, 0.8);
-        height: 100%;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        transition: background-color 0.75s ease;
     }
 
     @media (max-width: 1905px) {

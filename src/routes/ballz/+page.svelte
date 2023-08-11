@@ -59,42 +59,59 @@
     let gravityX: number = 0;
     let gravityY: number = 0;
 
-    function handleDeviceMotion(event: DeviceMotionEvent) {
-        const deltaX = Math.abs(lastMotion.x - (event.accelerationIncludingGravity?.x || 0));
-        const deltaY = Math.abs(lastMotion.y - (event.accelerationIncludingGravity?.y || 0));
-        const deltaZ = Math.abs(lastMotion.z - (event.accelerationIncludingGravity?.z || 0));
-
-        if (deltaX + deltaY + deltaZ > shakeThreshold) {
-            // Shake detected
-            for (let ball of balls) {
-                ball.vx += (Math.random() - 0.5) * 10;  // Adjust values based on desired shake intensity
-                ball.vy += (Math.random() - 0.5) * 10;
+    async function requestOrientationPermission() {
+        const requestPermission = async (eventType: any, handler: (event: any) => void) => {
+            if (typeof eventType.requestPermission === 'function') {
+                try {
+                    const permissionState = await eventType.requestPermission();
+                    if (permissionState === 'granted') {
+                        window.addEventListener(eventType.name, handler);
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            } else {
+                window.addEventListener(eventType.name, handler);
             }
-        }
-
-        lastMotion = {
-            x: event.accelerationIncludingGravity?.x || 0,
-            y: event.accelerationIncludingGravity?.y || 0,
-            z: event.accelerationIncludingGravity?.z || 0
         };
-    }
 
+        await requestPermission(DeviceOrientationEvent as any, handleDeviceOrientation);
+        await requestPermission(DeviceMotionEvent as any, handleDeviceMotion);
+    }
 
     function handleDeviceOrientation(event: DeviceOrientationEvent) {
         deviceOrientation = {
             alpha: event.alpha ?? 0,
-            beta: event.beta ?? 0,  // x-axis tilt [-180,180]
-            gamma: event.gamma ?? 0 // y-axis tilt [-90,90]
+            beta: event.beta ?? 0,
+            gamma: event.gamma ?? 0
         };
-
-        // Convert the [-90, 90] range to a [0, 1] range for gamma and [-180, 180] to [-1, 1] for beta
         gravityX = deviceOrientation.gamma / 90;
         gravityY = deviceOrientation.beta / 180;
     }
 
+    function handleDeviceMotion(event: DeviceMotionEvent) {
+        const acceleration = event.accelerationIncludingGravity;
+        const deltaX = Math.abs(lastMotion.x - (acceleration?.x || 0));
+        const deltaY = Math.abs(lastMotion.y - (acceleration?.y || 0));
+        const deltaZ = Math.abs(lastMotion.z - (acceleration?.z || 0));
+
+        if (deltaX + deltaY + deltaZ > shakeThreshold) {
+            balls.forEach(ball => {
+                ball.vx += (Math.random() - 0.5) * 10;
+                ball.vy += (Math.random() - 0.5) * 10;
+            });
+        }
+
+        lastMotion = {
+            x: acceleration?.x || 0,
+            y: acceleration?.y || 0,
+            z: acceleration?.z || 0
+        };
+    }
+
     function isMobileDevice() {
-        return window.innerWidth <= 800;  // This threshold can be adjusted based on your requirements.
-    };
+        return window.innerWidth <= 800;
+    }
 
     function formatNumber(num: number) {
         return parseFloat(num.toFixed(2)).toString();
@@ -265,131 +282,83 @@
         }
     }
 
-    async function requestOrientationPermission() {
-        if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-            try {
-                const permissionState = await (DeviceOrientationEvent as any).requestPermission();
-                if (permissionState === 'granted') {
-                    window.addEventListener('deviceorientation', handleDeviceOrientation);
-                }
-            } catch (error) {
-                console.error(error);
-            }
-        } else {
-            // For non-iOS 13+ devices
-            window.addEventListener('deviceorientation', handleDeviceOrientation);
-        }
-
-        if (typeof (DeviceMotionEvent as any).requestPermission === 'function') {
-            try {
-                const permissionState = await (DeviceMotionEvent as any).requestPermission();
-                if (permissionState === 'granted') {
-                    window.addEventListener('devicemotion', handleDeviceMotion);
-                }
-            } catch (error) {
-                console.error(error);
-            }
-        } else {
-            // For non-iOS 13+ devices
-            window.addEventListener('devicemotion', handleDeviceMotion);
-        }
-    }
-
     onMount(() => {
-        if (browser && canvas) {
-            requestOrientationPermission();
+        if (!browser || !canvas) return;
 
-            // Set the initial size of the canvas to match the window size
+        requestOrientationPermission();
+        
+        // Set canvas dimensions
+        const setCanvasDimensions = () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+        };
+        setCanvasDimensions();
 
-            // Update the canvas size when the window is resized
-            window.addEventListener('resize', () => {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
+        window.addEventListener('resize', setCanvasDimensions);
+
+        if (isMobileDevice()) {
+            if ('DeviceOrientationEvent' in window) {
+                window.addEventListener('deviceorientation', handleDeviceOrientation);
+            }
+            if ('DeviceMotionEvent' in window) {
+                window.addEventListener('devicemotion', handleDeviceMotion);
+            }
+            
+            canvas.addEventListener('touchstart', touchStartHandler);
+            canvas.addEventListener('touchend', touchEndHandler);
+            canvas.addEventListener('touchmove', touchMoveHandler);
+        } else {
+            const detectBallUnderCursor = (event: MouseEvent) => {
+                for (let ball of balls) {
+                    const dx = event.clientX - ball.x;
+                    const dy = event.clientY - ball.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < ball.radius) {
+                        return ball;
+                    }
+                }
+                return null;
+            };
+
+            canvas.addEventListener('mousedown', (event) => {
+                const ball = detectBallUnderCursor(event);
+                if (ball) {
+                    dragging = true;
+                    dragBall = ball;
+                    dragBall!.dragging = true;
+                    dragOffsetX = ball.x - event.clientX;
+                    dragOffsetY = ball.y - event.clientY;
+                }
             });
 
-            if (isMobileDevice()) {
-                const hasOrientationEvent = 'DeviceOrientationEvent' in window;
-                const hasMotionEvent = 'DeviceMotionEvent' in window;
-
-                if (hasOrientationEvent) {
-                    window.addEventListener('deviceorientation', handleDeviceOrientation);
+            canvas.addEventListener('mouseup', (event) => {
+                if (dragging && dragBall) {
+                    dragBall.vx = event.clientX - lastMouseX;
+                    dragBall.vy = event.clientY - lastMouseY;
+                    dragBall.dragging = false;
+                    dragBall = null;
+                    dragOffsetX = 0;
+                    dragOffsetY = 0;
+                    setTimeout(() => dragging = false, 0);
                 }
-                if (hasMotionEvent) {
-                    window.addEventListener('devicemotion', handleDeviceMotion);
+            });
+
+            canvas.addEventListener('mousemove', (event) => {
+                lastMouseX = mouseX;
+                lastMouseY = mouseY;
+                mouseX = event.clientX;
+                mouseY = event.clientY;
+                if (dragging && dragBall) {
+                    dragBall.x = event.clientX + dragOffsetX;
+                    dragBall.y = event.clientY + dragOffsetY;
                 }
-                
-                // Add touch event listeners
-                canvas.addEventListener('touchstart', touchStartHandler);
-                canvas.addEventListener('touchend', touchEndHandler);
-                canvas.addEventListener('touchmove', touchMoveHandler);
-            } else {
-                canvas.addEventListener('mousedown', (event) => {
-                    // The mouse button has been pressed
-                    // Check if the mouse is over a ball
-                    for (let i = 0; i < balls.length; i++) {
-                        let ball = balls[i];
-                        let dx = event.clientX - ball.x;
-                        let dy = event.clientY - ball.y;
-                        if (Math.sqrt(dx * dx + dy * dy) < ball.radius) {
-                            // The mouse is over this ball
-                            // Start dragging it
-                            dragging = true;
-                            dragBall = ball;
-                            ball.dragging = true;
+            });
 
-                            // Store the drag offset
-                            dragOffsetX = ball.x - event.clientX;
-                            dragOffsetY = ball.y - event.clientY;
-
-                            break;
-                        }
-                    }
-                });
-
-                canvas.addEventListener('mouseup', (event) => {
-                    // The mouse button has been released
-                    // If a ball was being dragged, throw it
-                    if (dragging && dragBall) {
-                        dragBall.vx = event.clientX - lastMouseX;
-                        dragBall.vy = event.clientY - lastMouseY;
-                        dragBall.dragging = false;
-                        dragBall = null;
-                        dragOffsetX = 0;
-                        dragOffsetY = 0;
-
-                        // Add a small delay before resetting the dragging state
-                        setTimeout(() => {
-                            dragging = false;
-                        }, 0);
-                    }
-                });
-
-                canvas.addEventListener('mousemove', (event) => {
-                    // Store the last mouse position
-                    lastMouseX = mouseX;
-                    lastMouseY = mouseY;
-
-                    // Update the current mouse position
-                    mouseX = event.clientX;
-                    mouseY = event.clientY;
-
-                    // If a ball is being dragged, move it to the current mouse position
-                    if (dragging && dragBall) {
-                        dragBall.x = event.clientX + dragOffsetX;
-                        dragBall.y = event.clientY + dragOffsetY;
-                    }
-                });
-
-                canvas.addEventListener('click', (event) => {
-                    if(dragging) return;
-                    spawnBall(event.clientX, event.clientY);
-                });
-            }
-
-            ctx = canvas.getContext('2d');
+            canvas.addEventListener('click', (event) => {
+                if (!dragging) spawnBall(event.clientX, event.clientY);
+            });
         }
+
+        ctx = canvas.getContext('2d');
 
         function gameLoop(timestamp: number = 0) {
             if (!lastTime) {
@@ -515,15 +484,12 @@
 
     onDestroy(() => {
         if (browser) {
-            // Clean up the resize event listener when the component is destroyed
             window.removeEventListener('resize', () => {
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
             });
-
             window.removeEventListener('deviceorientation', handleDeviceOrientation);
             window.removeEventListener('devicemotion', handleDeviceMotion);
-
             window.cancelAnimationFrame(animationId);
         }
     });
@@ -533,129 +499,125 @@
     <title>Ballz: A Ball Based Physics Simulator</title>
     <link rel="icon" href="\ballz_icon.ico" />
 
-    <!-- IOS Icon Tag -->
+    <!-- IOS Tags -->
     <link rel="apple-touch-icon" href="\ballz_icon.ico">
+    <meta name="apple-mobile-web-app-status-bar-style" content="#90b4ce">
 </svelte:head>
 
 <div id="stats-wrapper">
-    <div id="stats-container">
-        <label for="frames-sec" style="display: flex; justify-content: center; color: rgb(61, 169, 252);">{fps} fps</label>
+    <div class="menu">
+        <div id="stats-placeholder"> Statistics </div>
+        <div id="stats-container">
+            <label for="frames-sec" style="display: flex; justify-content: center; color: rgb(61, 169, 252);">{fps} fps</label>
 
-        <label for="num-balls">{numBallsLabel}</label>
+            <label for="num-balls">{numBallsLabel}</label>
 
-        <label for="mode-ball-size">{modeBallSizeLabel}</label>
+            <label for="mode-ball-size">{modeBallSizeLabel}</label>
 
-        <label for="avg-ball-size">{avgBallSizeLabel}</label>
+            <label for="avg-ball-size">{avgBallSizeLabel}</label>
+        </div>
     </div>
-    <div id="stats-placeholder"> Statistics </div>
 </div>
 
 <div id="slider-wrapper">
-    <div id="slider-container">
-        <label for="gravity-slider">{gravityLabel}</label>
-        <input id="gravity-slider" type="range" min="0" max="2" step="0.05" bind:value={gravity} />
+    <div class="menu">
+        <div id="slider-placeholder"> Settings </div>
+        <div id="slider-container">
+            <label for="gravity-slider">{gravityLabel}</label>
+            <input id="gravity-slider" type="range" min="0" max="2" step="0.05" bind:value={gravity} />
 
-        <label for="friction-slider">{frictionLabel}</label>
-        <input id="friction-slider" type="range" min="0" max="1" step="0.1" bind:value={friction} />
+            <label for="friction-slider">{frictionLabel}</label>
+            <input id="friction-slider" type="range" min="0" max="1" step="0.1" bind:value={friction} />
 
-        <label for="bounce-slider">{bounceLabel}</label>
-        <input id="bounce-slider" type="range" min="0" max="1" step="0.05" bind:value={bounce} />
+            <label for="bounce-slider">{bounceLabel}</label>
+            <input id="bounce-slider" type="range" min="0" max="1" step="0.05" bind:value={bounce} />
 
-        <label for="size-slider">{sizeLabel}</label>
-        <input id="size-slider" type="range" min="10" max="250" step="0.1" bind:value={radius} />
+            <label for="size-slider">{sizeLabel}</label>
+            <input id="size-slider" type="range" min="10" max="250" step="0.1" bind:value={radius} />
 
-        <button on:click={dropFloor} style="opacity: {floorDrop? 1 : 0.5};">Floor <i class="fa-solid fa-person-falling"></i> Toggle</button>
+            <button on:click={dropFloor} style="opacity: {floorDrop? 1 : 0.5};">Floor <i class="fa-solid fa-person-falling"></i> Toggle</button>
+        </div>
     </div>
-    <div id="slider-placeholder"> Settings </div>
 </div>
 
 <canvas bind:this={canvas}></canvas>
 
 <style>
+    :root {
+        --bg-color-dark-translucent: rgba(0, 0, 0, 0.5);
+        --transition-duration: 0.75s;
+        --padding-default: 10px;
+        --border-radius-default: 5px;
+        --menu-transform: translateX(200%);
+    }
 
-    #stats-wrapper {
+    .menu {
+        position: relative;
+        width: fit-content;
+    }
+
+    #stats-wrapper, #slider-wrapper {
         position: fixed;
-        top: 2%;
         right: 2%;
     }
 
-    #stats-container {
-        display: flex;
-        flex-direction: column;
-        background-color: rgba(0, 0, 0, 0.5);
-        padding: 10px;
-        border-radius: 5px;
-        transform: translateX(200%);
-        transition: transform 0.75s;
-    }
-
-    #stats-container label {
-        padding: 4px;
-    }
-
-    #stats-wrapper:hover #stats-container {
-        transform: translateX(0);
-    }
-
-    #stats-placeholder {
-        background-color: rgba(0, 0, 0, 0.5);
-        opacity: 0.5;
-        padding: 10px;
-        border-radius: 5px;
-        transform: translateX(0);
-        transition: opacity 0.65s, transform 0.75s;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        z-index: 0;
-    }
-
-    #stats-wrapper:hover #stats-placeholder {
-        opacity: 0;
-        transform: translateX(200%);
+    #stats-wrapper {
+        top: 2%;
     }
 
     #slider-wrapper {
-        position: fixed;
         bottom: 2%;
-        right: 2%;
         z-index: 2;
     }
 
-    #slider-container {
+    #stats-container, #slider-container {
         display: flex;
         flex-direction: column;
-        background-color: rgba(0, 0, 0, 0.5);
-        padding: 10px;
-        border-radius: 5px;
-        transform: translateX(200%);
-        transition: transform 0.65s;
+        background-color: var(--bg-color-dark-translucent);
+        padding: var(--padding-default);
+        border-radius: var(--border-radius-default);
+        transform: var(--menu-transform);
+        transition: transform var(--transition-duration);
     }
 
-    #slider-wrapper:hover #slider-container {
+    #stats-container label, #slider-container label {
+        padding: 4px;
+    }
+
+    #stats-wrapper .menu:hover #stats-container, 
+    #slider-wrapper .menu:hover #slider-container {
         transform: translateX(0);
+    }
+
+    #stats-placeholder, #slider-placeholder {
+        background-color: var(--bg-color-dark-translucent);
+        opacity: 0.5;
+        padding: var(--padding-default);
+        border-radius: var(--border-radius-default);
+        cursor: pointer;
+        transform: translateX(0);
+        transition: opacity 0.65s, transform var(--transition-duration);
+        position: absolute;
+        z-index: 3;
+    }
+
+    #stats-placeholder {
+        top: 50%;
+        left: 50%;
     }
 
     #slider-placeholder {
-        background-color: rgba(0, 0, 0, 0.5);
-        opacity: 0.5;
-        padding: 10px;
-        border-radius: 5px;
-        cursor: pointer;
-        transform: translateX(0);
-        transition: opacity 0.55s, transform 0.65s;
-        position: absolute;
         top: 50%;
         left: 25%;
-        z-index: 0;
     }
 
-    #slider-wrapper:hover #slider-placeholder {
-        opacity: 0;
-        transform: translateX(200%);
+    #stats-wrapper .menu:hover #stats-placeholder, 
+    #slider-wrapper .menu:hover #slider-placeholder {
+        opacity: 0.5;
+        transform: var(--menu-transform);
     }
 
-    #slider-container input, button {
+    #slider-container input, #slider-container button {
         margin: 5px;
         cursor: pointer;
         z-index: 1;
@@ -666,19 +628,17 @@
         color: white;
         background: rgba(0, 0, 0, 0.144);
         border: none;
-        border-radius: 5px;
+        border-radius: var(--border-radius-default);
     }
 
-    canvas {
+    canvas, :global(body) {
         background-color: #90b4ce;
     }
 
-    /* Body color and other properties */
     :global(body) {
         overflow: hidden;
         user-select: none;
         color: white;
-        background-color: #90b4ce;
         margin: 0;
         padding: 0;
     }
