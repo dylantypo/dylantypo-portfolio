@@ -388,7 +388,6 @@
 
                 ball.vx += gravityX;  // Apply horizontal gravity
                 ball.vy += gravityY;  // Apply vertical gravity
-                ball.vy += gravity;
                 ball.x += ball.vx;
                 ball.y += ball.vy;
 
@@ -436,8 +435,8 @@
                         ball.vx *= (1 - drag / ball.mass);
                         ball.vy *= (1 - drag / ball.mass);
                         // The balls are colliding
-                        ball.colliding = true;  // Add this line
-                        otherBall.colliding = true;  // And this line
+                        ball.colliding = true;
+                        otherBall.colliding = true;
                         // Calculate the overlap between the balls
                         let overlap = ball.radius + otherBall.radius - distance;
 
