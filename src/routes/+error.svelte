@@ -22,17 +22,9 @@
         font-display: swap;
     }
 
-    /* Hide scrollbar for all elements */
+    /* Hide scrollbar for webkit browsers */
     :global(::-webkit-scrollbar) {
         display: none;
-    }
-
-    /* Body color and other properties */
-    :global(body) {
-        font-family: 'KenneyFuture', sans-serif;
-        background-color: #004643;
-        margin: 0;
-        padding: 0;
     }
 
     /* Hide scrollbar for non-webkit browsers */
@@ -40,6 +32,15 @@
         scrollbar-width: none;
     }
 
+    /* Global body styling */
+    :global(body) {
+        font-family: 'KenneyFuture', sans-serif;
+        background-color: #004643;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Message styles */
     .message {
         position: fixed;
         width: 100%;

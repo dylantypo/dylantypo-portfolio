@@ -23,23 +23,28 @@
 </main>
 
 <style>
+    :root {
+        --font-family-kenney: 'KenneyFuture', sans-serif;
+        --background-color-default: #004643;
+    }
+
     @font-face {
-        font-family: 'KenneyFuture';
+        font-family: var(--font-family-kenney);
         src: url('/Kenney Future.ttf') format('truetype');
         font-display: swap;
+    }
+
+    /* Body styling */
+    :global(body) {
+        font-family: var(--font-family-kenney);
+        background-color: var(--background-color-default);
+        margin: 0;
+        padding: 0;
     }
 
     /* Hide scrollbar for all elements */
     :global(::-webkit-scrollbar) {
         display: none;
-    }
-
-    /* Body color and other properties */
-    :global(body) {
-        font-family: 'KenneyFuture', sans-serif;
-        background-color: #004643;
-        margin: 0;
-        padding: 0;
     }
 
     /* Hide scrollbar for non-webkit browsers */
