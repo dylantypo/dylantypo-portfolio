@@ -144,10 +144,10 @@
 <svelte:head>
     <title>Microphone Audio Visualizer</title>
     <link rel="icon" href="\mav_icon.ico" />
+    <meta name="theme-color" content="#004643">
 
     <!-- IOS Tags -->
     <link rel="apple-touch-icon" href="\mav_icon.ico">
-    <meta name="apple-mobile-web-app-status-bar-style" content="white">
 </svelte:head>
 
 <main>
