@@ -501,7 +501,7 @@
 
     <!-- IOS Tags -->
     <link rel="apple-touch-icon" href="\ballz_icon.ico">
-    <!-- <meta name="apple-mobile-web-app-status-bar-style" content="#90b4ce"> -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="#90b4ce">
 </svelte:head>
 
 <div id="stats-wrapper">
