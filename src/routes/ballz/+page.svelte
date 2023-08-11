@@ -8,7 +8,6 @@
 
     let balls: any[] = [];
 
-
     // User Inputs
     let gravity: number = 0.2;
     $: gravityLabel = `Gravity: ${formatNumber(gravity)}`;
@@ -27,6 +26,8 @@
 
     let dragging = false;  // Whether we are currently dragging a ball
     let dragBall: { vx: number; vy: number; dragging: boolean; x: number; y: number; } | null = null;  // The ball that we are dragging
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
 
     // Variables to keep track of the mouse position
     let mouseX = 0;
@@ -49,6 +50,47 @@
     let fps = 0;
     let framesRendered = 0;
     let lastTime = 0;
+
+    // Device Orientation Variables
+    let deviceOrientation = { alpha: 0, beta: 0, gamma: 0 };
+    let lastMotion = { x: 0, y: 0, z: 0 };
+    let shakeThreshold = 15;
+
+    let gravityX: number = 0;
+    let gravityY: number = 0;
+
+    function handleDeviceMotion(event: DeviceMotionEvent) {
+        const deltaX = Math.abs(lastMotion.x - (event.accelerationIncludingGravity?.x || 0));
+        const deltaY = Math.abs(lastMotion.y - (event.accelerationIncludingGravity?.y || 0));
+        const deltaZ = Math.abs(lastMotion.z - (event.accelerationIncludingGravity?.z || 0));
+
+        if (deltaX + deltaY + deltaZ > shakeThreshold) {
+            // Shake detected
+            for (let ball of balls) {
+                ball.vx += (Math.random() - 0.5) * 10;  // Adjust values based on desired shake intensity
+                ball.vy += (Math.random() - 0.5) * 10;
+            }
+        }
+
+        lastMotion = {
+            x: event.accelerationIncludingGravity?.x || 0,
+            y: event.accelerationIncludingGravity?.y || 0,
+            z: event.accelerationIncludingGravity?.z || 0
+        };
+    }
+
+
+    function handleDeviceOrientation(event: DeviceOrientationEvent) {
+        deviceOrientation = {
+            alpha: event.alpha ?? 0,
+            beta: event.beta ?? 0,
+            gamma: event.gamma ?? 0
+        };
+    }
+
+    function isMobileDevice() {
+        return window.innerWidth <= 800;  // This threshold can be adjusted based on your requirements.
+    };
 
     function formatNumber(num: number) {
         return parseFloat(num.toFixed(2)).toString();
@@ -158,8 +200,92 @@
         balls.push(ball);
     }
 
+    function touchStartHandler(event: TouchEvent) {
+        event.preventDefault();  // Prevents default behavior like scrolling
+        
+        let touch = event.touches[0];
+        let x = touch.clientX;
+        let y = touch.clientY;
+
+        // Similar logic as in the mousedown event listener
+        // For instance:
+        for (let i = 0; i < balls.length; i++) {
+            let ball = balls[i];
+            let dx = x - ball.x;
+            let dy = y - ball.y;
+            if (Math.sqrt(dx * dx + dy * dy) < ball.radius) {
+                dragging = true;
+                dragBall = ball;
+                ball.dragging = true;
+
+                // Store the drag offset
+                dragOffsetX = ball.x - x;
+                dragOffsetY = ball.y - y;
+
+                break;
+            }
+        }
+    }
+
+    function touchEndHandler(event: TouchEvent) {
+        event.preventDefault();
+        let touch = event.changedTouches[0];  // Use changedTouches for the end event
+        if (dragging && dragBall) {
+            dragBall.vx = touch.clientX - lastMouseX;
+            dragBall.vy = touch.clientY - lastMouseY;
+            dragBall.dragging = false;
+            dragBall = null;
+            dragging = false;
+            dragOffsetX = 0;
+            dragOffsetY = 0;
+        }
+        if (!dragging) {
+            spawnBall(touch.clientX, touch.clientY);
+        }
+    }
+
+    function touchMoveHandler(event: TouchEvent) {
+        event.preventDefault();
+
+        let touch = event.touches[0];
+        let x = touch.clientX;
+        let y = touch.clientY;
+
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+        mouseX = x;
+        mouseY = y;
+
+        if (dragging && dragBall) {
+            dragBall.x = x + dragOffsetX;
+            dragBall.y = y + dragOffsetY;
+        }
+    }
+
+    function requestOrientationPermission() {
+        if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+            (DeviceOrientationEvent as any).requestPermission().then((permissionState: string) => {
+                if (permissionState === 'granted') {
+                    window.addEventListener('deviceorientation', handleDeviceOrientation);
+                }
+            })
+            .catch(console.error);
+        } else if (typeof (window.DeviceMotionEvent as any).requestPermission === 'function') { // Check for DeviceMotionEvent
+            (window.DeviceMotionEvent as any).requestPermission().then((permissionState: string) => {
+                if (permissionState === 'granted') {
+                    window.addEventListener('deviceorientation', handleDeviceOrientation);
+                }
+            })
+            .catch(console.error);
+        } else {
+            window.addEventListener('deviceorientation', handleDeviceOrientation);
+        }
+    }
+
     onMount(() => {
         if (browser && canvas) {
+            requestOrientationPermission();
+
             // Set the initial size of the canvas to match the window size
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
@@ -170,60 +296,80 @@
                 canvas.height = window.innerHeight;
             });
 
-            canvas.addEventListener('mousedown', (event) => {
-                // The mouse button has been pressed
-                // Check if the mouse is over a ball
-                for (let i = 0; i < balls.length; i++) {
-                    let ball = balls[i];
-                    let dx = event.clientX - ball.x;
-                    let dy = event.clientY - ball.y;
-                    if (Math.sqrt(dx * dx + dy * dy) < ball.radius) {
-                        // The mouse is over this ball
-                        // Start dragging it
-                        dragging = true;
-                        dragBall = ball;
-                        ball.dragging = true;
-                        break;
+            if (isMobileDevice()) {
+                if (window.DeviceOrientationEvent) {
+                    window.addEventListener('deviceorientation', handleDeviceOrientation);
+                }
+                if (window.DeviceMotionEvent) {
+                    window.addEventListener('devicemotion', handleDeviceMotion);
+                }
+                // Add touch event listeners
+                canvas.addEventListener('touchstart', touchStartHandler);
+                canvas.addEventListener('touchend', touchEndHandler);
+                canvas.addEventListener('touchmove', touchMoveHandler);
+            } else {
+                canvas.addEventListener('mousedown', (event) => {
+                    // The mouse button has been pressed
+                    // Check if the mouse is over a ball
+                    for (let i = 0; i < balls.length; i++) {
+                        let ball = balls[i];
+                        let dx = event.clientX - ball.x;
+                        let dy = event.clientY - ball.y;
+                        if (Math.sqrt(dx * dx + dy * dy) < ball.radius) {
+                            // The mouse is over this ball
+                            // Start dragging it
+                            dragging = true;
+                            dragBall = ball;
+                            ball.dragging = true;
+
+                            // Store the drag offset
+                            dragOffsetX = ball.x - event.clientX;
+                            dragOffsetY = ball.y - event.clientY;
+
+                            break;
+                        }
                     }
-                }
-            });
+                });
 
-            canvas.addEventListener('mouseup', (event) => {
-                // The mouse button has been released
-                // If a ball was being dragged, throw it
-                if (dragging && dragBall) {
-                    dragBall.vx = event.clientX - lastMouseX;
-                    dragBall.vy = event.clientY - lastMouseY;
-                    dragBall.dragging = false;
-                    dragBall = null;
+                canvas.addEventListener('mouseup', (event) => {
+                    // The mouse button has been released
+                    // If a ball was being dragged, throw it
+                    if (dragging && dragBall) {
+                        dragBall.vx = event.clientX - lastMouseX;
+                        dragBall.vy = event.clientY - lastMouseY;
+                        dragBall.dragging = false;
+                        dragBall = null;
+                        dragOffsetX = 0;
+                        dragOffsetY = 0;
 
-                    // Add a small delay before resetting the dragging state
-                    setTimeout(() => {
-                        dragging = false;
-                    }, 0);
-                }
-            });
+                        // Add a small delay before resetting the dragging state
+                        setTimeout(() => {
+                            dragging = false;
+                        }, 0);
+                    }
+                });
 
-            canvas.addEventListener('mousemove', (event) => {
-                // Store the last mouse position
-                lastMouseX = mouseX;
-                lastMouseY = mouseY;
+                canvas.addEventListener('mousemove', (event) => {
+                    // Store the last mouse position
+                    lastMouseX = mouseX;
+                    lastMouseY = mouseY;
 
-                // Update the current mouse position
-                mouseX = event.clientX;
-                mouseY = event.clientY;
+                    // Update the current mouse position
+                    mouseX = event.clientX;
+                    mouseY = event.clientY;
 
-                // If a ball is being dragged, move it to the current mouse position
-                if (dragging && dragBall) {
-                    dragBall.x = event.clientX;
-                    dragBall.y = event.clientY;
-                }
-            });
+                    // If a ball is being dragged, move it to the current mouse position
+                    if (dragging && dragBall) {
+                        dragBall.x = event.clientX + dragOffsetX;
+                        dragBall.y = event.clientY + dragOffsetY;
+                    }
+                });
 
-            canvas.addEventListener('click', (event) => {
-                if(dragging) return;
-                spawnBall(event.clientX, event.clientY);
-            });
+                canvas.addEventListener('click', (event) => {
+                    if(dragging) return;
+                    spawnBall(event.clientX, event.clientY);
+                });
+            }
 
             ctx = canvas.getContext('2d');
         }
@@ -246,9 +392,19 @@
 
             floorY = floorDrop ? floorY + 10 : canvas.height; // Adjust this value to change the speed of the floor dropping
 
+            if (isMobileDevice()) {
+                gravityX = deviceOrientation.gamma / 90;  // Normalize between -1 and 1
+                gravityY = deviceOrientation.beta / 90;   // Normalize between -1 and 1
+            } else {
+                gravityX = 0;
+                gravityY = gravity;
+            }
+
             for (let i = 0; i < balls.length; i++) {
                 let ball = balls[i];
 
+                ball.vx += gravityX;  // Apply horizontal gravity
+                ball.vy += gravityY;  // Apply vertical gravity
                 ball.vy += gravity;
                 ball.x += ball.vx;
                 ball.y += ball.vy;
@@ -348,6 +504,9 @@
                 canvas.height = window.innerHeight;
             });
 
+            window.removeEventListener('deviceorientation', handleDeviceOrientation);
+            window.removeEventListener('devicemotion', handleDeviceMotion);
+
             window.cancelAnimationFrame(animationId);
         }
     });
@@ -381,8 +540,6 @@
 
         <label for="friction-slider">{frictionLabel}</label>
         <input id="friction-slider" type="range" min="0" max="1" step="0.1" bind:value={friction} />
-
-        <!-- <div style="display: block; height: 100px;"></div> -->
 
         <label for="bounce-slider">{bounceLabel}</label>
         <input id="bounce-slider" type="range" min="0" max="1" step="0.05" bind:value={bounce} />
