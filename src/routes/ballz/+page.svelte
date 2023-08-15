@@ -408,13 +408,13 @@
 
                 // If the ball is being dragged, don't apply gravity or bouncing
                 if (!ball.dragging) {
-                    ball.vy += gravity / ball.mass;
+                    ball.vy += gravity;
 
+                    ball.vy += gravity / ball.mass; // Apply ball mass
                     ball.vx += gravityX;  // Apply horizontal gravity
                     ball.vy += gravityY;  // Apply vertical gravity
-                    ball.vy += gravity;
-                    ball.x += ball.vx;
-                    ball.y += ball.vy;
+                    ball.x += ball.vx;  // Apply x velocity
+                    ball.y += ball.vy;  // Apply y velocity
                 }
 
                 let bounceResult;

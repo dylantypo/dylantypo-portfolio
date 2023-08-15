@@ -1,5 +1,4 @@
 <script lang="ts">
-    // import SnakeGame from '$lib/snakeGame.svelte';
     import RetroConsole from '$lib/RetroConsole.svelte';
 	import ToolBar from '$lib/ToolBar.svelte';
     import MainContent from '$lib/mainContent.svelte';
@@ -13,8 +12,6 @@
 </script>
 
 <main>
-    <!-- <SnakeGame /> -->
-
     <ToolBar />
 
     <RetroConsole {hero_text} />
