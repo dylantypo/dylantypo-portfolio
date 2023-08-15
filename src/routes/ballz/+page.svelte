@@ -96,6 +96,19 @@
         gravityY = deviceOrientation.beta / 180;
     }
 
+    function isMobileDev() {
+        // User Agent detection
+        let mobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        // Feature detection
+        let touchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+        // Screen size detection
+        let screenSize = Math.min(screen.width, screen.height) <= 800;  // consider devices with min dimension <= 800px as mobile
+
+        return mobileUserAgent || touchSupport || screenSize;
+    }
+
     function handleDeviceMotion(event: DeviceMotionEvent) {
         const acceleration = event.accelerationIncludingGravity;
         const deltaX = Math.abs(lastMotion.x - (acceleration?.x || 0));
@@ -282,7 +295,7 @@
     onMount(() => {
         if (!browser || !canvas) return;
 
-        isMobileDevice = window.innerWidth <= 800;
+        isMobileDevice = isMobileDev();
         
         // Set canvas dimensions
         const setCanvasDimensions = () => {
@@ -388,6 +401,7 @@
 
                 ball.vx += gravityX;  // Apply horizontal gravity
                 ball.vy += gravityY;  // Apply vertical gravity
+                ball.vy += gravity;
                 ball.x += ball.vx;
                 ball.y += ball.vy;
 
