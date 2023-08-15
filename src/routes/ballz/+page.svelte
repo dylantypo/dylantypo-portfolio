@@ -399,12 +399,6 @@
             for (let i = 0; i < balls.length; i++) {
                 let ball = balls[i];
 
-                ball.vx += gravityX;  // Apply horizontal gravity
-                ball.vy += gravityY;  // Apply vertical gravity
-                ball.vy += gravity;
-                ball.x += ball.vx;
-                ball.y += ball.vy;
-
                 // If the ball is below the floor, remove it from the array
                 if (ball.y - ball.radius > floorY) {
                     balls.splice(i, 1);
@@ -415,6 +409,12 @@
                 // If the ball is being dragged, don't apply gravity or bouncing
                 if (!ball.dragging) {
                     ball.vy += gravity / ball.mass;
+
+                    ball.vx += gravityX;  // Apply horizontal gravity
+                    ball.vy += gravityY;  // Apply vertical gravity
+                    ball.vy += gravity;
+                    ball.x += ball.vx;
+                    ball.y += ball.vy;
                 }
 
                 let bounceResult;
