@@ -110,6 +110,7 @@
                 if (snakeDirection.x === 0) snakeDirection = { x: 1, y: 0 };
                 break;
             case 'q':
+            case 'Escape':
                 resetGame();  // Reset the game when 'q' is pressed
                 currentState = GameState.INIT;
                 if (backgroundMusic) {
