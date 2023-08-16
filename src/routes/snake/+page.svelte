@@ -19,7 +19,7 @@
         PLAYING
     }
     let currentState: GameState = GameState.INIT;
-
+    const NUM_CELLS = 50;
     let CELL_SIZE: number;
     let GRID_WIDTH: number;
     let GRID_HEIGHT: number;
@@ -33,6 +33,8 @@
     let isGameOver = false;
     let gameInterval: string | number | NodeJS.Timer | undefined;
     let foodPosition: { x: number, y: number } | undefined;
+    let startTouchX: number;
+    let startTouchY: number;
 
     // Themes and Difficulties
     type ThemeKey = 'classic' | 'retro' | 'aquatic' | 'desert' | 'night';
@@ -86,10 +88,6 @@
         return position;
     }
 
-    function getFoodPosition() {
-        return foodPosition!;
-    }
-
     function handleKeydown(event: KeyboardEvent) {
         // Handle arrow key presses to change snake direction.
         switch (event.key) {
@@ -126,11 +124,35 @@
         }
     }
 
+    // Touch Controls
+    function handleTouchStart(event: TouchEvent) {
+        startTouchX = event.touches[0].clientX;
+        startTouchY = event.touches[0].clientY;
+    }
+
+    function handleTouchMove(event: TouchEvent) {
+        if (!startTouchX || !startTouchY) {
+            return;
+        }
+
+        const xDiff = startTouchX - event.touches[0].clientX;
+        const yDiff = startTouchY - event.touches[0].clientY;
+
+        // Reset start touch coordinates for the next move
+        startTouchX = 0;
+        startTouchY = 0;
+
+        // Determine swipe direction
+        if (Math.abs(xDiff) > Math.abs(yDiff)) { // Horizontal swipe
+            snakeDirection = xDiff > 0 ? { x: -1, y: 0 } : { x: 1, y: 0 };
+        } else { // Vertical swipe
+            snakeDirection = yDiff > 0 ? { x: 0, y: -1 } : { x: 0, y: 1 };
+        }
+    }
+
     function resetGame() {
-        // const startX = Math.floor(Math.random() * (GRID_WIDTH * 0.5)) + (GRID_WIDTH * 0.25);
-        // const startY = Math.floor(Math.random() * (GRID_HEIGHT * 0.5)) + (GRID_HEIGHT * 0.25);
-        const startX = GRID_WIDTH * 0.5;
-        const startY = GRID_HEIGHT * 0.5;
+        const startX = Math.floor(GRID_WIDTH * 0.5);
+        const startY = Math.floor(GRID_HEIGHT * 0.5);
         snakeBody = Array.from({ length: INITIAL_SNAKE_LENGTH }).map((_, index) => {
             return { x: startX, y: startY - index };
         });
@@ -150,7 +172,6 @@
             const head = Object.assign({}, snakeBody[0]);
             head.x += snakeDirection.x;
             head.y += snakeDirection.y;
-            snakeBody = [head, ...snakeBody.slice(0, -1)];
 
             // Check for collision with walls or itself
             if (
@@ -163,6 +184,8 @@
                 return;
             }
 
+            snakeBody = [head, ...snakeBody.slice(0, -1)];
+
             // Grow snake smoothly based on growthQueue
             if (growthQueue > 0) {
                 snakeBody.push({ ...snakeBody[snakeBody.length - 1] });
@@ -170,7 +193,7 @@
             }
 
             // Check if snake ate the food
-            if (head.x === getFoodPosition().x && head.y === getFoodPosition().y) {
+            if (head.x === foodPosition!.x && head.y === foodPosition!.y) {
                 munchSound.play();
 
                 // Scoring logic
@@ -203,6 +226,12 @@
         // Stop the game loop.
         clearInterval(gameInterval);
     }
+
+    function handleResize() {
+        CELL_SIZE = Math.min(window.innerWidth, window.innerHeight) / NUM_CELLS;
+        GRID_WIDTH = Math.floor(window.innerWidth / CELL_SIZE);
+        GRID_HEIGHT = Math.floor(window.innerHeight / CELL_SIZE);
+    }
     
     function handleRestart() {
         resetGame();
@@ -219,10 +248,15 @@
         // Adjust game speed based on difficulty. This is just a basic example.
         let intervalSpeed: number = 10;
         switch (difficulty) {
-            case "Easy": intervalSpeed = 75; break;
-            case "Medium": intervalSpeed = 50; break;
-            case "Hard": intervalSpeed = 25; break;
+            case "Easy": intervalSpeed = 135; break;
+            case "Medium": intervalSpeed = 100; break;
+            case "Hard": intervalSpeed = 65; break;
         }
+        
+        // Trying to adjust the difficulty based on screen size
+        const speedModifier = CELL_SIZE / NUM_CELLS
+        intervalSpeed += speedModifier;
+
         // Set your game interval speed here, then start the game.
         currentState = GameState.PLAYING;
         backgroundMusic.play(); // Start music when game starts
@@ -237,13 +271,16 @@
             backgroundMusic.loop = true;
             highScore = parseInt(localStorage.getItem("snakeHighScore") || "0");
 
-            CELL_SIZE = 25;
+            CELL_SIZE = Math.min(window.innerWidth, window.innerHeight) / NUM_CELLS;
             GRID_WIDTH = Math.floor(window.innerWidth / CELL_SIZE);
             GRID_HEIGHT = Math.floor(window.innerHeight / CELL_SIZE);
             foodPosition = generateFoodPosition();
 
             resetGame();
             document.addEventListener('click', handleLeftClick);
+            document.addEventListener('touchstart', handleTouchStart, false);
+            document.addEventListener('touchmove', handleTouchMove, false);
+            window.addEventListener('resize', handleResize)
         }
     });
 
@@ -255,6 +292,8 @@
         }
         if (browser) {
             document.removeEventListener('click', handleLeftClick); 
+            document.removeEventListener('touchstart', handleTouchStart, false);
+            document.removeEventListener('touchmove', handleTouchMove, false);
         }
     });
 </script>
@@ -311,7 +350,7 @@
         <svg width={CELL_SIZE * GRID_WIDTH} height={CELL_SIZE * GRID_HEIGHT}>
             <!-- Render the snake -->
             {#each snakeBody as segment}
-                <rect x={segment.x * CELL_SIZE} y={segment.y * CELL_SIZE} width={CELL_SIZE} height={CELL_SIZE} fill={currentTheme.snakeColor} style="margin: 5px;"/>
+                <rect x={segment.x * CELL_SIZE} y={segment.y * CELL_SIZE} width={CELL_SIZE} height={CELL_SIZE} fill={currentTheme.snakeColor}/>
             {/each}
 
             <!-- Render the food -->
@@ -346,7 +385,7 @@
     }
 
     .menu p {
-        margin-top: 10%;
+        z-index: 3;
     }
 
     main {
@@ -375,13 +414,17 @@
 
     #logo {
         background-color: black;
-        width: 100%;
+        width: 100vw;
         height: 100vh;
-        scale: 1;
-        font-size: 4em;
+        font-size: 3em;
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         justify-content: center;
+        position: absolute;
+        top: 50%; /* These four lines are used to */
+        left: 50%; /* position the container in the */
+        transform: translate(-50%, -50%); /* exact center of the parent. */
     }
 
     .menu {
@@ -390,7 +433,16 @@
         display: flex;
         flex-direction: column;
         align-items: center;
+        justify-content: center; /* Centers items vertically */
+        position: absolute;
+        top: 50%; /* These four lines are used to */
+        left: 50%; /* position the container in the */
+        transform: translate(-50%, -50%); /* exact center of the parent. */
         background-color: black;
+    }
+
+    .menu p:first-child {
+        margin-bottom: 22rem; /* Adjust this value to your liking. */;
     }
 
     /* Button Container Styles */
