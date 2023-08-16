@@ -19,7 +19,7 @@
         PLAYING
     }
     let currentState: GameState = GameState.INIT;
-    const NUM_CELLS = 32;
+    const NUM_CELLS = 30;
     let CELL_SIZE: number;
     let GRID_WIDTH: number;
     let GRID_HEIGHT: number;
@@ -30,6 +30,7 @@
     let total_food = 0;
     let difficulty_value = 0;
     let growthQueue = 0;
+    let movementQueue: { x: number, y: number }[] = [];
     let isGameOver = false;
     let gameInterval: string | number | NodeJS.Timer | undefined;
     let foodPosition: { x: number, y: number } | undefined;
@@ -88,24 +89,32 @@
         return position;
     }
 
+    function isEqualDirection(dir1: { x: number, y: number }, dir2: { x: number, y: number }): boolean {
+        return dir1.x === dir2.x && dir1.y === dir2.y;
+    }
+
+    function invertDirection(dir: { x: number, y: number }): { x: number, y: number } {
+        return { x: -dir.x, y: -dir.y };
+    }
+
     function handleKeydown(event: KeyboardEvent) {
-        // Handle arrow key presses to change snake direction.
+        let newDirection;
         switch (event.key) {
             case 'ArrowUp':
             case 'w':
-                if (snakeDirection.y !== 1) snakeDirection = { x: 0, y: -1 };
+                newDirection = { x: 0, y: -1 };
                 break;
             case 'ArrowDown':
             case 's':
-                if (snakeDirection.y !== -1) snakeDirection = { x: 0, y: 1 };
+                newDirection = { x: 0, y: 1 };
                 break;
             case 'ArrowLeft':
             case 'a':
-                if (snakeDirection.x !== 1) snakeDirection = { x: -1, y: 0 };
+                newDirection = { x: -1, y: 0 };
                 break;
             case 'ArrowRight':
             case 'd':
-                if (snakeDirection.x !== -1) snakeDirection = { x: 1, y: 0 };
+                newDirection = { x: 1, y: 0 };
                 break;
             case 'q':
             case 'Escape':
@@ -115,6 +124,9 @@
                     backgroundMusic.pause();
                 }
                 break;
+        }
+        if (newDirection && (movementQueue.length === 0 || !isEqualDirection(movementQueue[movementQueue.length - 1], newDirection))) {
+            movementQueue.push(newDirection);
         }
     }
 
@@ -132,6 +144,7 @@
     }
 
     function handleTouchMove(event: TouchEvent) {
+        let newDirection;
         if (!startTouchX || !startTouchY) {
             return;
         }
@@ -145,17 +158,15 @@
 
         // Determine swipe direction
         if (Math.abs(xDiff) > Math.abs(yDiff)) { // Horizontal swipe
-            if (xDiff > 0 && snakeDirection.x !== 1) { 
-                snakeDirection = { x: -1, y: 0 };
-            } else if (snakeDirection.x !== -1) {
-                snakeDirection = { x: 1, y: 0 };
-            }
+            if (xDiff > 0) newDirection = { x: -1, y: 0 };
+            else newDirection = { x: 1, y: 0 };
         } else { // Vertical swipe
-            if (yDiff > 0 && snakeDirection.y !== 1) {
-                snakeDirection = { x: 0, y: -1 };
-            } else if (snakeDirection.y !== -1) {
-                snakeDirection = { x: 0, y: 1 };
-            }
+            if (yDiff > 0) newDirection = { x: 0, y: -1 };
+            else newDirection = { x: 0, y: 1 };
+        }
+
+        if (newDirection && (movementQueue.length === 0 || !isEqualDirection(movementQueue[movementQueue.length - 1], newDirection))) {
+            movementQueue.push(newDirection);
         }
     }
 
@@ -177,6 +188,13 @@
     function startGame(intervalSpeed: number) {
         // Start the game loop.
         gameInterval = setInterval(() => {
+            if (movementQueue.length > 0) {
+                const nextDirection = movementQueue.shift();
+                if (!isEqualDirection(invertDirection(snakeDirection), nextDirection!)) {
+                    snakeDirection = nextDirection!;
+                }
+            }
+
             // Update snake's position
             const head = Object.assign({}, snakeBody[0]);
             head.x += snakeDirection.x;
