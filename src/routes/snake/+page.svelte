@@ -93,23 +93,23 @@
         switch (event.key) {
             case 'ArrowUp':
             case 'w':
-                if (snakeDirection.y === 0) snakeDirection = { x: 0, y: -1 };
+                if (snakeDirection.y !== 1) snakeDirection = { x: 0, y: -1 };
                 break;
             case 'ArrowDown':
             case 's':
-                if (snakeDirection.y === 0) snakeDirection = { x: 0, y: 1 };
+                if (snakeDirection.y !== -1) snakeDirection = { x: 0, y: 1 };
                 break;
             case 'ArrowLeft':
             case 'a':
-                if (snakeDirection.x === 0) snakeDirection = { x: -1, y: 0 };
+                if (snakeDirection.x !== 1) snakeDirection = { x: -1, y: 0 };
                 break;
             case 'ArrowRight':
             case 'd':
-                if (snakeDirection.x === 0) snakeDirection = { x: 1, y: 0 };
+                if (snakeDirection.x !== -1) snakeDirection = { x: 1, y: 0 };
                 break;
             case 'q':
             case 'Escape':
-                resetGame();  // Reset the game when 'q' is pressed
+                resetGame();
                 currentState = GameState.INIT;
                 if (backgroundMusic) {
                     backgroundMusic.pause();
@@ -117,6 +117,7 @@
                 break;
         }
     }
+
 
     function handleLeftClick(event: MouseEvent) {
         if (event.button === 0) {  // Left mouse button has a button value of 0
@@ -144,9 +145,17 @@
 
         // Determine swipe direction
         if (Math.abs(xDiff) > Math.abs(yDiff)) { // Horizontal swipe
-            snakeDirection = xDiff > 0 ? { x: -1, y: 0 } : { x: 1, y: 0 };
+            if (xDiff > 0 && snakeDirection.x !== 1) { 
+                snakeDirection = { x: -1, y: 0 };
+            } else if (snakeDirection.x !== -1) {
+                snakeDirection = { x: 1, y: 0 };
+            }
         } else { // Vertical swipe
-            snakeDirection = yDiff > 0 ? { x: 0, y: -1 } : { x: 0, y: 1 };
+            if (yDiff > 0 && snakeDirection.y !== 1) {
+                snakeDirection = { x: 0, y: -1 };
+            } else if (snakeDirection.y !== -1) {
+                snakeDirection = { x: 0, y: 1 };
+            }
         }
     }
 
