@@ -5,15 +5,17 @@
     let hero_text = '4 0 4';
 </script>
 
-<RetroConsole {hero_text} />
+<main>
+    <RetroConsole {hero_text} />
 
-<section class="message">
-    <button on:click={() => goto('/')}>
-        <i class="fa-regular fa-rocket fa-bounce fa-2xl" style="--fa-animation-duration: 3.25s"></i>
-        <h1>Page not found</h1>
-        <i class="fa-regular fa-rocket fa-bounce fa-2xl" style="--fa-animation-duration: 3.67s"></i>
-    </button>
-</section>
+    <section class="message">
+        <button on:click={() => goto('/')}>
+            <i class="fa-regular fa-rocket fa-bounce fa-2xl" style="--fa-animation-duration: 3.25s"></i>
+            <h1>Page not found</h1>
+            <i class="fa-regular fa-rocket fa-bounce fa-2xl" style="--fa-animation-duration: 3.67s"></i>
+        </button>
+    </section>
+</main>
 
 <style>
     @font-face {
@@ -33,7 +35,7 @@
     }
 
     /* Global body styling */
-    :global(body) {
+    main {
         font-family: 'KenneyFuture', sans-serif;
         background-color: #004643;
         margin: 0;

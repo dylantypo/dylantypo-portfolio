@@ -131,6 +131,22 @@
 </div>
 
 <style>
+    :global(html) {
+        scrollbar-width: none;
+        width: 100vw;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #004643;
+    }
+
+    :global(body) {
+        width: 100vw;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
     #content {
         color: #e8e4e6;
         user-select: none;
@@ -141,7 +157,7 @@
     }
 
     #footer-content {
-        margin-bottom: 12.5vh;
+        padding-bottom: 10vh;
         display: flex;
         flex-direction: row;
         justify-content: flex-start;

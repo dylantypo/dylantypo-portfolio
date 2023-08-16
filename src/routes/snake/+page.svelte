@@ -373,10 +373,30 @@
         src: url("/snake-assets/PressStart2P-Regular.ttf");
     }
 
+    /* Hide scrollbar for all elements */
+    :global(::-webkit-scrollbar) {
+        display: none;
+    }
+
+    /* Hide scrollbar for non-webkit browsers */
+    :global(html) {
+        scrollbar-width: none;
+        background-color: black;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
     :global(body) {
         user-select: none;
+        background-color: black;
         color: white;
         overflow: hidden;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
     }
 
     /* Apply theme background to the game area */
@@ -399,7 +419,6 @@
     #game-over {
         width: 100%;
         height: 100vh;
-        background-color: black;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -413,7 +432,6 @@
     }
 
     #logo {
-        background-color: black;
         width: 100vw;
         height: 100vh;
         font-size: 3em;

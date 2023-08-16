@@ -30,11 +30,12 @@
         src: url('/Kenney Future.ttf') format('truetype');
         font-display: swap;
     }
-
-    /* Body styling */
-    :global(body) {
+    
+    main {
         font-family: var(--font-family-kenney);
         background-color: var(--background-color-default);
+        width: 100%;
+        height: 100%;
         margin: 0;
         padding: 0;
     }
@@ -44,8 +45,9 @@
         display: none;
     }
 
-    /* Hide scrollbar for non-webkit browsers */
     :global(html) {
         scrollbar-width: none;
+        width: 100vw;
+        height: 100%;
     }
 </style>
