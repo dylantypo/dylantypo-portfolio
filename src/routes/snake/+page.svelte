@@ -24,7 +24,7 @@
     let GRID_WIDTH: number;
     let GRID_HEIGHT: number;
     let snakeBody: { x: number, y: number }[] = [];
-    let snakeDirection: { x: number, y: number } = { x: 0, y: -1 };
+    let snakeDirection: { x: number, y: number };
     let score = 0;
     let munch = 0;
     let total_food = 0;
@@ -301,7 +301,6 @@
             CELL_SIZE = Math.min(window.innerWidth, window.innerHeight) / NUM_CELLS;
             GRID_WIDTH = Math.floor(window.innerWidth / CELL_SIZE);
             GRID_HEIGHT = Math.floor(window.innerHeight / CELL_SIZE);
-            foodPosition = generateFoodPosition();
 
             resetGame();
             document.addEventListener('click', handleLeftClick);
@@ -341,7 +340,6 @@
     <div id="game-over">
         <p>Game Over!</p>
         <p>Score: {score}</p>
-        <!-- Transition back to INIT state with a button or delay -->
         <button on:click={handleRestart}>Try Again</button>
     </div>
 {:else if currentState === GameState.INIT}
@@ -417,6 +415,7 @@
 
     :global(body) {
         user-select: none;
+        touch-action: none;
         background-color: black;
         color: white;
         overflow: hidden;
@@ -424,6 +423,10 @@
         height: 100%;
         margin: 0;
         padding: 0;
+        padding-top: env(safe-area-inset-top);
+        padding-right: env(safe-area-inset-right);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
     }
 
     /* Apply theme background to the game area */
