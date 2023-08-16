@@ -211,8 +211,11 @@
         transition: transform 0.5s ease;
     }
 
-    button:hover {
-        transform: scale(1.1);
+    @media (min-width: 800px) {
+        /* Only scale buttons on larger screens */
+        button:hover {
+            transform: scale(1.1);
+        }
     }
 
     canvas {

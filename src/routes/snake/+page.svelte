@@ -483,8 +483,11 @@
         border-bottom-right-radius: 10px;
     }
 
-    /* Button Hover Styles */
-    button:hover {
-        background-color: var(--button-highlighted-color);
+
+    @media (min-width: 800px) {
+        /* Button Hover Styles only on larger screens*/
+        button:hover {
+            background-color: var(--button-highlighted-color);
+        }
     }
 </style>
