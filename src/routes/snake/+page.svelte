@@ -19,7 +19,7 @@
         PLAYING
     }
     let currentState: GameState = GameState.INIT;
-    const NUM_CELLS = 50;
+    const NUM_CELLS = 32;
     let CELL_SIZE: number;
     let GRID_WIDTH: number;
     let GRID_HEIGHT: number;
