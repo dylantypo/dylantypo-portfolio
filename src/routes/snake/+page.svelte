@@ -463,6 +463,7 @@
         font-size: 2em;
         width: 10em;
         background-color: var(--button-color);
+        color: black;
         border: none;
         padding: 8px 12px;
         margin: 5px;
