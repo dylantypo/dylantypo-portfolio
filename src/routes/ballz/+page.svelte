@@ -638,7 +638,7 @@
     }
 
     #slider-container button {
-        font-family: 'KenneyFuture', sans-serif;
+        font-family: 'KenneyFuture', 'sans-serif';
         color: white;
         background: rgba(0, 0, 0, 0.144);
         border: none;
@@ -650,11 +650,10 @@
     }
 
     :global(body) {
+        font-family: 'KenneyFuture', 'sans-serif';
         overflow: hidden;
         user-select: none;
         color: white;
-        width: 100%;
-        height: 100%;
         margin: 0;
         padding: 0;
     }
