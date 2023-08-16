@@ -11,6 +11,7 @@ Below is a sitemap of the website:
 - [Home](https://dylanposner.com/)
   - [Microphone Audio Visualizer (Mav)](https://dylanposner.com/mav)
   - [Ballz - Ball Based Physics Simulator](https://dylanposner.com/ballz)
+  - [Snake.](https://dylanposner.com/snake)
 - [Error Page](https://dylanposner.com/error)
 
 ## 🚀 Getting Started
@@ -37,3 +38,4 @@ firebase deploy
 ## ✨ Project Wikis
 - [Microphone Audio Visualizer (Mav): A tool that visualizes audio input from a microphone.](https://github.com/dylantypo/dylantypo.github.io/wiki/Microphone-Audio-Visualizer)
 - [Ballz - Ball Based Physics Simulator: Experiment with various ball physics simulations.](https://github.com/dylantypo/dylantypo.github.io/wiki/A-Ball-Based-Physics-Simulator)
+- [Snake. - Dive into the nostalgic world of the Snake game.](#)
