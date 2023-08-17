@@ -291,6 +291,7 @@
 
         // Set your game interval speed here, then start the game.
         currentState = GameState.PLAYING;
+        backgroundMusic.play().catch(error => console.error("Background music play error:", error));
         startGame(intervalSpeed);
     }
 
@@ -298,8 +299,9 @@
     onMount(() => {
         if (browser) {
             munchSound = new Audio("/snake-assets/munch.wav");
-            munchSound.volume = 0.25;
+            munchSound.volume = 0.15;
             backgroundMusic = new Audio("/snake-assets/snake_song.wav");
+            backgroundMusic.volume = 0.35;
             backgroundMusic.loop = true;
             backgroundMusic.play().catch(error => console.error("Background music play error:", error));
             highScore = parseInt(localStorage.getItem("snakeHighScore") || "0");
