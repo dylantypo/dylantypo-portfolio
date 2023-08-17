@@ -11,6 +11,14 @@
         { x: 1, y: 0 }    // right
     ];
 
+    type Segment = {
+        x: number,
+        y: number,
+        age: number,
+        id: number
+    };
+
+
     // Game State and Controls
     enum GameState {
         INIT,
@@ -19,12 +27,14 @@
         PLAYING
     }
     let currentState: GameState = GameState.INIT;
-    const NUM_CELLS = 30;
+    const NUM_CELLS = 28;
     let CELL_SIZE: number;
     let GRID_WIDTH: number;
     let GRID_HEIGHT: number;
-    let snakeBody: { x: number, y: number }[] = [];
+    let snakeBody: Segment[] = [];
+    // let snakeBody: { x: number, y: number }[] = [];
     let snakeDirection: { x: number, y: number };
+    const MIN_TAIL_SIZE = 0.25; // This means the tail will be half the size of a regular cell. Adjust as needed.
     let score = 0;
     let munch = 0;
     let total_food = 0;
@@ -76,15 +86,44 @@
     let backgroundMusic: HTMLAudioElement;
     let highScore: number;
 
+    // the linear interpolation (often abbreviated as lerp)
+    function lerp(a: number, b: number, t: number): number {
+        return a + t * (b - a);
+    }
+
+    // The function to calculate the scale factor for a given segment index
+    function getScaleFactor(age: number): number {
+        const t = age / (snakeBody[snakeBody.length - 1].age);
+        return lerp(1, MIN_TAIL_SIZE, t);
+    }
+
+    // Function to compute adjusted size and offsets
+    function getAdjustedSizeAndOffsets(index: number): { adjustedSize: number; offsetX: number; offsetY: number } {
+        const scaleFactor = getScaleFactor(index);
+        const adjustedSize = CELL_SIZE * scaleFactor;
+        const offsetX = (CELL_SIZE - adjustedSize) / 2;
+        const offsetY = (CELL_SIZE - adjustedSize) / 2;
+        return { adjustedSize, offsetX, offsetY };
+    }
+
+    function manhattanDistance(p1: {x: number, y: number}, p2: {x: number, y: number}): number {
+        return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
+    }
+
     // Utility functions and core game logic.
     function generateFoodPosition(): { x: number, y: number } {
         let position: { x: any; y: any; };
+        const MIN_DISTANCE_FROM_SNAKE = 5;
+
         do {
             position = {
                 x: Math.floor(Math.random() * GRID_WIDTH),
                 y: Math.floor(Math.random() * GRID_HEIGHT)
             };
-        } while (snakeBody.some(segment => segment.x === position.x && segment.y === position.y));
+        } while (
+            snakeBody.some(segment => segment.x === position.x && segment.y === position.y) ||
+            (manhattanDistance(position, snakeBody[0]) < MIN_DISTANCE_FROM_SNAKE)
+        );
 
         return position;
     }
@@ -172,8 +211,9 @@
     function resetGame() {
         const startX = Math.floor(GRID_WIDTH * 0.5);
         const startY = Math.floor(GRID_HEIGHT * 0.5);
+        const timestamp = Date.now();
         snakeBody = Array.from({ length: INITIAL_SNAKE_LENGTH }).map((_, index) => {
-            return { x: startX, y: startY - index };
+            return { x: startX, y: startY - index, age: index, id: timestamp + index };
         });
         snakeDirection = directions[Math.floor(Math.random() * directions.length)];
         score = 0;
@@ -211,16 +251,16 @@
                 return;
             }
 
-            snakeBody = [head, ...snakeBody.slice(0, -1)];
-
-            // Grow snake smoothly based on growthQueue
-            if (growthQueue > 0) {
-                snakeBody.push({ ...snakeBody[snakeBody.length - 1] });
-                growthQueue--;
-            }
+            snakeBody = [
+                { x: head.x, y: head.y, age: 0, id: Date.now() },
+                ...snakeBody.slice(0, -1).map((segment, index) => {
+                    return { ...segment, age: segment.age + 1 };
+                })
+            ];
 
             // Check if snake ate the food
             if (head.x === foodPosition!.x && head.y === foodPosition!.y) {
+                console.log("Snake ate the food");
                 munchSound.play().catch(error => console.error("Munch sound play error:", error));
 
                 // Scoring logic
@@ -243,8 +283,15 @@
                 // Instead of directly growing the snake, we add to the growth queue
                 growthQueue += INITIAL_SNAKE_LENGTH + 2;
 
+                // Grow snake smoothly based on growthQueue
+                if (growthQueue > 0) {
+                    snakeBody.push({ ...snakeBody[snakeBody.length - 1], age: snakeBody[snakeBody.length - 1].age + 1, id: Date.now() + Math.random() });
+                    growthQueue--;
+                }
+
                 // Generate new food position
                 foodPosition = generateFoodPosition();
+                console.log("New food position generated:", foodPosition);
             }
         }, intervalSpeed - difficulty_value);
 
@@ -303,18 +350,20 @@
             backgroundMusic = new Audio("/snake-assets/snake_song.wav");
             backgroundMusic.volume = 0.35;
             backgroundMusic.loop = true;
-            backgroundMusic.play().catch(error => console.error("Background music play error:", error));
+            
             highScore = parseInt(localStorage.getItem("snakeHighScore") || "0");
 
             CELL_SIZE = Math.min(window.innerWidth, window.innerHeight) / NUM_CELLS;
             GRID_WIDTH = Math.floor(window.innerWidth / CELL_SIZE);
             GRID_HEIGHT = Math.floor(window.innerHeight / CELL_SIZE);
 
-            resetGame();
             document.addEventListener('click', handleLeftClick);
             document.addEventListener('touchstart', handleTouchStart, false);
             document.addEventListener('touchmove', handleTouchMove, false);
             window.addEventListener('resize', handleResize);
+
+            resetGame();
+            handleResize();
         }
     });
 
@@ -382,8 +431,14 @@
     <main style="background-color: {currentTheme.backgroundColor}">
         <svg width={CELL_SIZE * GRID_WIDTH} height={CELL_SIZE * GRID_HEIGHT}>
             <!-- Render the snake -->
-            {#each snakeBody as segment}
-                <rect x={segment.x * CELL_SIZE} y={segment.y * CELL_SIZE} width={CELL_SIZE} height={CELL_SIZE} fill={currentTheme.snakeColor}/>
+            {#each snakeBody as segment (segment.id)}
+                <rect 
+                    x={segment.x * CELL_SIZE + getAdjustedSizeAndOffsets(segment.age).offsetX} 
+                    y={segment.y * CELL_SIZE + getAdjustedSizeAndOffsets(segment.age).offsetY} 
+                    width={getAdjustedSizeAndOffsets(segment.age).adjustedSize} 
+                    height={getAdjustedSizeAndOffsets(segment.age).adjustedSize} 
+                    fill={currentTheme.snakeColor}
+                />
             {/each}
 
             <!-- Render the food -->
