@@ -132,7 +132,7 @@
 
     function handleLeftClick(event: MouseEvent) {
         if (event.button === 0) {  // Left mouse button has a button value of 0
-            munchSound.play();
+            munchSound.play().catch(error => console.error("Munch sound play error:", error));
         }
     }
 
@@ -207,7 +207,6 @@
                 snakeBody.slice(1).some(segment => segment.x === head.x && segment.y === head.y)
             ) {
                 isGameOver = true;
-                backgroundMusic.pause();
                 clearInterval(gameInterval);  // Clear the game loop
                 return;
             }
@@ -222,7 +221,7 @@
 
             // Check if snake ate the food
             if (head.x === foodPosition!.x && head.y === foodPosition!.y) {
-                munchSound.play();
+                munchSound.play().catch(error => console.error("Munch sound play error:", error));
 
                 // Scoring logic
                 if (munch === 9) { // Changed this to 9 since we'll increment munch after this block
@@ -292,7 +291,7 @@
 
         // Set your game interval speed here, then start the game.
         currentState = GameState.PLAYING;
-        backgroundMusic.play(); // Start music when game starts
+        backgroundMusic.play().catch(error => console.error("Background music play error:", error));
         startGame(intervalSpeed);
     }
 
