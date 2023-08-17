@@ -85,6 +85,19 @@
     let munchSound: HTMLAudioElement;
     let backgroundMusic: HTMLAudioElement;
     let highScore: number;
+    let isSoundOn = true;
+
+    function toggleSound() {
+        isSoundOn = !isSoundOn;
+
+        // Actual logic for toggling the sound should be added here. 
+        // For instance, you can pause or play a sound, adjust the volume, etc.
+        if (isSoundOn) {
+            backgroundMusic.play().catch(error => console.error("Background music play error:", error));
+        } else {
+            backgroundMusic.pause();
+        }
+    }
 
     // the linear interpolation (often abbreviated as lerp)
     function lerp(a: number, b: number, t: number): number {
@@ -265,13 +278,13 @@
 
                 // Scoring logic
                 if (munch === 9) { // Changed this to 9 since we'll increment munch after this block
-                    difficulty_value += 2;
+                    difficulty_value += 10;
                     score += Math.round((snakeBody.length - INITIAL_SNAKE_LENGTH) * 2.5); // Double score bonus every 10 foods
                     munch = 0; // Reset munch
 
                     backgroundMusic.playbackRate += 0.01;
                 } else {
-                    difficulty_value += 0.5;
+                    difficulty_value += 5;
                     score += Math.round((snakeBody.length - INITIAL_SNAKE_LENGTH) * 1.25); // Normal score increase
 
                     backgroundMusic.playbackRate += 0.005;
@@ -449,6 +462,12 @@
     </main>
 {/if}
 
+<!-- Sound Button -->
+
+<button id="soundButton" on:click={toggleSound}>
+    <i class={isSoundOn ? "fa-solid fa-volume-high" : "fa-solid fa-volume-xmark"}></i>
+</button>
+
 <style>
     /* Variables */
     :root {
@@ -493,6 +512,22 @@
     }
 
     /* Apply theme background to the game area */
+    #soundButton {
+        position: fixed; 
+        bottom: 10px; 
+        right: 10px;
+        background-color: transparent;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 1.5em; /* Adjust size as required */
+        z-index: 10; /* Ensure the button is always on top */
+    }
+
+    .fa-volume-xmark {
+        opacity: 0.5; /* This makes the volume off icon semi-transparent */
+    }
+
     p {
         font-family: "PressStart2P";
     }
