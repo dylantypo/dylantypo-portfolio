@@ -336,7 +336,6 @@
 <svelte:head>
     <title>Snake.</title>
     <link rel="icon" href="\snake-assets\snake-logo.ico" />
-    <meta name="theme-color" content="#00000">
 
     <!-- IOS Tags -->
     <link rel="apple-touch-icon" href="\snake-assets\snake-logo.ico">
