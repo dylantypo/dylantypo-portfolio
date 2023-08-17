@@ -130,7 +130,6 @@
         }
     }
 
-
     function handleLeftClick(event: MouseEvent) {
         if (event.button === 0) {  // Left mouse button has a button value of 0
             munchSound.play();
@@ -183,6 +182,7 @@
         isGameOver = false;
         gameInterval && clearInterval(gameInterval);
         foodPosition = generateFoodPosition();
+        backgroundMusic.playbackRate = 1;
     }
 
     function startGame(intervalSpeed: number) {
@@ -207,6 +207,7 @@
                 snakeBody.slice(1).some(segment => segment.x === head.x && segment.y === head.y)
             ) {
                 isGameOver = true;
+                backgroundMusic.pause();
                 clearInterval(gameInterval);  // Clear the game loop
                 return;
             }
@@ -225,11 +226,16 @@
 
                 // Scoring logic
                 if (munch === 9) { // Changed this to 9 since we'll increment munch after this block
-                    difficulty_value += 2; // Increase speed every 10 foods
+                    difficulty_value += 2;
                     score += Math.round((snakeBody.length - INITIAL_SNAKE_LENGTH) * 2.5); // Double score bonus every 10 foods
                     munch = 0; // Reset munch
+
+                    backgroundMusic.playbackRate += 0.01;
                 } else {
+                    difficulty_value += 0.5;
                     score += Math.round((snakeBody.length - INITIAL_SNAKE_LENGTH) * 1.25); // Normal score increase
+
+                    backgroundMusic.playbackRate += 0.005;
                 }
                 total_food += 1;
                 munch += 1;
@@ -294,6 +300,7 @@
     onMount(() => {
         if (browser) {
             munchSound = new Audio("/snake-assets/munch.wav");
+            munchSound.volume = 0.25;
             backgroundMusic = new Audio("/snake-assets/snake_song.wav");
             backgroundMusic.loop = true;
             highScore = parseInt(localStorage.getItem("snakeHighScore") || "0");
@@ -306,7 +313,7 @@
             document.addEventListener('click', handleLeftClick);
             document.addEventListener('touchstart', handleTouchStart, false);
             document.addEventListener('touchmove', handleTouchMove, false);
-            window.addEventListener('resize', handleResize)
+            window.addEventListener('resize', handleResize);
         }
     });
 
@@ -320,6 +327,7 @@
             document.removeEventListener('click', handleLeftClick); 
             document.removeEventListener('touchstart', handleTouchStart, false);
             document.removeEventListener('touchmove', handleTouchMove, false);
+            window.removeEventListener('resize', handleResize);
         }
     });
 </script>

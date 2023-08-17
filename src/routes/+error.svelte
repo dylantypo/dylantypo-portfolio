@@ -34,10 +34,19 @@
         scrollbar-width: none;
     }
 
+    :global(body) {
+        width: 100vw;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
     /* Global body styling */
     main {
         font-family: 'KenneyFuture', sans-serif;
         background-color: #004643;
+        width: 100%;
+        height: 100%;
         margin: 0;
         padding: 0;
     }
