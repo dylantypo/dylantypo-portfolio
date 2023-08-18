@@ -32,9 +32,8 @@
     let GRID_WIDTH: number;
     let GRID_HEIGHT: number;
     let snakeBody: Segment[] = [];
-    // let snakeBody: { x: number, y: number }[] = [];
     let snakeDirection: { x: number, y: number };
-    const MIN_TAIL_SIZE = 0.35; // This means the tail will be half the size of a regular cell. Adjust as needed.
+    const MIN_TAIL_SIZE = 0.35;
     let score = 0;
     let munch = 0;
     let total_food = 0;
@@ -229,6 +228,7 @@
         score = 0;
         munch = 0;
         total_food = 0;
+        difficulty_value = 0;
         isGameOver = false;
         gameInterval && clearInterval(gameInterval);
         foodPosition = generateFoodPosition();
