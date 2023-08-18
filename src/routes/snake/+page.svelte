@@ -82,6 +82,16 @@
     let highScore: number;
     let isSoundOn = false;
 
+    function isLocalStorageAvailable() {
+        try {
+            localStorage.setItem('test', 'test');
+            localStorage.removeItem('test');
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
     function toggleSound() {
         isSoundOn = !isSoundOn;
         if (isSoundOn) {
@@ -239,6 +249,16 @@
         foodPosition = generateFoodPosition();
         // console.log("Initial food position:", foodPosition);
         backgroundMusic.playbackRate = 1;
+        munchSound = new Audio("/snake-assets/munch.wav");
+        munchSound.volume = 0.1;
+        clickSound = new Audio("/snake-assets/mouse-click.wav");
+        clickSound.volume = 0.15;
+        backgroundMusic = new Audio("/snake-assets/snake_song.wav");
+        backgroundMusic.volume = 0.35;
+        backgroundMusic.loop = true;
+        if (isLocalStorageAvailable()) {
+            highScore = parseInt(localStorage.getItem("snakeHighScore") || "0");
+        }
     }
 
     function startGame(intervalSpeed: number) {
@@ -316,9 +336,11 @@
             }
         }, intervalSpeed - difficulty_value);
 
-        if (browser && score > highScore) {
+        if (isGameOver && score > highScore) {
             highScore = score;
-            localStorage.setItem("snakeHighScore", highScore.toString());
+            if (isLocalStorageAvailable()) {
+                localStorage.setItem("snakeHighScore", highScore.toString());
+            }
         }
     }
 
@@ -336,7 +358,7 @@
     
     function handleRestart() {
         resetGame();
-        currentState = GameState.DIFFICULTY_SELECTION;
+        currentState = GameState.INIT;
     }
 
     function selectTheme(theme: ThemeKey) {
@@ -366,16 +388,6 @@
     // --- Component Lifecycle ---
     onMount(() => {
         if (browser) {
-            munchSound = new Audio("/snake-assets/munch.wav");
-            munchSound.volume = 0.15;
-            clickSound = new Audio("/snake-assets/mouse-click.wav");
-            clickSound.volume = 0.15;
-            backgroundMusic = new Audio("/snake-assets/snake_song.wav");
-            backgroundMusic.volume = 0.35;
-            backgroundMusic.loop = true;
-            
-            highScore = parseInt(localStorage.getItem("snakeHighScore") || "0");
-
             CELL_SIZE = Math.min(window.innerWidth, window.innerHeight) / NUM_CELLS;
             GRID_WIDTH = Math.floor(window.innerWidth / CELL_SIZE);
             GRID_HEIGHT = Math.floor(window.innerHeight / CELL_SIZE);
@@ -443,7 +455,7 @@
         <p>Select a difficulty.</p>
         <div id="difficulties">
             {#each difficulties as difficulty}
-                <button on:click={() => { handleButtonClick(); selectDifficulty(difficulty);}}>{difficulty}</button>
+                <button on:click={() => { handleButtonClick(); selectDifficulty(difficulty); }}>{difficulty}</button>
             {/each}
         </div>
     </div>
