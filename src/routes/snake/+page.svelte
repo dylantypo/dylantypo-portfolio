@@ -4,12 +4,8 @@
 
     // Constants
     const INITIAL_SNAKE_LENGTH = 5;
-    const directions = [
-        { x: 0, y: -1 },  // up
-        { x: 0, y: 1 },   // down
-        { x: -1, y: 0 },  // left
-        { x: 1, y: 0 }    // right
-    ];
+    const NUM_CELLS = 24;
+    const MIN_TAIL_SIZE = 0.35;
 
     type Segment = {
         x: number,
@@ -27,20 +23,17 @@
         PLAYING
     }
     let currentState: GameState = GameState.INIT;
-    const NUM_CELLS = 24;
     let CELL_SIZE: number;
     let GRID_WIDTH: number;
     let GRID_HEIGHT: number;
     let snakeBody: Segment[] = [];
     let snakeDirection: { x: number, y: number };
     let nextSnakeDirection: { x: number, y: number } | null = null;
-    const MIN_TAIL_SIZE = 0.35;
     let score = 0;
     let munch = 0;
     let total_food = 0;
     let difficulty_value = 0;
     let growthQueue = 0;
-    let movementQueue: { x: number, y: number }[] = [];
     let isGameOver = false;
     let deferCollisionCheck = true;
     let gameInterval: string | number | NodeJS.Timer | undefined;
@@ -183,10 +176,8 @@
         }
     }
 
-    function handleLeftClick(event: MouseEvent) {
-        if (event.button === 0) {  // Left mouse button has a button value of 0
-            clickSound.play().catch(error => console.error("Click sound play error:", error));
-        }
+    function handleButtonClick() {
+        clickSound.play().catch(error => console.error("Click sound play error:", error));
     }
 
     // Touch Controls
@@ -389,7 +380,6 @@
             GRID_WIDTH = Math.floor(window.innerWidth / CELL_SIZE);
             GRID_HEIGHT = Math.floor(window.innerHeight / CELL_SIZE);
 
-            document.addEventListener('click', handleLeftClick);
             document.addEventListener('touchstart', handleTouchStart, false);
             document.addEventListener('touchmove', handleTouchMove, false);
             window.addEventListener('resize', handleResize);
@@ -406,7 +396,6 @@
             backgroundMusic.pause();
         }
         if (browser) {
-            document.removeEventListener('click', handleLeftClick); 
             document.removeEventListener('touchstart', handleTouchStart, false);
             document.removeEventListener('touchmove', handleTouchMove, false);
             window.removeEventListener('resize', handleResize);
@@ -429,11 +418,11 @@
     <div id="game-over">
         <p>Game Over!</p>
         <p>Score: {score}</p>
-        <button on:click={handleRestart}>Try Again</button>
+        <button on:click={() => { handleButtonClick(); handleRestart(); }}>Try Again</button>
     </div>
 {:else if currentState === GameState.INIT}
     <!-- Display logo with previous score (if any) -->
-    <div id="logo" on:click={() => currentState = GameState.THEME_SELECTION} on:keypress={() => currentState = GameState.THEME_SELECTION}>
+    <div id="logo" on:click={() => { handleButtonClick(); currentState = GameState.THEME_SELECTION; }} on:keypress={() => { handleButtonClick(); currentState = GameState.THEME_SELECTION; }}>
         <img src="/snake-assets/snake-logo-upscaled-5x.png" alt="Snake Game"/>
         <p>Snake.</p>
         {#if score > 0}<p id="previous-score">Previous Score: {score}</p>{/if}
@@ -444,7 +433,7 @@
         <p>Select a theme.</p>
         <div id="themes">
             {#each themeKeys as theme}
-                <button on:click={() => selectTheme(theme)}>{theme}</button>
+                <button on:click={() => { handleButtonClick(); selectTheme(theme); }}>{theme}</button>
             {/each}
         </div>
     </div>
@@ -454,7 +443,7 @@
         <p>Select a difficulty.</p>
         <div id="difficulties">
             {#each difficulties as difficulty}
-                <button on:click={() => selectDifficulty(difficulty)}>{difficulty}</button>
+                <button on:click={() => { handleButtonClick(); selectDifficulty(difficulty);}}>{difficulty}</button>
             {/each}
         </div>
     </div>
@@ -483,7 +472,7 @@
 
 <!-- Sound Button -->
 
-<button id="soundButton" on:click={toggleSound}>
+<button id="soundButton" on:click={() => { handleButtonClick(); toggleSound(); }}>
     <i class={isSoundOn ? "fa-solid fa-volume-high" : "fa-solid fa-volume-xmark"}></i>
 </button>
 
