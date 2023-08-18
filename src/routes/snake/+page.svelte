@@ -83,6 +83,7 @@
     let selectedDifficulty: string = "";
 
     // Audio and Other
+    let clickSound: HTMLAudioElement;
     let munchSound: HTMLAudioElement;
     let backgroundMusic: HTMLAudioElement;
     let highScore: number;
@@ -184,7 +185,7 @@
 
     function handleLeftClick(event: MouseEvent) {
         if (event.button === 0) {  // Left mouse button has a button value of 0
-            munchSound.play().catch(error => console.error("Munch sound play error:", error));
+            clickSound.play().catch(error => console.error("Click sound play error:", error));
         }
     }
 
@@ -376,6 +377,8 @@
         if (browser) {
             munchSound = new Audio("/snake-assets/munch.wav");
             munchSound.volume = 0.15;
+            clickSound = new Audio("/snake-assets/mouse-click.wav");
+            clickSound.volume = 0.15;
             backgroundMusic = new Audio("/snake-assets/snake_song.wav");
             backgroundMusic.volume = 0.35;
             backgroundMusic.loop = true;
