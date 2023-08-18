@@ -248,7 +248,6 @@
         gameInterval && clearInterval(gameInterval);
         foodPosition = generateFoodPosition();
         // console.log("Initial food position:", foodPosition);
-        backgroundMusic.playbackRate = 1;
         munchSound = new Audio("/snake-assets/munch.wav");
         munchSound.volume = 0.1;
         clickSound = new Audio("/snake-assets/mouse-click.wav");
@@ -256,6 +255,7 @@
         backgroundMusic = new Audio("/snake-assets/snake_song.wav");
         backgroundMusic.volume = 0.35;
         backgroundMusic.loop = true;
+        backgroundMusic.playbackRate = 1;
         if (isLocalStorageAvailable()) {
             highScore = parseInt(localStorage.getItem("snakeHighScore") || "0");
         }
