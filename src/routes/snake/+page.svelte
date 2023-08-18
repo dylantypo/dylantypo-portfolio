@@ -340,6 +340,8 @@
             highScore = score;
             if (isLocalStorageAvailable()) {
                 localStorage.setItem("snakeHighScore", highScore.toString());
+                let snakeHS = localStorage.getItem("snakeHighScore");
+                console.log("Current Snake High Score: ", snakeHS);
             }
         }
     }
