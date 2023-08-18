@@ -33,6 +33,7 @@
     let GRID_HEIGHT: number;
     let snakeBody: Segment[] = [];
     let snakeDirection: { x: number, y: number };
+    let nextSnakeDirection: { x: number, y: number } | null = null;
     const MIN_TAIL_SIZE = 0.35;
     let score = 0;
     let munch = 0;
@@ -41,6 +42,7 @@
     let growthQueue = 0;
     let movementQueue: { x: number, y: number }[] = [];
     let isGameOver = false;
+    let deferCollisionCheck = true;
     let gameInterval: string | number | NodeJS.Timer | undefined;
     let foodPosition: { x: number, y: number } | undefined;
     let startTouchX: number;
@@ -146,6 +148,7 @@
     }
 
     function handleKeydown(event: KeyboardEvent) {
+        // console.log("Key Pressed")
         let newDirection;
         switch (event.key) {
             case 'ArrowUp':
@@ -173,8 +176,9 @@
                 }
                 break;
         }
-        if (newDirection && (movementQueue.length === 0 || !isEqualDirection(movementQueue[movementQueue.length - 1], newDirection))) {
-            movementQueue.push(newDirection);
+        if (newDirection && !isEqualDirection(invertDirection(snakeDirection), newDirection)) {
+            // console.log("Setting next direction:", newDirection);
+            nextSnakeDirection = newDirection;
         }
     }
 
@@ -212,8 +216,9 @@
             else newDirection = { x: 0, y: 1 };
         }
 
-        if (newDirection && (movementQueue.length === 0 || !isEqualDirection(movementQueue[movementQueue.length - 1], newDirection))) {
-            movementQueue.push(newDirection);
+        if (newDirection && !isEqualDirection(invertDirection(snakeDirection), newDirection)) {
+            // console.log("Setting next direction:", newDirection);
+            nextSnakeDirection = newDirection;
         }
     }
 
@@ -221,28 +226,39 @@
         const startX = Math.floor(GRID_WIDTH * 0.5);
         const startY = Math.floor(GRID_HEIGHT * 0.5);
         const timestamp = Date.now();
+        const possibleDirections = [
+            { x: -1, y: 0 },  // left
+            { x: 1, y: 0 }    // right
+        ];
+
         snakeBody = Array.from({ length: INITIAL_SNAKE_LENGTH }).map((_, index) => {
             return { x: startX, y: startY - index, age: index, id: timestamp + index };
         });
-        snakeDirection = directions[Math.floor(Math.random() * directions.length)];
+        // console.log("Initial snake body:", snakeBody);
+        snakeDirection = possibleDirections[Math.floor(Math.random() * possibleDirections.length)];
+        // console.log("Initial snake direction:", snakeDirection);
         score = 0;
         munch = 0;
         total_food = 0;
         difficulty_value = 0;
         isGameOver = false;
+        deferCollisionCheck = true;
         gameInterval && clearInterval(gameInterval);
         foodPosition = generateFoodPosition();
+        // console.log("Initial food position:", foodPosition);
         backgroundMusic.playbackRate = 1;
     }
 
     function startGame(intervalSpeed: number) {
+        // console.log("Starting game with interval speed:", intervalSpeed);
+        // console.log("Movement Queue:", movementQueue);
         // Start the game loop.
         gameInterval = setInterval(() => {
-            if (movementQueue.length > 0) {
-                const nextDirection = movementQueue.shift();
-                if (!isEqualDirection(invertDirection(snakeDirection), nextDirection!)) {
-                    snakeDirection = nextDirection!;
+            if (nextSnakeDirection) {
+                if (!isEqualDirection(invertDirection(snakeDirection), nextSnakeDirection)) {
+                    snakeDirection = nextSnakeDirection;
                 }
+                nextSnakeDirection = null;  // Reset after using it
             }
 
             // Update snake's position
@@ -250,15 +266,18 @@
             head.x += snakeDirection.x;
             head.y += snakeDirection.y;
 
-            // Check for collision with walls or itself
-            if (
-                head.x < 0 || head.x > GRID_WIDTH - 1 ||
-                head.y < 0 || head.y > GRID_HEIGHT - 1 ||
-                snakeBody.slice(1).some(segment => segment.x === head.x && segment.y === head.y)
-            ) {
-                isGameOver = true;
-                clearInterval(gameInterval);  // Clear the game loop
-                return;
+            if (!deferCollisionCheck) {
+                // Check for collision with walls or itself
+                if (
+                    head.x < 0 || head.x > GRID_WIDTH - 1 ||
+                    head.y < 0 || head.y > GRID_HEIGHT - 1 ||
+                    snakeBody.slice(1).some(segment => segment.x === head.x && segment.y === head.y)
+                ) {
+                    // console.log("Game Over due to collision. Head position:", head);
+                    isGameOver = true;
+                    clearInterval(gameInterval);  // Clear the game loop
+                    return;
+                }
             }
 
             snakeBody = [
@@ -267,6 +286,8 @@
                     return { ...segment, age: segment.age + 1 };
                 })
             ];
+
+            deferCollisionCheck = false;
 
             // Check if snake ate the food
             if (head.x === foodPosition!.x && head.y === foodPosition!.y) {
@@ -310,6 +331,7 @@
     }
 
     function stopGame() {
+        // console.log("Manually stopping the game.");
         // Stop the game loop.
         clearInterval(gameInterval);
     }
