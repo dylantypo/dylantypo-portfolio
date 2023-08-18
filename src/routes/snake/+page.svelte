@@ -3,7 +3,7 @@
     import { browser } from '$app/environment';
 
     // Constants
-    const INITIAL_SNAKE_LENGTH = 3;
+    const INITIAL_SNAKE_LENGTH = 5;
     const directions = [
         { x: 0, y: -1 },  // up
         { x: 0, y: 1 },   // down
@@ -27,14 +27,14 @@
         PLAYING
     }
     let currentState: GameState = GameState.INIT;
-    const NUM_CELLS = 28;
+    const NUM_CELLS = 24;
     let CELL_SIZE: number;
     let GRID_WIDTH: number;
     let GRID_HEIGHT: number;
     let snakeBody: Segment[] = [];
     // let snakeBody: { x: number, y: number }[] = [];
     let snakeDirection: { x: number, y: number };
-    const MIN_TAIL_SIZE = 0.25; // This means the tail will be half the size of a regular cell. Adjust as needed.
+    const MIN_TAIL_SIZE = 0.35; // This means the tail will be half the size of a regular cell. Adjust as needed.
     let score = 0;
     let munch = 0;
     let total_food = 0;
@@ -85,13 +85,10 @@
     let munchSound: HTMLAudioElement;
     let backgroundMusic: HTMLAudioElement;
     let highScore: number;
-    let isSoundOn = true;
+    let isSoundOn = false;
 
     function toggleSound() {
         isSoundOn = !isSoundOn;
-
-        // Actual logic for toggling the sound should be added here. 
-        // For instance, you can pause or play a sound, adjust the volume, etc.
         if (isSoundOn) {
             backgroundMusic.play().catch(error => console.error("Background music play error:", error));
         } else {
@@ -126,7 +123,7 @@
     // Utility functions and core game logic.
     function generateFoodPosition(): { x: number, y: number } {
         let position: { x: any; y: any; };
-        const MIN_DISTANCE_FROM_SNAKE = 5;
+        const MIN_DISTANCE_FROM_SNAKE = 6;
 
         do {
             position = {
@@ -273,7 +270,6 @@
 
             // Check if snake ate the food
             if (head.x === foodPosition!.x && head.y === foodPosition!.y) {
-                console.log("Snake ate the food");
                 munchSound.play().catch(error => console.error("Munch sound play error:", error));
 
                 // Scoring logic
@@ -294,7 +290,7 @@
 
                 // Grow snake based on INITIAL_SNAKE_LENGTH
                 // Instead of directly growing the snake, we add to the growth queue
-                growthQueue += INITIAL_SNAKE_LENGTH + 2;
+                growthQueue += INITIAL_SNAKE_LENGTH;
 
                 // Grow snake smoothly based on growthQueue
                 if (growthQueue > 0) {
@@ -304,7 +300,6 @@
 
                 // Generate new food position
                 foodPosition = generateFoodPosition();
-                console.log("New food position generated:", foodPosition);
             }
         }, intervalSpeed - difficulty_value);
 
@@ -340,9 +335,9 @@
         // Adjust game speed based on difficulty. This is just a basic example.
         let intervalSpeed: number = 10;
         switch (difficulty) {
-            case "Easy": intervalSpeed = 135; break;
+            case "Easy": intervalSpeed = 150; break;
             case "Medium": intervalSpeed = 100; break;
-            case "Hard": intervalSpeed = 65; break;
+            case "Hard": intervalSpeed = 50; break;
         }
         
         // Trying to adjust the difficulty based on screen size
@@ -351,7 +346,6 @@
 
         // Set your game interval speed here, then start the game.
         currentState = GameState.PLAYING;
-        backgroundMusic.play().catch(error => console.error("Background music play error:", error));
         startGame(intervalSpeed);
     }
 
@@ -513,7 +507,8 @@
 
     /* Apply theme background to the game area */
     #soundButton {
-        position: fixed; 
+        position: fixed;
+        width: min-content;
         bottom: 10px; 
         right: 10px;
         background-color: transparent;
