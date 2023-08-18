@@ -290,6 +290,12 @@
 
             deferCollisionCheck = false;
 
+            // Grow snake smoothly based on growthQueue
+            if (growthQueue > 0) {
+                snakeBody.push({ ...snakeBody[snakeBody.length - 1], age: snakeBody[snakeBody.length - 1].age + 1, id: Date.now() + Math.random() });
+                growthQueue--;
+            }
+
             // Check if snake ate the food
             if (head.x === foodPosition!.x && head.y === foodPosition!.y) {
                 munchSound.play().catch(error => console.error("Munch sound play error:", error));
@@ -313,12 +319,6 @@
                 // Grow snake based on INITIAL_SNAKE_LENGTH
                 // Instead of directly growing the snake, we add to the growth queue
                 growthQueue += INITIAL_SNAKE_LENGTH;
-
-                // Grow snake smoothly based on growthQueue
-                if (growthQueue > 0) {
-                    snakeBody.push({ ...snakeBody[snakeBody.length - 1], age: snakeBody[snakeBody.length - 1].age + 1, id: Date.now() + Math.random() });
-                    growthQueue--;
-                }
 
                 // Generate new food position
                 foodPosition = generateFoodPosition();
