@@ -35,6 +35,8 @@
     let difficulty_value = 0;
     let growthQueue = 0;
     let isGameOver = false;
+    let difficultyMultiplier: number = 1;
+    let initialIntervalSpeed: number;
     let gameInterval: string | number | NodeJS.Timer | undefined;
     let foodPosition: { x: number, y: number } | undefined;
     let startTouchX: number;
@@ -311,7 +313,8 @@
                 snakeBody.slice(1).some(segment => segment.x === head.x && segment.y === head.y)
             ) {
                 isGameOver = true;
-                score *= +Math.round((150 / intervalSpeed));
+                const dynamicMultiplier = initialIntervalSpeed / intervalSpeed;
+                score *= difficultyMultiplier * dynamicMultiplier;
                 clearInterval(gameInterval);  // Clear the game loop
                 return;
             }
@@ -413,13 +416,15 @@
         let intervalSpeed: number = 10;
         switch (difficulty) {
             case "Easy": intervalSpeed = 150; break;
-            case "Medium": intervalSpeed = 100; break;
-            case "Hard": intervalSpeed = 50; break;
+            case "Medium": intervalSpeed = 100; difficultyMultiplier = 1.5; break;
+            case "Hard": intervalSpeed = 50; difficultyMultiplier = 2; break;
         }
         
         // Trying to adjust the difficulty based on screen size
         const speedModifier = CELL_SIZE / NUM_CELLS
         intervalSpeed += speedModifier;
+
+        initialIntervalSpeed = intervalSpeed;  // Store the initial interval speed
 
         // Set your game interval speed here, then start the game.
         currentState = GameState.PLAYING;
