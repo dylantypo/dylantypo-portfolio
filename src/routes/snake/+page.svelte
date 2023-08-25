@@ -35,7 +35,6 @@
     let difficulty_value = 0;
     let growthQueue = 0;
     let isGameOver = false;
-    let deferCollisionCheck = true;
     let gameInterval: string | number | NodeJS.Timer | undefined;
     let foodPosition: { x: number, y: number } | undefined;
     let startTouchX: number;
@@ -278,7 +277,6 @@
         total_food = 0;
         difficulty_value = 0;
         isGameOver = false;
-        deferCollisionCheck = true;
         gameInterval && clearInterval(gameInterval);
         foodPosition = generateFoodPosition();
         if (backgroundMusic) {
@@ -306,18 +304,16 @@
             head.x += snakeDirection.x;
             head.y += snakeDirection.y;
 
-            if (!deferCollisionCheck) {
-                // Check for collision with walls or itself
-                if (
-                    head.x < 0 || head.x > GRID_WIDTH - 1 ||
-                    head.y < 0 || head.y > GRID_HEIGHT - 1 ||
-                    snakeBody.slice(1).some(segment => segment.x === head.x && segment.y === head.y)
-                ) {
-                    isGameOver = true;
-                    score *= +Math.round((150 / intervalSpeed));
-                    clearInterval(gameInterval);  // Clear the game loop
-                    return;
-                }
+            // Check for collision with walls or itself
+            if (
+                head.x < 0 || head.x > GRID_WIDTH - 1 ||
+                head.y < 0 || head.y > GRID_HEIGHT - 1 ||
+                snakeBody.slice(1).some(segment => segment.x === head.x && segment.y === head.y)
+            ) {
+                isGameOver = true;
+                score *= +Math.round((150 / intervalSpeed));
+                clearInterval(gameInterval);  // Clear the game loop
+                return;
             }
 
             snakeBody = [
@@ -326,8 +322,6 @@
                     return { ...segment, age: segment.age + 1 };
                 })
             ];
-
-            deferCollisionCheck = false;
 
             // Grow snake smoothly based on growthQueue
             if (growthQueue > 0) {
@@ -349,12 +343,16 @@
                     score += Math.round((snakeBody.length - INITIAL_SNAKE_LENGTH) * 2.5); // Double score bonus every 10 foods
                     munch = 0; // Reset munch
 
-                    backgroundMusic.playbackRate += 0.01;
+                    if (backgroundMusic) {
+                        backgroundMusic.playbackRate += 0.01;
+                    }
                 } else {
                     difficulty_value += 5;
                     score += Math.round((snakeBody.length - INITIAL_SNAKE_LENGTH) * 1.25); // Normal score increase
 
-                    backgroundMusic.playbackRate += 0.005;
+                    if (backgroundMusic) {
+                        backgroundMusic.playbackRate += 0.005;
+                    }
                 }
                 total_food += 1;
                 munch += 1;
@@ -366,9 +364,24 @@
                 // Generate new food position
                 foodPosition = generateFoodPosition();
             }
-        }, intervalSpeed - difficulty_value);
 
-        if (isGameOver && score > highScore) {
+            // Check for game over and update high score
+            if (isGameOver) {
+                clearInterval(gameInterval);  // Clear the game loop
+                updateHighScore();
+                return;
+            }
+        }, intervalSpeed - difficulty_value);
+    }
+
+    function stopGame() {
+        // console.log("Manually stopping the game.");
+        // Stop the game loop.
+        clearInterval(gameInterval);
+    }
+
+    function updateHighScore() {
+        if (score > highScore) {
             highScore = score;
             if (isLocalStorageAvailable()) {
                 localStorage.setItem("snakeHighScore", highScore.toString());
@@ -376,12 +389,6 @@
                 console.log("Current Snake High Score: ", snakeHS);
             }
         }
-    }
-
-    function stopGame() {
-        // console.log("Manually stopping the game.");
-        // Stop the game loop.
-        clearInterval(gameInterval);
     }
 
     function handleResize() {
