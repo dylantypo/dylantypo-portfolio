@@ -88,6 +88,7 @@
             localStorage.removeItem('test');
             return true;
         } catch (e) {
+            console.log(e)
             return false;
         }
     }
@@ -95,11 +96,29 @@
     function toggleSound() {
         isSoundOn = !isSoundOn;
         if (isSoundOn) {
+            // Initialize sounds if they haven't been already
+            munchSound = munchSound || new Audio("/snake-assets/munch.wav");
+            clickSound = clickSound || new Audio("/snake-assets/mouse-click.wav");
+            backgroundMusic = backgroundMusic || new Audio("/snake-assets/snake_song.wav");
+
+            // Play the background music
             backgroundMusic.play().catch(error => console.error("Background music play error:", error));
+
+            // Unmute all sounds
+            munchSound.muted = false;
+            clickSound.muted = false;
+            backgroundMusic.muted = false;
         } else {
-            backgroundMusic.pause();
+            // Pause and mute all sounds
+            munchSound && (munchSound.muted = true);
+            clickSound && (clickSound.muted = true);
+            if (backgroundMusic) {
+                backgroundMusic.muted = true;
+                backgroundMusic.pause();
+            }
         }
     }
+
 
     // the linear interpolation (often abbreviated as lerp)
     function lerp(a: number, b: number, t: number): number {
@@ -175,9 +194,6 @@
             case 'Escape':
                 resetGame();
                 currentState = GameState.INIT;
-                if (backgroundMusic) {
-                    backgroundMusic.pause();
-                }
                 break;
         }
         if (newDirection && !isEqualDirection(invertDirection(snakeDirection), newDirection)) {
@@ -187,7 +203,9 @@
     }
 
     function handleButtonClick() {
-        clickSound.play().catch(error => console.error("Click sound play error:", error));
+        if (isSoundOn) {
+            clickSound.play().catch(error => console.error("Click sound play error:", error));
+        }
     }
 
     // Touch Controls
@@ -229,16 +247,32 @@
         const startY = Math.floor(GRID_HEIGHT * 0.5);
         const timestamp = Date.now();
         const possibleDirections = [
+            { x: 0, y: -1 },  // up
+            { x: 0, y: 1 },   // down
             { x: -1, y: 0 },  // left
             { x: 1, y: 0 }    // right
         ];
-
-        snakeBody = Array.from({ length: INITIAL_SNAKE_LENGTH }).map((_, index) => {
-            return { x: startX, y: startY - index, age: index, id: timestamp + index };
-        });
-        // console.log("Initial snake body:", snakeBody);
         snakeDirection = possibleDirections[Math.floor(Math.random() * possibleDirections.length)];
-        // console.log("Initial snake direction:", snakeDirection);
+
+        // Depending on the initial direction, set the initial snake body
+        if (snakeDirection.y === -1) {
+            snakeBody = Array.from({ length: INITIAL_SNAKE_LENGTH }).map((_, index) => {
+                return { x: startX, y: startY + index, age: index, id: timestamp + index };
+            });
+        } else if (snakeDirection.y === 1) {
+            snakeBody = Array.from({ length: INITIAL_SNAKE_LENGTH }).map((_, index) => {
+                return { x: startX, y: startY - index, age: index, id: timestamp + index };
+            });
+        } else if (snakeDirection.x === -1) {
+            snakeBody = Array.from({ length: INITIAL_SNAKE_LENGTH }).map((_, index) => {
+                return { x: startX + index, y: startY, age: index, id: timestamp + index };
+            });
+        } else if (snakeDirection.x === 1) {
+            snakeBody = Array.from({ length: INITIAL_SNAKE_LENGTH }).map((_, index) => {
+                return { x: startX - index, y: startY, age: index, id: timestamp + index };
+            });
+        }
+
         score = 0;
         munch = 0;
         total_food = 0;
@@ -247,23 +281,17 @@
         deferCollisionCheck = true;
         gameInterval && clearInterval(gameInterval);
         foodPosition = generateFoodPosition();
-        // console.log("Initial food position:", foodPosition);
-        munchSound = new Audio("/snake-assets/munch.wav");
-        munchSound.volume = 0.1;
-        clickSound = new Audio("/snake-assets/mouse-click.wav");
-        clickSound.volume = 0.15;
-        backgroundMusic = new Audio("/snake-assets/snake_song.wav");
-        backgroundMusic.volume = 0.35;
-        backgroundMusic.loop = true;
-        backgroundMusic.playbackRate = 1;
+        if (backgroundMusic) {
+            backgroundMusic.volume = 0.35;
+            backgroundMusic.loop = true;
+            backgroundMusic.playbackRate = 1;
+        }
         if (isLocalStorageAvailable()) {
             highScore = parseInt(localStorage.getItem("snakeHighScore") || "0");
         }
     }
 
     function startGame(intervalSpeed: number) {
-        // console.log("Starting game with interval speed:", intervalSpeed);
-        // console.log("Movement Queue:", movementQueue);
         // Start the game loop.
         gameInterval = setInterval(() => {
             if (nextSnakeDirection) {
@@ -285,8 +313,8 @@
                     head.y < 0 || head.y > GRID_HEIGHT - 1 ||
                     snakeBody.slice(1).some(segment => segment.x === head.x && segment.y === head.y)
                 ) {
-                    // console.log("Game Over due to collision. Head position:", head);
                     isGameOver = true;
+                    score *= +Math.round((150 / intervalSpeed));
                     clearInterval(gameInterval);  // Clear the game loop
                     return;
                 }
@@ -309,8 +337,12 @@
 
             // Check if snake ate the food
             if (head.x === foodPosition!.x && head.y === foodPosition!.y) {
-                munchSound.play().catch(error => console.error("Munch sound play error:", error));
+                if (isSoundOn) {
+                    munchSound.play().catch(error => console.error("Munch sound play error:", error));
+                }
 
+                score += 10; // Each food is worth 10 points
+                
                 // Scoring logic
                 if (munch === 9) { // Changed this to 9 since we'll increment munch after this block
                     difficulty_value += 10;
@@ -329,7 +361,7 @@
 
                 // Grow snake based on INITIAL_SNAKE_LENGTH
                 // Instead of directly growing the snake, we add to the growth queue
-                growthQueue += INITIAL_SNAKE_LENGTH;
+                growthQueue += INITIAL_SNAKE_LENGTH - 2;
 
                 // Generate new food position
                 foodPosition = generateFoodPosition();
