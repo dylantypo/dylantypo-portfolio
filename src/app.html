@@ -4,26 +4,29 @@
 		<meta charset="utf-8" />
         <title>Dylan Posner | Portfolio</title>
         <!-- Primary CDN Links -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" integrity="sha384-..." crossorigin="anonymous">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" integrity="sha384-..." crossorigin="anonymous">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" integrity="sha384-..." crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" crossorigin="anonymous">
         <script>
-            if (!document.querySelector('link[href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css"]').sheet) {
-                var fa = document.createElement('link');
-                fa.rel = 'stylesheet';
-                fa.href = '/fontawesome-free-6.4.0-web/css/fontawesome.css'; // Fallback path
-                document.head.appendChild(fa);
+            document.addEventListener('DOMContentLoaded', function() {
+                var faLink = document.querySelector('link[href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css"]');
+                if (faLink && !faLink.sheet) {
+                    var fa = document.createElement('link');
+                    fa.rel = 'stylesheet';
+                    fa.href = '/fontawesome-free-6.4.0-web/css/fontawesome.css'; // Fallback path
+                    document.head.appendChild(fa);
 
-                var faBrands = document.createElement('link');
-                faBrands.rel = 'stylesheet';
-                faBrands.href = '/fontawesome-free-6.4.0-web/css/brands.css'; // Fallback path
-                document.head.appendChild(faBrands);
+                    var faBrands = document.createElement('link');
+                    faBrands.rel = 'stylesheet';
+                    faBrands.href = '/fontawesome-free-6.4.0-web/css/brands.css'; // Fallback path
+                    document.head.appendChild(faBrands);
 
-                var faSolid = document.createElement('link');
-                faSolid.rel = 'stylesheet';
-                faSolid.href = '/fontawesome-free-6.4.0-web/css/solid.css'; // Fallback path
-                document.head.appendChild(faSolid);
-            }
+                    var faSolid = document.createElement('link');
+                    faSolid.rel = 'stylesheet';
+                    faSolid.href = '/fontawesome-free-6.4.0-web/css/solid.css'; // Fallback path
+                    document.head.appendChild(faSolid);
+                }
+            });
         </script>
 		<link rel="icon" href="%sveltekit.assets%/favicon.ico" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0" />
