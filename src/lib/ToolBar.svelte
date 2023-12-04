@@ -40,7 +40,7 @@
         <a href="https://github.com/dylantypo/dylantypo.github.io" target="_blank" class="toolbar-link">
             <div class="wrapper"><i class="fab fa-github fa-2xl"></i></div>
         </a>
-        <a href="/Resume_0523.pdf" target="_blank" class="toolbar-link">
+        <a href="/Resume-Winter-2023.pdf" target="_blank" class="toolbar-link">
             <div class="wrapper"><i class="fa-regular fa-file fa-2xl"></i></div>
         </a>
         <div class="wrapper"><i class="fa-solid fa-angle-down fa-beat-fade fa-2xl" style="--fa-animation-delay: 3s"></i></div>
