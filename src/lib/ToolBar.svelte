@@ -1,14 +1,21 @@
 <script lang="ts">
     import gsap from 'gsap';
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
 
     let expandedTool = false;
 
-    let toolbar: gsap.TweenTarget; // Declare the variable toolbar
+    let isTouchDevice = false;
+
+    let toolbar: HTMLElement //gsap.TweenTarget; // Declare the variable toolbar
 
     // Toggle function for toolbar
     function toggleToolbar() {
         expandedTool = !expandedTool;
+    }
+
+    // Close toolbar when mouse leaves
+    function handleCloseToolbar() {
+        expandedTool = false;
     }
 
     // Keypress functions for each bubble
@@ -18,9 +25,26 @@
         }
     }
 
+    function handleOutsideTouch(event: TouchEvent) {
+        if (toolbar && expandedTool && !toolbar.contains(event.target as Node)) {
+            expandedTool = false;
+        }
+    }
+
     onMount(async () => {
+        isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         gsap.fromTo(toolbar, { x: '200' }, { duration: 4, x: '0', ease: "back" });
-    });
+
+        if (isTouchDevice) {
+            document.addEventListener('touchstart', handleOutsideTouch);
+        }
+    })
+
+    onDestroy(() => {
+        if (isTouchDevice) {
+            document.removeEventListener('touchstart', handleOutsideTouch);
+        }
+    })
 </script>
 
 <!-- Connections Bubble -->
@@ -29,6 +53,7 @@
     class="toolbar {expandedTool ? 'expandedTool' : ''}"
     on:click={toggleToolbar}
     on:keydown={handleKeydown}
+    on:mouseleave={isTouchDevice ? undefined : handleCloseToolbar}
     tabindex="0"
     role="button"
     aria-pressed="{expandedTool}"
@@ -69,7 +94,7 @@
         border-radius: 50%;
         width: 50px;
         height: 50px;
-        transition: height 0.25s, border-radius 0.15s;
+        transition: height 0.6s cubic-bezier(.28,1.79,.72,.72), border-radius 1s cubic-bezier(.28,1.79,.72,.72);
         color: #004643;
         display: flex;
         justify-content: center;
