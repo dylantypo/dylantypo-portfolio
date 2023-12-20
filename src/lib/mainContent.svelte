@@ -3,44 +3,46 @@
     import gsap from 'gsap';
 
     let ScrollTrigger;
-    let elements: NodeListOf<HTMLElement> | undefined;
+    let elements: HTMLElement[] | undefined;
 
     onMount(async () => {
         const module = await import('gsap/ScrollTrigger');
         ScrollTrigger = module.ScrollTrigger;
         gsap.registerPlugin(ScrollTrigger);
 
-        elements = gsap.utils.toArray(".fade-in");
+        elements = gsap.utils.toArray(".fade-in") as HTMLElement[];
 
-        elements.forEach(el => {
-            let nodes = Array.from(el.childNodes);
+        if (elements) {
+            elements.forEach(el => {
+                let nodes = Array.from(el.childNodes);
 
-            // clear the element's content
-            el.innerHTML = '';
+                // clear the element's content
+                el.innerHTML = '';
 
-            nodes.forEach(node => {
-                if (node.nodeType === Node.TEXT_NODE) {
-                    // for normal text, split into words without adding the class
-                    let words = node.textContent.split(" ");
-                    words.forEach(word => {
-                        let span = document.createElement('span');
-                        span.textContent = word + " ";
-                        el.appendChild(span);
-                    });
-                } else if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('highlighted-text')) {
-                    // for each highlighted text, keep the highlighted-text class intact
-                    let words = node.textContent.split(" ");
-                    words.forEach(word => {
-                        let span = document.createElement('span');
-                        span.style.color = "#f9bc60";
-                        span.textContent = word + " ";
-                        el.appendChild(span);
-                    });
-                }
+                nodes.forEach(node => {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        // for normal text, split into words without adding the class
+                        let words = node.textContent ? node.textContent.split(" ") : [];
+                        words.forEach(word => {
+                            let span = document.createElement('span');
+                            span.textContent = word + " ";
+                            el.appendChild(span);
+                        });
+                    } else if (node.nodeType === Node.ELEMENT_NODE && (node as Element).classList.contains('highlighted-text')) {
+                        // for each highlighted text, keep the highlighted-text class intact
+                        let words = node.textContent ? node.textContent.split(" ") : [];
+                        words.forEach(word => {
+                            let span = document.createElement('span');
+                            span.style.color = "#f9bc60";
+                            span.textContent = word + " ";
+                            el.appendChild(span);
+                        });
+                    }
+                });
             });
-        });
+        }
 
-        let spans = gsap.utils.toArray(".fade-in span");
+        let spans = gsap.utils.toArray(".fade-in span") as HTMLElement[];
 
         spans.forEach(span => {
             gsap.from(span, {
