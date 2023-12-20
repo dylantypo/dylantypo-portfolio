@@ -33,7 +33,7 @@
 
     onMount(async () => {
         isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-        gsap.fromTo(coolbar, { x: '200' }, { duration: 4, x: '0', ease: "back" });
+        gsap.fromTo(coolbar, { x: '200' }, { delay: 0.5, duration: 4, x: '0', ease: "back" });
 
         if (isTouchDevice) {
             document.addEventListener('touchstart', handleOutsideTouch);
@@ -123,7 +123,7 @@
     @media (max-width: 1030px) {
         .coolbar {
             opacity: 35%;
-            bottom: 2em;
+            top: 2em;
             right: 1em;
         }
         .coolbar.expandedCool {
