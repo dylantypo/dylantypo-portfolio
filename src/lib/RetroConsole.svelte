@@ -8,10 +8,9 @@
     import { gsap } from 'gsap';
 
     // Declare variables
-    export let hero_text: String;
+    export let hero_text: string;
     let container: HTMLDivElement;
-    let resize;
-    let object: { position: gsap.TweenTarget; add: (arg0: any) => void; rotation: { y: number; }; };
+    let object: THREE.Object3D;
     let targetRotation = 0;
     const minRotation = -Math.PI / 8.5; // minimum rotation
     const maxRotation = Math.PI / 8.5; // maximum rotation
@@ -42,7 +41,7 @@
         // Initialize scene, camera, and renderer
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({antialiasing:true});
+        const renderer = new THREE.WebGLRenderer({antialias:true});
 
         // Set scene background color
         scene.background = new THREE.Color(0x004643);
@@ -64,74 +63,80 @@
 
         // Load materials and object
         const mtlLoader = new MTLLoader();
-        mtlLoader.load('Retro_Console.mtl', (materials: { preload: () => void; }) => {
-            materials.preload();
-
+        mtlLoader.load('Retro_Console.mtl', (materials) => {
             const objLoader = new OBJLoader();
             objLoader.setMaterials(materials);
-            objLoader.load('Retro_Console.obj', (objectLoader: { position: gsap.TweenTarget; add: (arg0: any) => void; rotation: { y: number; }; }) => {
+            objLoader.load('Retro_Console.obj', (objectLoader) => {
                 // Set object position and add to scene
-                object = objectLoader
-                object.position.set(0, 500, 0);
-                scene.add(object);
+                // Check if objectLoader is an instance of THREE.Object3D
+                if (objectLoader instanceof THREE.Object3D) {
+                    object = objectLoader;
 
-                // GSAP timeline
-                const tl = gsap.timeline();
+                    // Ensure object.position is treated as a Vector3
+                    if (object.position instanceof THREE.Vector3) {
+                        object.position.set(0, 500, 0);
+                    }
 
-                // Animate the object falling down
-                tl.to(object.position, { y: -25, duration: 1, ease: "bounce" });
+                    scene.add(object);
 
-                // Set camera position and look at center of scene
-                camera.position.set(0, 0, 800); // position camera
-                camera.lookAt(scene.position);
+                    // GSAP timeline
+                    const tl = gsap.timeline();
 
-                const current_Z = getZValue() // get current Z value
-                // After the object has landed, move the camera closer
-                tl.to(camera.position, { y: 75, z: current_Z, duration: 1, onUpdate: () => camera.lookAt(scene.position), ease: "slow" }, "+=0.5");
+                    // Animate the object falling down
+                    tl.to(object.position, { y: -25, duration: 1, ease: "bounce" });
 
-                const fontLoader = new FontLoader();
+                    // Set camera position and look at center of scene
+                    camera.position.set(0, 0, 800); // position camera
+                    camera.lookAt(scene.position);
 
-                fontLoader.load('/Kenney Future_Regular.json', function(font: any) {
-                    let textGeometry = new TextGeometry(hero_text, {
-                        font: font,
-                        size: 18,  // size of the text
-                        height: 3,  // thickness to extrude text
-                        curveSegments: 24,  // number of points on the curves
-                        bevelEnabled: true,  // turn on bevel
-                        bevelThickness: 0.75,  // how deep into text bevel goes
-                        bevelSize: 0.5,  // how far from text outline is bevel
-                        bevelOffset: 0,  // how far from text outline bevel starts
-                        bevelSegments: 100  // number of bevel segments
+                    const current_Z = getZValue() // get current Z value
+                    // After the object has landed, move the camera closer
+                    tl.to(camera.position, { y: 75, z: current_Z, duration: 1, onUpdate: () => camera.lookAt(scene.position), ease: "slow" }, "+=0.5");
+
+                    const fontLoader = new FontLoader();
+
+                    fontLoader.load('/Kenney Future_Regular.json', function(font: any) {
+                        let textGeometry = new TextGeometry(hero_text, {
+                            font: font,
+                            size: 18,  // size of the text
+                            height: 3,  // thickness to extrude text
+                            curveSegments: 24,  // number of points on the curves
+                            bevelEnabled: true,  // turn on bevel
+                            bevelThickness: 0.75,  // how deep into text bevel goes
+                            bevelSize: 0.5,  // how far from text outline is bevel
+                            bevelOffset: 0,  // how far from text outline bevel starts
+                            bevelSegments: 100  // number of bevel segments
+                        });
+
+                        let textMaterial = new THREE.MeshPhongMaterial({
+                            color: 0xfffffe,
+                            specular: 0xffffff,
+                            shininess: 2
+                        });
+
+                        let textMesh = new THREE.Mesh(textGeometry, textMaterial);
+
+                        // compute the bounding box of the text geometry
+                        textGeometry.computeBoundingBox();
+
+                        // get the bounding box dimensions
+                        if (textGeometry.boundingBox) {
+                            let { min, max } = textGeometry.boundingBox;
+                            // calculate offsetX
+                            let offsetX = (max.x - min.x) / 2;
+                            textMesh.position.set(-offsetX, 400, 900);
+                        }
+
+                        object.add(textMesh);
+
+                        tl.to(textMesh.position, { y: 45, z: 0, duration: 1, ease: "expo" });
                     });
 
-                    // compute the bounding box of the text geometry
-                    textGeometry.computeBoundingBox();
-
-                    // get the bounding box dimensions
-                    const { min, max } = textGeometry.boundingBox;
-
-                    // calculate offsets for each dimension
-                    const offsetX = (max.x - min.x) / 2;
-
-                    let textMaterial = new THREE.MeshPhongMaterial({
-                        color: 0xfffffe,
-                        specular: 0xffffff,
-                        shininess: 2
+                    // Set flag when animation is completed
+                    tl.eventCallback("onComplete", () => {
+                        animationFinished = true;
                     });
-
-                    let textMesh = new THREE.Mesh(textGeometry, textMaterial);
-
-                    textMesh.position.set(-offsetX, 400, 900);
-
-                    object.add(textMesh);
-
-                    tl.to(textMesh.position, { y: 45, z: 0, duration: 1, ease: "expo" });
-                });
-
-                // Set flag when animation is completed
-                tl.eventCallback("onComplete", () => {
-                    animationFinished = true;
-                });
+                }
             });
         });
 
@@ -184,7 +189,9 @@
                 }
 
                 // Ensure camera is always looking at the center of the scene
-                camera.lookAt(object.position);
+                if (object && object.position instanceof THREE.Vector3) {
+                    camera.lookAt(object.position);
+                }
             }
 
             // Update object rotation if animation is finished

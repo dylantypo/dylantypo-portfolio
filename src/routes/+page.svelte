@@ -1,6 +1,7 @@
 <script lang="ts">
     import RetroConsole from '$lib/RetroConsole.svelte';
 	import ToolBar from '$lib/ToolBar.svelte';
+    import CoolBar from '$lib/CoolBar.svelte';
     import MainContent from '$lib/mainContent.svelte';
     import { onMount } from 'svelte';
 
@@ -12,6 +13,8 @@
 </script>
 
 <main>
+    <CoolBar />
+
     <ToolBar />
 
     <RetroConsole {hero_text} />
