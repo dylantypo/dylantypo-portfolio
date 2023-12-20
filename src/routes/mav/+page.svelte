@@ -221,7 +221,7 @@
     @media (min-width: 800px) {
         /* Only scale buttons on larger screens */
         button:hover {
-            transform: scale(1.1);
+            transform: scale(3);
         }
     }
 
