@@ -94,7 +94,7 @@
         border-radius: 50%;
         width: 50px;
         height: 50px;
-        transition: height 0.6s cubic-bezier(.28,1.79,.72,.72), border-radius 1s cubic-bezier(.28,1.79,.72,.72);
+        transition: height 0.6s cubic-bezier(.28,1.79,.72,.72), border-radius 1s cubic-bezier(.28,1.79,.72,.72), opacity 1s;
         color: #004643;
         display: flex;
         justify-content: center;
