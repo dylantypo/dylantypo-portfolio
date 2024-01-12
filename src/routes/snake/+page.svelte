@@ -37,7 +37,7 @@
     let isGameOver = false;
     let difficultyMultiplier: number = 1;
     let initialIntervalSpeed: number;
-    let gameInterval: string | number | NodeJS.Timer | undefined;
+    let gameInterval: number | undefined;
     let foodPosition: { x: number, y: number } | undefined;
     let startTouchX: number;
     let startTouchY: number;
@@ -463,10 +463,10 @@
 
 <svelte:head>
     <title>Snake.</title>
-    <link rel="icon" href="\snake-assets\snake-logo.ico" />
+    <link rel="icon" href="\snake-logo.ico" />
 
     <!-- IOS Tags -->
-    <link rel="apple-touch-icon" href="\snake-assets\snake-logo.ico">
+    <link rel="apple-touch-icon" href="\snake-logo.ico">
 </svelte:head>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -480,7 +480,7 @@
     </div>
 {:else if currentState === GameState.INIT}
     <!-- Display logo with previous score (if any) -->
-    <div id="logo" on:click={() => { handleButtonClick(); currentState = GameState.THEME_SELECTION; }} on:keypress={() => { handleButtonClick(); currentState = GameState.THEME_SELECTION; }}>
+    <div id="logo" tabindex=0 role="button" on:click={() => { handleButtonClick(); currentState = GameState.THEME_SELECTION; }} on:keypress={() => { handleButtonClick(); currentState = GameState.THEME_SELECTION; }}>
         <img src="/snake-assets/snake-logo-upscaled-5x.png" alt="Snake Game"/>
         <p>Snake.</p>
         {#if score > 0}<p id="previous-score">Previous Score: {score}</p>{/if}
