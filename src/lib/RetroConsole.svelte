@@ -47,18 +47,25 @@
         scene.background = new THREE.Color(0x004643);
 
         // Add lights to the scene
-        const pointLight = new THREE.PointLight( 0x404040, 0.25, 800 );
-        pointLight.position.set( 0, 0, 50 );
-        scene.add( pointLight );
-        scene.add(new THREE.AmbientLight(0x404040));
-        const directionalLightFront = new THREE.DirectionalLight(0xffffff, 0.45);
-        directionalLightFront.position.set( 0, -1, 1 );
-        scene.add( directionalLightFront );
-        scene.add(new THREE.DirectionalLight(0xfffffb, 0.65))
+        // Ambient Light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.65); // Adjust intensity as needed
+        scene.add(ambientLight);
+
+        // Spot Light
+        const spotLight = new THREE.SpotLight(0xffffff, 1.65);
+        spotLight.position.set(0, 150, 100);
+        spotLight.castShadow = true;
+        scene.add(spotLight);
+
+        // Directional Light
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        directionalLight.position.set(-100, 50, 100);
+        scene.add(directionalLight);
 
         // Configure renderer
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true; // Ensure shadow mapping is enabled if needed
         container.appendChild(renderer.domElement);
 
         // Load materials and object
@@ -99,7 +106,7 @@
                         let textGeometry = new TextGeometry(hero_text, {
                             font: font,
                             size: 18,  // size of the text
-                            height: 3,  // thickness to extrude text
+                            depth: 3,  // thickness to extrude text
                             curveSegments: 24,  // number of points on the curves
                             bevelEnabled: true,  // turn on bevel
                             bevelThickness: 0.75,  // how deep into text bevel goes
@@ -167,10 +174,10 @@
             const canvas = renderer.domElement;
             const pixelRatio = window.devicePixelRatio;
             const width  = canvas.clientWidth  * pixelRatio | 0;
-            const height = canvas.clientHeight * pixelRatio | 0;
-            const needResize = canvas.width !== width || canvas.height !== height;
+            const depth = canvas.clientHeight * pixelRatio | 0;
+            const needResize = canvas.width !== width || canvas.height !== depth;
             if (needResize) {
-                renderer.setSize(width, height, false);
+                renderer.setSize(width, depth, false);
             }
             return needResize;
         }
@@ -209,14 +216,14 @@
 
         let prevWindowSize = {
             width: window.innerWidth,
-            height: window.innerHeight
+            depth: window.innerHeight
         };
 
         const threshold = 100; // set your threshold value
 
         handleResize = () => {
             let widthChange = Math.abs(window.innerWidth - prevWindowSize.width);
-            let heightChange = Math.abs(window.innerHeight - prevWindowSize.height);
+            let heightChange = Math.abs(window.innerHeight - prevWindowSize.depth);
 
             if (widthChange > threshold || heightChange > threshold) {
                 clearTimeout(resizeTimeout);
@@ -237,7 +244,7 @@
             // update previous window size
             prevWindowSize = {
                 width: window.innerWidth,
-                height: window.innerHeight
+                depth: window.innerHeight
             };
         };
 
