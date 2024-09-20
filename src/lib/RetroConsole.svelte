@@ -65,7 +65,6 @@
         // Configure renderer
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true; // Ensure shadow mapping is enabled if needed
         container.appendChild(renderer.domElement);
 
         // Load materials and object
