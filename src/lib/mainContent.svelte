@@ -5,6 +5,44 @@
     let ScrollTrigger;
     let elements: HTMLElement[] | undefined;
 
+    // Array of jobs with details including descriptions and visibility toggle
+    let jobs = [
+        {
+            year: "Now",
+            company: "Booz Allen Hamilton",
+            role: "Data Scientist (Senior Consultant)",
+            description: "Developed Python-based tools and automated workflows, integrating AWS and Tableau to improve data analysis and visualization.",
+            showDescription: false, // Toggles between showing role details or description
+        },
+        {
+            year: "2019",
+            company: "Interos",
+            role: "Data Analytics Intern",
+            description: "Used Snowflake and SQL to organize data and developed efficient pipelines for supply chain analysis.",
+            showDescription: false,
+        },
+        {
+            year: "2018",
+            company: "The Phoenix Team",
+            role: "Product Development Intern",
+            description: "Leveraged agile practices to support product design and coordinated efforts to deliver a client-focused white paper.",
+            showDescription: false,
+        },
+    ];
+
+    // Toggles the display of the description or role details for a job
+    const toggleDescription = (index: number) => {
+        jobs[index].showDescription = !jobs[index].showDescription;
+        jobs = [...jobs]; // Ensures reactivity by creating a new array reference
+    };
+
+    // Resets showDescription to false when the mouse leaves the job
+    const resetDescription = (index: number) => {
+        jobs[index].showDescription = false;
+        jobs = [...jobs]; // Ensures reactivity
+    };
+
+    // Runs animations for elements with fade-in effects when scrolling
     onMount(async () => {
         const module = await import('gsap/ScrollTrigger');
         ScrollTrigger = module.ScrollTrigger;
@@ -16,12 +54,12 @@
             elements.forEach(el => {
                 let nodes = Array.from(el.childNodes);
 
-                // clear the element's content
+                // Clears the element's content to prepare for animation
                 el.innerHTML = '';
 
                 nodes.forEach(node => {
                     if (node.nodeType === Node.TEXT_NODE) {
-                        // for normal text, split into words without adding the class
+                        // Splits plain text into words and wraps each in a span
                         let words = node.textContent ? node.textContent.split(" ") : [];
                         words.forEach(word => {
                             let span = document.createElement('span');
@@ -29,11 +67,11 @@
                             el.appendChild(span);
                         });
                     } else if (node.nodeType === Node.ELEMENT_NODE && (node as Element).classList.contains('highlighted-text')) {
-                        // for each highlighted text, keep the highlighted-text class intact
+                        // Handles highlighted text, preserving its style
                         let words = node.textContent ? node.textContent.split(" ") : [];
                         words.forEach(word => {
                             let span = document.createElement('span');
-                            span.style.color = "#f9bc60";
+                            span.style.color = "#f9bc60"; // Applies specific highlight color
                             span.textContent = word + " ";
                             el.appendChild(span);
                         });
@@ -45,15 +83,16 @@
         let spans = gsap.utils.toArray(".fade-in span") as HTMLElement[];
 
         spans.forEach(span => {
+            // Applies fade-in animation with ScrollTrigger
             gsap.from(span, {
                 scrollTrigger: {
                     trigger: span,
-                    start: "top 75%",
-                    end: "bottom 25%",
-                    scrub: true
+                    start: "top 75%", // Animation starts when 75% of the span enters the viewport
+                    end: "bottom 25%", // Animation ends when 25% of the span leaves the viewport
+                    scrub: true, // Smooth scrolling animation
                 },
-                autoAlpha: 0.025, // start at 5% opacity
-                duration: 1, // animate over 1 second
+                autoAlpha: 0.025, // Initial opacity set to 5%
+                duration: 1, // Animation duration of 1 second
             });
         });
     });
@@ -69,38 +108,28 @@
         <p class="header">Experience</p>
         <h1 class="long-text fade-in">Nearly <span class="highlighted-text">half a decade</span> of diverse experience, enhancing data-driven decisions with a unique blend of creativity and innovation.</h1>
     </div>
-    
+
     <div class="section">
         <p class="header">History</p>
-        <div class="job">
-            <h1 class="year">Now</h1>
-            <div class="position">
-                <h1 class="company">Booz Allen Hamilton</h1>
-                <p class="role">Data Scientist (Senior Consultant)</p>
-            </div>
-            <!-- <p class="text">Advanced data validation and analysis tools using Python, optimized project timelines, and automated data extraction for financial performance assessment.</p> -->
-            <div class="background"></div>
-        </div>
-
-        <div class="job">
-            <h1 class="year">2019</h1>
-            <div class="position">
-                <h1 class="company">Interos</h1>
-                <p class="role">Data Analytics Intern</p>
-            </div>
-            <!-- <p class="text">Excelled in Snowflake to boost data handling, developed efficient data schema and SQL queries for optimized data relationships and processing.</p> -->
-            <div class="background"></div>
-        </div>
-
-        <div class="job">
-            <h1 class="year">2018</h1>
-            <div class="position">
-                <h1 class="company">The Phoenix Team</h1>
-                <p class="role">Product Development Intern</p>
-            </div>
-            <!-- <p class="text">Drove agile product development and led interns in delivering a detailed white paper on effective product management.</p> -->
-            <div class="background"></div>
-        </div>
+        {#each jobs as job, i}
+            <!-- Use a button for better accessibility and style it to remove default button appearance -->
+            <button class="job" type="button" on:click={() => toggleDescription(i)} on:keydown={(e) => e.key === 'Enter' && toggleDescription(i)} on:mouseleave={() => resetDescription(i)} aria-expanded={job.showDescription}>
+                <h1 class="year">{job.year}</h1>
+                <div class="text-wrapper">
+                    <h1 class="company">{job.company}</h1>
+                    {#if job.showDescription}
+                        <div class="description">
+                            <p>{job.description}</p>
+                        </div>
+                    {:else}
+                        <div class="role-text">
+                            <p>{job.role}</p>
+                        </div>
+                    {/if}
+                </div>
+                <div class="background"></div>
+            </button>
+        {/each}
     </div>
 
     <!-- Skills to Include -->
@@ -133,7 +162,7 @@
 </div>
 
 <style>
-    :global(html) {
+    :global(html), :global(body) {
         scrollbar-width: none;
         width: 100vw;
         height: 100%;
@@ -142,20 +171,9 @@
         background-color: #004643;
     }
 
-    :global(body) {
-        width: 100vw;
-        height: 100%;
-        margin: 0;
-        padding: 0;
-    }
-
     #content {
         color: #e8e4e6;
         user-select: none;
-    }
-
-    #copyright {
-        font-family: sans-serif;
     }
 
     #footer-content {
@@ -166,34 +184,29 @@
         align-items: center;
     }
 
-    .section {
-        margin-bottom: 12.5vh;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .headshot {
-        display: inline-block;
-    }
-
     .headshot img {
         width: 10vmin;
         height: auto;
         margin-left: 1em;
         border-radius: 50%;
-        opacity: 0.60;
-        box-shadow: 0px 8px 10px rgba(0, 0, 0, 0.85);
+        opacity: 0.6;
+        box-shadow: 0 8px 10px rgba(0, 0, 0, 0.85);
         transition: transform 0.55s, opacity 0.55s, box-shadow 0.55s;
     }
 
     .headshot img:hover {
         transform: scale(1.2);
         opacity: 1;
-        box-shadow: 0px 12px 16px rgba(0, 0, 0, 0.75);
+        box-shadow: 0 12px 16px rgba(0, 0, 0, 0.75);
     }
 
+    .section {
+        margin-bottom: 12.5vh;
+        display: flex;
+        flex-direction: column;
+    }
 
-    .header, .footer{
+    .header, .footer {
         width: max-content;
         padding-left: 20vw;
         font-size: 3.5vmin;
@@ -201,12 +214,12 @@
 
     .long-text {
         font-size: 7.5vmin;
-        padding-left: 20vw;
-        padding-right: 20vw;
+        padding: 0 20vw;
         color: #abd1c6;
     }
 
     .job {
+        all: unset; /* Removes all default button styles */
         width: 100vw;
         display: flex;
         flex-direction: row;
@@ -216,22 +229,62 @@
         transition: color 0.3s;
     }
 
-    .position, .year {
+    .job:focus {
+        outline: none; /* Removes focus outline */
+    }
+
+    .role-text, .year {
         padding-left: 20vw;
         z-index: 2;
     }
 
-    .position {
+    .role-text {
+        font-size: 2vmin;
+        font-style: italic;
         width: 100%;
+        transition: opacity 0.5s ease-in-out;
+        opacity: 1;
+    }
+
+    .text-wrapper {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        z-index: 2;
+    }
+
+    .company {
+        padding-left: 20vw;
         padding-right: 20vw;
+        color: #e8e4e6; /* Default color */
+        transition: color 0.3s ease-in-out, opacity 0.3s ease-in-out, transform 0.3s ease-in-out; /* Slightly faster for responsiveness */
+        opacity: 1; /* Start visible */
+        z-index: 2;
+    }
+
+    .job:hover .company {
+        color: #004643; /* Matches hover color with job text */
     }
 
     .company, .year {
         font-size: 4vmin;
     }
 
-    .role {
-        font-size: 2vmin;
+    .description {
+        font-size: 2.5vmin;
+        padding-left: 20vw;
+        padding-right: 20vw;
+        color: #e8e4e6; /* Default color */
+        transition: color 0.5s ease, opacity 0.5s ease, transform 0.5s ease; /* Unified durations */
+        opacity: 0; /* Start invisible */
+        transform: scale(0.95); /* Slightly shrink */
+        z-index: 2;
+    }
+
+    .job:hover .description {
+        color: #004643; /* Matches hover color with job text */
+        opacity: 1; /* Fade in description */
+        transform: scale(1); /* Return to full size */
     }
 
     .background {
@@ -242,7 +295,7 @@
         background: rgb(249, 188, 96);
         transform-origin: center; 
         transform: scaleY(0);
-        transition: transform 0.3s;
+        transition: transform 0.3s ease-in-out; /* Longer for fluidity */
         z-index: 1;
     }
 
@@ -255,34 +308,14 @@
     }
 
     @media (max-width: 925px) {
-        .long-text {
-            padding-left: 12vw;
-            padding-right: 12vw;
-        }
-
-        .section p, .job h1 {
-            padding-left: 12vw;
-        }
-
-        .position {
-            padding-left: 12vw;
-            padding-right: 12vw;
+        .long-text, .section p, .job h1, .role-text, .description {
+            padding: 0 12vw;
         }
     }
 
     @media (max-width: 610px) {
-        .long-text {
-            padding-left: 5vw;
-            padding-right: 5vw;
-        }
-
-        .section p, .job h1 {
-            padding-left: 5vw;
-        }
-
-        .position {
-            padding-left: 5vw;
-            padding-right: 5vw;
+        .long-text, .section p, .job h1, .role-text, .description {
+            padding: 0 5vw;
         }
     }
 
@@ -292,11 +325,7 @@
             margin-bottom: 5vh;
         }
 
-        .footer {
-            padding-left: 0;
-        }
-
-        .position {
+        .footer, .role-text, .description {
             padding-right: 0;
         }
     }
