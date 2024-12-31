@@ -10,22 +10,22 @@
         {
             year: "Now",
             company: "Booz Allen Hamilton",
-            role: "Data Scientist (Senior Consultant)",
-            description: "Developed Python-based tools and automated workflows, integrating AWS and Tableau to improve data analysis and visualization.",
+            role: "Data Scientist (Senior Consultant)  ",
+            description: "Developed Python-based tools and automated workflows, integrating AWS and Tableau to improve data analysis and visualization  ",
             showDescription: false, // Toggles between showing role details or description
         },
         {
             year: "2019",
             company: "Interos",
-            role: "Data Analytics Intern",
-            description: "Used Snowflake and SQL to organize data and developed efficient pipelines for supply chain analysis.",
+            role: "Data Analytics Intern  ",
+            description: "Used Snowflake and SQL to organize data and developed efficient pipelines for supply chain analysis  ",
             showDescription: false,
         },
         {
             year: "2018",
             company: "The Phoenix Team",
-            role: "Product Development Intern",
-            description: "Leveraged agile practices to support product design and coordinated efforts to deliver a client-focused white paper.",
+            role: "Product Development Intern  ",
+            description: "Leveraged agile practices to support product design and coordinated efforts to deliver a client-focused white paper  ",
             showDescription: false,
         },
     ];
@@ -119,11 +119,12 @@
                     <h1 class="company">{job.company}</h1>
                     {#if job.showDescription}
                         <div class="description">
-                            <p>{job.description}</p>
+                            <p>{job.description}<i class="fa-solid fa-caret-up fa-fade"></i></p>
+
                         </div>
                     {:else}
                         <div class="role-text">
-                            <p>{job.role}</p>
+                            <p>{job.role}<i class="fa-solid fa-caret-down fa-beat"></i></p>
                         </div>
                     {/if}
                 </div>
@@ -221,6 +222,7 @@
     .job {
         all: unset; /* Removes all default button styles */
         width: 100vw;
+        cursor: pointer;
         display: flex;
         flex-direction: row;
         align-items: center;
@@ -308,14 +310,54 @@
     }
 
     @media (max-width: 925px) {
-        .long-text, .section p, .job h1, .role-text, .description {
+        .long-text {
             padding: 0 12vw;
+        }
+        .job {
+            flex-direction: column;
+        }
+
+        .role-text, .year {
+            padding-left: 10vw;
+            font-size: 3vmin;
+        }
+
+        .company {
+            padding-left: 10vw;
+            padding-right: 10vw;
+            font-size: 3.5vmin;
+        }
+
+        .description {
+            font-size: 3vmin;
+            padding-left: 10vw;
+            padding-right: 10vw;
         }
     }
 
     @media (max-width: 610px) {
-        .long-text, .section p, .job h1, .role-text, .description {
+        .long-text {
             padding: 0 5vw;
+        }
+        .job {
+            flex-direction: column;
+        }
+
+        .role-text, .year {
+            padding-left: 5vw;
+            font-size: 2.5vmin;
+        }
+
+        .company {
+            padding-left: 5vw;
+            padding-right: 5vw;
+            font-size: 3vmin;
+        }
+
+        .description {
+            font-size: 2.5vmin;
+            padding-left: 5vw;
+            padding-right: 5vw;
         }
     }
 
@@ -325,8 +367,28 @@
             margin-bottom: 5vh;
         }
 
-        .footer, .role-text, .description {
+        .footer {
             padding-right: 0;
+        }
+        .job {
+            flex-direction: column;
+        }
+
+        .role-text, .year {
+            padding-left: 2vw;
+            font-size: 2vmin;
+        }
+
+        .company {
+            padding-left: 2vw;
+            padding-right: 2vw;
+            font-size: 2.5vmin;
+        }
+
+        .description {
+            font-size: 2vmin;
+            padding-left: 2vw;
+            padding-right: 2vw;
         }
     }
 </style>
