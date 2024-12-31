@@ -310,15 +310,28 @@
     }
 
     @media (max-width: 925px) {
+        .section {
+            align-items: center;
+        }
+
+        .header {
+            padding-left: 0;
+        }
+
         .long-text {
             padding: 0 12vw;
         }
+        
         .job {
             flex-direction: column;
         }
 
-        .role-text, .year {
+        .role-text {
             padding-left: 10vw;
+        }
+
+        .year {
+            padding: 0;
             font-size: 3vmin;
         }
 
@@ -336,15 +349,29 @@
     }
 
     @media (max-width: 610px) {
-        .long-text {
-            padding: 0 5vw;
+        .section {
+            align-items: center;
         }
+
+        .header {
+            padding-left: 0;
+        }
+
+        .long-text {
+            padding: 0 8vw;
+        }
+
         .job {
             flex-direction: column;
         }
 
-        .role-text, .year {
+        .role-text {
             padding-left: 5vw;
+            font-size: 2.8vmin;
+        }
+
+        .year {
+            padding: 0;
             font-size: 2.5vmin;
         }
 
@@ -362,33 +389,42 @@
     }
 
     @media (max-width: 480px) {
-        #footer-content {
-            flex-direction: column-reverse;
-            margin-bottom: 5vh;
+        .section {
+            align-items: center;
         }
 
-        .footer {
-            padding-right: 0;
+        .header {
+            padding-left: 0;
         }
+
+        .long-text {
+            padding: 0 5vw;
+        }
+
         .job {
             flex-direction: column;
         }
 
-        .role-text, .year {
-            padding-left: 2vw;
+        .role-text {
+            padding-left: 3vw;
+            font-size: 2.5vmin;
+        }
+
+        .year {
+            padding: 0;
             font-size: 2vmin;
         }
 
         .company {
-            padding-left: 2vw;
-            padding-right: 2vw;
-            font-size: 2.5vmin;
+            padding-left: 3vw;
+            padding-right: 3vw;
+            font-size: 2.8vmin;
         }
 
         .description {
-            font-size: 2vmin;
-            padding-left: 2vw;
-            padding-right: 2vw;
+            font-size: 2.3vmin;
+            padding-left: 3vw;
+            padding-right: 3vw;
         }
     }
 </style>
