@@ -374,7 +374,7 @@
                 updateHighScore();
                 return;
             }
-        }, intervalSpeed - difficulty_value);
+        }, intervalSpeed - difficulty_value) as unknown as number;
     }
 
     function stopGame() {
@@ -529,9 +529,15 @@
 {/if}
 
 <!-- Sound Button -->
-
-<button id="soundButton" on:click={() => { handleButtonClick(); toggleSound(); }}>
-    <i class={isSoundOn ? "fa-solid fa-volume-high" : "fa-solid fa-volume-xmark"}></i>
+<button
+    id="soundButton"
+    on:click={() => { handleButtonClick(); toggleSound(); }}
+    aria-label="{isSoundOn ? 'Mute sound' : 'Unmute sound'}"
+>
+    <i
+        class="{isSoundOn ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark'}"
+        aria-hidden="true"
+    ></i>
 </button>
 
 <style>

@@ -57,21 +57,47 @@
     tabindex="0"
     role="button"
     aria-pressed="{expandedTool}"
+    aria-label="{expandedTool ? 'Collapse toolbar menu' : 'Expand toolbar menu'}"
 >
     <div class="toolbar-content">
-        <a href="https://www.linkedin.com/in/dylan-posner-3a0034152/" target="_blank" class="toolbar-link">
-            <div class="wrapper"><i class="fab fa-linkedin-in fa-2xl"></i></div>
+        <a
+            href="https://www.linkedin.com/in/dylan-posner-3a0034152/"
+            target="_blank"
+            class="toolbar-link"
+            aria-label="Visit Dylan's LinkedIn profile"
+        >
+            <div class="wrapper"><i class="fab fa-linkedin-in fa-2xl" aria-hidden="true"></i></div>
         </a>
-        <a href="https://github.com/dylantypo/dylantypo.github.io" target="_blank" class="toolbar-link">
-            <div class="wrapper"><i class="fab fa-github fa-2xl"></i></div>
+        <a
+            href="https://github.com/dylantypo/dylantypo.github.io"
+            target="_blank"
+            class="toolbar-link"
+            aria-label="Visit Dylan's GitHub repository"
+        >
+            <div class="wrapper"><i class="fab fa-github fa-2xl" aria-hidden="true"></i></div>
         </a>
-        <a href="/Resume-Summer-2024.pdf" target="_blank" class="toolbar-link">
-            <div class="wrapper"><i class="fa-regular fa-file fa-2xl"></i></div>
+        <a
+            href="/Resume-Summer-2024.pdf"
+            target="_blank"
+            class="toolbar-link"
+            aria-label="Download Dylan's Resume"
+        >
+            <div class="wrapper"><i class="fa-regular fa-file fa-2xl" aria-hidden="true"></i></div>
         </a>
-        <div class="wrapper"><i class="fa-solid fa-angle-down fa-beat-fade fa-2xl" style="--fa-animation-delay: 3s"></i></div>
+        <div class="wrapper">
+            <i
+                class="fa-solid fa-angle-down fa-beat-fade fa-2xl"
+                style="--fa-animation-delay: 3s"
+                aria-hidden="true"
+            ></i>
+        </div>
     </div>
     {#if !expandedTool}
-        <i class="fa-solid fa-gear fa-spin fa-2xl" style="--fa-animation-duration: 3s"></i>
+        <i
+            class="fa-solid fa-gear fa-spin fa-2xl"
+            style="--fa-animation-duration: 3s"
+            aria-hidden="true"
+        ></i>
     {/if}
 </div>
 

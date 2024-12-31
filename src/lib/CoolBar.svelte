@@ -57,21 +57,53 @@
     tabindex="0"
     role="button"
     aria-pressed="{expandedCool}"
+    aria-label="{expandedCool ? 'Collapse connections menu' : 'Expand connections menu'}"
 >
     <div class="coolbar-content">
-        <div class="wrapper"><i class="fa-solid fa-angle-up fa-beat-fade fa-2xl" style="--fa-animation-delay: 3s"></i></div>
-        <a href="https://dylanposner.com/mav" target="_blank" class="coolbar-link">
-            <div class="wrapper"><i class="fa-solid fa-microphone-lines fa-2xl"></i></div>
+        <div class="wrapper">
+            <i
+                class="fa-solid fa-angle-up fa-beat-fade fa-2xl"
+                style="--fa-animation-delay: 3s"
+                aria-hidden="true"
+            ></i>
+        </div>
+        <a
+            href="https://dylanposner.com/mav"
+            target="_blank"
+            class="coolbar-link"
+            aria-label="View MAV Project"
+        >
+            <div class="wrapper">
+                <i class="fa-solid fa-microphone-lines fa-2xl" aria-hidden="true"></i>
+            </div>
         </a>
-        <a href="https://dylanposner.com/ballz" target="_blank" class="coolbar-link">
-            <div class="wrapper"><i class="fa-solid fa-hands-holding-circle fa-2xl"></i></div>
+        <a
+            href="https://dylanposner.com/ballz"
+            target="_blank"
+            class="coolbar-link"
+            aria-label="View Ballz Project"
+        >
+            <div class="wrapper">
+                <i class="fa-solid fa-hands-holding-circle fa-2xl" aria-hidden="true"></i>
+            </div>
         </a>
-        <a href="https://dylanposner.com/snake" target="_blank" class="coolbar-link">
-            <div class="wrapper"><i class="fa-solid fa-staff-snake fa-2xl"></i></div>
+        <a
+            href="https://dylanposner.com/snake"
+            target="_blank"
+            class="coolbar-link"
+            aria-label="View Snake Project"
+        >
+            <div class="wrapper">
+                <i class="fa-solid fa-staff-snake fa-2xl" aria-hidden="true"></i>
+            </div>
         </a>
     </div>
     {#if !expandedCool}
-        <i class="fa-solid fa-atom fa-spin fa-2xl" style="--fa-animation-duration: 5s"></i>
+        <i
+            class="fa-solid fa-atom fa-spin fa-2xl"
+            style="--fa-animation-duration: 5s"
+            aria-hidden="true"
+        ></i>
     {/if}
 </div>
 
