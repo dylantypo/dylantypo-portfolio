@@ -655,7 +655,7 @@
     }
 
     .menu p:first-child {
-        margin-bottom: 22rem; /* Adjust this value to your liking. */;
+        margin-bottom: 22rem; /* Adjust this value to your liking. */
     }
 
     /* Button Container Styles */
