@@ -75,7 +75,7 @@
         const scene = new THREE.Scene();
         scene.background = new THREE.Color('#004643');
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer();
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -83,21 +83,25 @@
 
         // Add light
         const ambientLight = new THREE.AmbientLight('#ffffff', 1); // Even lighting
-        const directionalLight = new THREE.DirectionalLight('#f9bc60', 0.8); // Highlight
-        directionalLight.position.set(5, 3, 5);
-        scene.add(ambientLight, directionalLight);
+        // const directionalLight = new THREE.DirectionalLight('#f9bc60', 0.8); // Highlight
+        // directionalLight.position.set(5, 3, 5);
+        scene.add(ambientLight);
 
         // Create globe
         const globe = new Globe()
             .showAtmosphere(false)
-            .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+            .globeImageUrl('//unpkg.com/three-globe/example/img/earth-day.jpg')
             .polygonsData(countriesLivedIn)
             .polygonCapColor(() => 'rgba(249, 188, 96, 0.7)') // Highlight color for polygons
             .polygonSideColor(() => 'rgba(171, 209, 198, 0.3)') // Mid-tone color
             .polygonStrokeColor(() => '#111')
-            .polygonAltitude(() => 0.01);
+            .polygonAltitude(() => 0.5);
 
         scene.add(globe);
+
+        // Position the camera close to a random region
+        const randomRegion = regionsLived[Math.floor(Math.random() * regionsLived.length)];
+        camera.position.set(randomRegion.lng * 5, randomRegion.lat * 5, 50);
 
         // Enhance globe appearance
         const globeMaterial = globe.globeMaterial() as THREE.MeshPhongMaterial;
@@ -114,72 +118,94 @@
         // Add hero text
         const fontLoader = new FontLoader();
         fontLoader.load('/Kenney Future_Regular.json', function (font: any) {
-            const textGeometry = new TextGeometry(hero_text, {
-                font: font,
-                size: 50,
-                depth: 3,
-                curveSegments: 24,
-                bevelEnabled: true,
-                bevelThickness: 0.75,
-                bevelSize: 0.5,
-                bevelOffset: 0,
-                bevelSegments: 100
-            });
+            const group = new THREE.Group(); // Group for the text
+            const radiusOffset = 55; // Base radius offset
 
-            const textMaterial = new THREE.MeshPhongMaterial({
-                color: 0xfffffe,
-                specular: 0xffffff,
-                shininess: 2
-            });
+            for (let i = 0; i < hero_text.length; i++) {
+                const char = hero_text[i];
+                const charGeometry = new TextGeometry(char, {
+                    font: font,
+                    size: 11,
+                    depth: 0,
+                    curveSegments: 24,
+                    bevelEnabled: true,
+                    bevelThickness: 0.75,
+                    bevelSize: 0.5,
+                    bevelOffset: 0,
+                    bevelSegments: 100
+                });
 
-            const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+                const charMaterial = new THREE.MeshPhongMaterial({
+                    color: 0xfffffe,
+                    specular: 0xffffff,
+                    shininess: 10
+                });
 
-            textGeometry.computeBoundingBox();
-            if (textGeometry.boundingBox) {
-                const { min, max } = textGeometry.boundingBox;
-                const offsetX = (max.x - min.x) / 2;
-                textMesh.position.set(-offsetX, 25, 100);
+                const charMesh = new THREE.Mesh(charGeometry, charMaterial);
+
+                charGeometry.computeBoundingBox();
+                if (charGeometry.boundingBox) {
+                    const angle = ((i - hero_text.length / 2) / hero_text.length) * Math.PI;
+
+                    const centralIndex = Math.floor(hero_text.length / 2);
+                    const centralAngle = ((centralIndex - hero_text.length / 2) / hero_text.length) * Math.PI;
+
+                    charMesh.position.set(
+                        Math.sin(angle - centralAngle) * (radiusOffset + 50), // Position along X-axis
+                        0, // Keep Y-axis constant
+                        Math.cos(angle - centralAngle) * (radiusOffset + 50) // Position in depth
+                    );
+
+                    // Calculate the outward direction based on position
+                    const outwardDirection = charMesh.position.clone().normalize();
+                    const outwardPoint = outwardDirection.multiplyScalar(radiusOffset + 100);
+
+                    // Make the mesh look at the outward point
+                    charMesh.lookAt(outwardPoint);
+
+                    // Ensure text is properly oriented if necessary
+                    if (Math.cos(angle - centralAngle) < 0) {
+                        charMesh.rotation.y += Math.PI;
+                    }  
+                }
+
+                group.add(charMesh);
             }
+        
+            group.position.set(0, 0, 0);
+            group.visible = false; // Initially hide the text
+        
+            scene.add(group);
+        
+            // Add delay for text to appear
+            gsap.to(group.children, {
+                delay: 1,
+                duration: 2,
+                opacity: 1,
+                ease: "power2.inOut",
+                onStart: () => { group.visible = true; },
+                onUpdate: () => {
+                    group.children.forEach((charMesh: any) => {
+                        if (charMesh.material instanceof THREE.MeshPhongMaterial) {
+                            charMesh.material.opacity = gsap.getProperty(charMesh, "opacity");
+                            charMesh.material.transparent = true;
+                        }
+                    });
+                }
+            });
 
-            scene.add(textMesh);
         });
-
-        // Position the camera close to a random region
-        const randomRegion = regionsLived[Math.floor(Math.random() * regionsLived.length)];
-        camera.position.set(randomRegion.lng * 5, randomRegion.lat * 5, 50);
 
         // Add camera controls
         const controls = new TrackballControls(camera, renderer.domElement);
-        controls.minDistance = 50;
+        controls.minDistance = 350;
         controls.maxDistance = 500;
-        controls.rotateSpeed = 5;
-        controls.zoomSpeed = 0.8;
+        controls.rotateSpeed = 2;
+        controls.zoomSpeed = 0.85;
 
         // Restrict globe rotation to one axis
         globe.rotation.x = 0;
         globe.rotation.z = 0;
-
-        // Create a scroll-triggered animation
-        gsap.timeline({
-            scrollTrigger: {
-                trigger: container,
-                start: "top top",
-                end: "+=1000",
-                scrub: true,
-                pin: container
-            }
-        })
-            .to(camera.position, {
-                z: 300,
-                duration: 2,
-                ease: "power1.inOut"
-            })
-            .to(camera.position, {
-                x: 0,
-                y: 0,
-                duration: 2,
-                ease: "power1.inOut"
-            });
 
         const resizeRendererToDisplaySize = (renderer: THREE.WebGLRenderer) => {
             const canvas = renderer.domElement;
@@ -201,7 +227,7 @@
                 camera.updateProjectionMatrix();
             }
 
-            globe.rotation.y += 0.001; // Rotate globe on one axis
+            globe.rotation.y -= 0.001; // Rotate globe on one axis
 
             controls.update();
             renderer.render(scene, camera);

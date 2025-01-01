@@ -6,7 +6,7 @@
     import MainContent from '$lib/mainContent.svelte';
     import { onMount } from 'svelte';
 
-    let hero_text = 'Dylan P.'
+    let hero_text = 'DylanPosner'
 
     onMount(() => {
         window.scrollTo(0, 0);
