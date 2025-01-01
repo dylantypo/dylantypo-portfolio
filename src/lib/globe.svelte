@@ -13,9 +13,7 @@
     type Region = {
         country: string;
         description: string;
-        lat: number;
-        lng: number;
-        states: { name: string; description: string }[];
+        states: { name: string; description: string; lat: number; lng: number }[];
     };
 
     export let hero_text: string;
@@ -24,35 +22,48 @@
         {
             country: "United States",
             description: "Lived in California, Maine, Virginia, Illinois, and Georgia",
-            lat: 37.0902,
-            lng: -95.7129,
             states: [
-                { name: "California", description: "Palo Alto and Aliso Viejo" },
-                { name: "Maine", description: "Bangor" },
-                { name: "Virginia", description: "Arlington and Blacksburg" },
-                { name: "Illinois", description: "Chicago" },
-                { name: "Georgia", description: "Atlanta" }
+                { name: "Palo Alto", description: "Lived in Palo Alto", lat: 37.4419, lng: -122.1430 },
+                { name: "Aliso Viejo", description: "Lived in Aliso Viejo", lat: 33.5686, lng: -117.7267 },
+                { name: "Bangor", description: "Lived in Bangor", lat: 44.8012, lng: -68.7778 },
+                { name: "Arlington", description: "Lived in Arlington", lat: 38.8797, lng: -77.1057 },
+                { name: "Blacksburg", description: "Lived in Blacksburg", lat: 37.2296, lng: -80.4139 },
+                { name: "Chicago", description: "Lived in Chicago", lat: 41.8781, lng: -87.6298 },
+                { name: "Atlanta", description: "Lived in Atlanta", lat: 33.7490, lng: -84.3880 }
             ]
         },
         {
             country: "Brazil",
             description: "Lived in Sao Paulo",
-            lat: -14.2350,
-            lng: -51.9253,
             states: [
-                { name: "Sao Paulo", description: "Sao Paulo" }
+                { name: "Sao Paulo", description: "Lived in Sao Paulo", lat: -23.5505, lng: -46.6333 }
             ]
         },
         {
             country: "Latvia",
             description: "Lived in Riga",
-            lat: 56.8796,
-            lng: 24.6032,
             states: [
-                { name: "Latvia", description: "Riga" }
+                { name: "Riga", description: "Lived in Riga", lat: 56.9496, lng: 24.1052 }
             ]
         }
     ];
+
+
+    function getCityCoordinates(cityName: string) {
+        const cityCoordinates: Record<string, { lat: number; lng: number }> = {
+            "Palo Alto": { lat: 37.4419, lng: -122.1430 },
+            "Aliso Viejo": { lat: 33.5686, lng: -117.7267 },
+            "Bangor": { lat: 44.8012, lng: -68.7778 },
+            "Arlington": { lat: 38.8797, lng: -77.1057 },
+            "Blacksburg": { lat: 37.2296, lng: -80.4139 },
+            "Chicago": { lat: 41.8781, lng: -87.6298 },
+            "Atlanta": { lat: 33.7490, lng: -84.3880 },
+            "Sao Paulo": { lat: -23.5505, lng: -46.6333 },
+            "Riga": { lat: 56.9496, lng: 24.1052 }
+        };
+
+        return cityCoordinates[cityName] || { lat: 0, lng: 0 }; // Default to 0,0 if not found
+    }
 
     onMount(async () => {
         // Check if we are in the browser
@@ -61,15 +72,6 @@
         // Dynamically import browser-only dependencies
         const { default: Globe } = await import('three-globe');
         const { TrackballControls } = await import('three/examples/jsm/controls/TrackballControls.js');
-
-        // Fetch country data
-        const response = await fetch('/geo/ne_110m_admin_0_countries.geojson');
-        const countries = await response.json();
-
-        // Filter for countries lived in
-        const countriesLivedIn = countries.features.filter((d: any) => {
-            return ['USA', 'BRA', 'LVA'].includes(d.properties.ISO_A2);
-        });
 
         // Initialize scene, camera, and renderer
         const scene = new THREE.Scene();
@@ -83,25 +85,41 @@
 
         // Add light
         const ambientLight = new THREE.AmbientLight('#ffffff', 1); // Even lighting
-        // const directionalLight = new THREE.DirectionalLight('#f9bc60', 0.8); // Highlight
-        // directionalLight.position.set(5, 3, 5);
-        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight('#f9bc60', 0.8); // Highlight
+        directionalLight.position.set(5, 3, 5);
+        scene.add(ambientLight, directionalLight);
 
         // Create globe
         const globe = new Globe()
-            .showAtmosphere(false)
+            .showAtmosphere(true)
+            .atmosphereColor('rgb(171, 209, 198)')
             .globeImageUrl('//unpkg.com/three-globe/example/img/earth-day.jpg')
-            .polygonsData(countriesLivedIn)
-            .polygonCapColor(() => 'rgba(249, 188, 96, 0.7)') // Highlight color for polygons
-            .polygonSideColor(() => 'rgba(171, 209, 198, 0.3)') // Mid-tone color
-            .polygonStrokeColor(() => '#111')
-            .polygonAltitude(() => 0.5);
+            .pointsData(regionsLived.flatMap(region =>
+                region.states.map(state => ({
+                    lat: state.lat,
+                    lng: state.lng,
+                    name: `${state.name}, ${region.country}`,
+                    description: state.description
+                }))
+            ))
+            .labelText((d: any) => d.name) // Or use type casting as shown above
+            .pointAltitude(() => 0.025)
+            .pointColor(() => '#FFFFFF')
+            .pointRadius(() => 1)
+            .labelSize(() => 1.5)
+            .labelDotRadius(() => 1)
+            .labelColor(() => '#FFFFFF');
 
         scene.add(globe);
 
         // Position the camera close to a random region
         const randomRegion = regionsLived[Math.floor(Math.random() * regionsLived.length)];
-        camera.position.set(randomRegion.lng * 5, randomRegion.lat * 5, 50);
+        // Calculate and apply the ideal distance for consistent globe sizing
+        const globeRadius = 50;
+        const fov = camera.fov;
+        const idealDistance = globeRadius / Math.tan(THREE.MathUtils.degToRad(fov / 2));
+
+        camera.position.set(idealDistance * 4, 0, 0); // Center the globe
 
         // Enhance globe appearance
         const globeMaterial = globe.globeMaterial() as THREE.MeshPhongMaterial;
@@ -119,15 +137,15 @@
         const fontLoader = new FontLoader();
         fontLoader.load('/Kenney Future_Regular.json', function (font: any) {
             const group = new THREE.Group(); // Group for the text
-            const radiusOffset = 55; // Base radius offset
+            const radiusOffset = 62; // Base radius offset
 
             for (let i = 0; i < hero_text.length; i++) {
                 const char = hero_text[i];
                 const charGeometry = new TextGeometry(char, {
                     font: font,
-                    size: 11,
-                    depth: 0,
-                    curveSegments: 24,
+                    size: 26,
+                    depth: 2,
+                    curveSegments: 64,
                     bevelEnabled: true,
                     bevelThickness: 0.75,
                     bevelSize: 0.5,
@@ -198,8 +216,7 @@
 
         // Add camera controls
         const controls = new TrackballControls(camera, renderer.domElement);
-        controls.minDistance = 350;
-        controls.maxDistance = 500;
+        controls.noZoom = true;
         controls.rotateSpeed = 2;
         controls.zoomSpeed = 0.85;
 
@@ -227,7 +244,7 @@
                 camera.updateProjectionMatrix();
             }
 
-            globe.rotation.y -= 0.001; // Rotate globe on one axis
+            globe.rotation.y -= 0.002; // Rotate globe on one axis
 
             controls.update();
             renderer.render(scene, camera);
@@ -249,7 +266,7 @@
     });
 </script>
 
-<div bind:this={container} style="width: 100%; height: 100%;"></div>
+<div bind:this={container}></div>
 
 <style>
     div {
