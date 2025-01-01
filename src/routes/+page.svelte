@@ -1,5 +1,6 @@
 <script lang="ts">
     import RetroConsole from '$lib/RetroConsole.svelte';
+    import Globe from '$lib/globe.svelte';
 	import ToolBar from '$lib/ToolBar.svelte';
     import CoolBar from '$lib/CoolBar.svelte';
     import MainContent from '$lib/mainContent.svelte';
@@ -18,6 +19,7 @@
     <ToolBar />
 
     <RetroConsole {hero_text} />
+    <!-- <Globe {hero_text} /> -->
 
     <MainContent />
 </main>
