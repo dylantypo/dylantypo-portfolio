@@ -77,7 +77,7 @@
         const scene = new THREE.Scene();
         scene.background = new THREE.Color('#004643');
 
-        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer();
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -112,15 +112,8 @@
 
         scene.add(globe);
 
-        // // Position the camera close to a random region
-        // const randomRegion = regionsLived[Math.floor(Math.random() * regionsLived.length)];
-        
-        // Calculate and apply the ideal distance for consistent globe sizing
-        const globeRadius = globe.getGlobeRadius();
-        const fov = camera.fov;
-        const idealDistance = globeRadius / Math.tan(THREE.MathUtils.degToRad(fov / 2));
-
-        // camera.position.set(idealDistance * 2, 0, 0); // Center the globe
+        // After initializing the globe
+        globe.rendererSize(new THREE.Vector2(window.innerWidth, window.innerHeight));
 
         // Select a city to focus on
         const cityName = "Arlington"; // Replace with the city of your choice
@@ -132,9 +125,10 @@
             const phi = (90 - selectedCity.lat) * (Math.PI / 180); // Latitude to spherical
             const theta = (180 - selectedCity.lng) * (Math.PI / 180); // Longitude to spherical
 
-            const globeRadius = globe.getGlobeRadius(); // Approximate radius of the globe
-            const fov = camera.fov;
-            const idealDistance = globeRadius / Math.tan(THREE.MathUtils.degToRad(fov / 2)) * 1.5;
+            const idealDistance =
+                globe.getGlobeRadius() /
+                Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) *
+                (window.innerWidth < 768 ? 1.8 : 1.5); // Adjust scaling for smaller screens
 
             // Set camera position based on city coordinates
             camera.position.set(
@@ -143,7 +137,7 @@
                 idealDistance * Math.sin(phi) * Math.sin(theta)
             );
 
-            camera.lookAt(globeRadius, 0, 100); // Focus on the globe's center
+            camera.lookAt(globe.getGlobeRadius(), 0, 100); // Focus on the globe's center
         } else {
             console.warn(`City "${cityName}" not found in the regionsLived data.`);
         }
@@ -165,7 +159,7 @@
         const fontLoader = new FontLoader();
         fontLoader.load('/Kenney Future_Regular.json', function (font: any) {
             const group = new THREE.Group(); // Group for the text
-            const radiusOffset = globeRadius * 0.6; // Base radius offset
+            const radiusOffset = globe.getGlobeRadius() * 0.6; // Base radius offset
 
             for (let i = 0; i < hero_text.length; i++) {
                 const char = hero_text[i];
@@ -256,25 +250,8 @@
         controls.rotateSpeed = 2;
         controls.dynamicDampingFactor = 0.05;
 
-        const resizeRendererToDisplaySize = (renderer: THREE.WebGLRenderer) => {
-            const canvas = renderer.domElement;
-            const pixelRatio = window.devicePixelRatio;
-            const width = Math.floor(canvas.clientWidth * pixelRatio);
-            const height = Math.floor(canvas.clientHeight * pixelRatio);
-            const needResize = canvas.width !== width || canvas.height !== height;
-            if (needResize) {
-                renderer.setSize(width, height, false);
-            }
-            return needResize;
-        };
-
         const animate = () => {
             requestAnimationFrame(animate);
-
-            if (resizeRendererToDisplaySize(renderer)) {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-            }
 
             globe.rotation.y -= 0.002; // Rotate globe on one axis
 
@@ -284,9 +261,23 @@
         animate();
 
         const onWindowResize = () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            // Update globe renderer size
+            globe.rendererSize(new THREE.Vector2(window.innerWidth, window.innerHeight));
+
+            // Adjust camera distance dynamically for smaller screens
+            const idealDistance =
+                globe.getGlobeRadius() /
+                Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) *
+                (window.innerWidth < 768 ? 1.8 : 1.5);
+
+            camera.position.z = idealDistance;
+
+            // Dynamically resize labels
+            globe.labelSize(() => (window.innerWidth < 768 ? 1 : 1.5));
         };
         window.addEventListener('resize', onWindowResize);
 
@@ -303,7 +294,8 @@
 <style>
     div {
         position: relative;
-        width: 100%;
-        height: 100%;
+        width: 100vw;
+        height: 100vh; /* Leave room for mobile browser controls */
+        overflow: hidden;
     }
 </style>
