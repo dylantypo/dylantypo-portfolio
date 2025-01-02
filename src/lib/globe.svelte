@@ -48,23 +48,6 @@
         }
     ];
 
-
-    function getCityCoordinates(cityName: string) {
-        const cityCoordinates: Record<string, { lat: number; lng: number }> = {
-            "Palo Alto": { lat: 37.4419, lng: -122.1430 },
-            "Aliso Viejo": { lat: 33.5686, lng: -117.7267 },
-            "Bangor": { lat: 44.8012, lng: -68.7778 },
-            "Arlington": { lat: 38.8797, lng: -77.1057 },
-            "Blacksburg": { lat: 37.2296, lng: -80.4139 },
-            "Chicago": { lat: 41.8781, lng: -87.6298 },
-            "Atlanta": { lat: 33.7490, lng: -84.3880 },
-            "Sao Paulo": { lat: -23.5505, lng: -46.6333 },
-            "Riga": { lat: 56.9496, lng: 24.1052 }
-        };
-
-        return cityCoordinates[cityName] || { lat: 0, lng: 0 }; // Default to 0,0 if not found
-    }
-
     onMount(async () => {
         // Check if we are in the browser
         if (typeof window === 'undefined') return;
@@ -111,6 +94,10 @@
             .labelColor(() => '#FFFFFF');
 
         scene.add(globe);
+
+        const tiltAxis = new THREE.Vector3(1, 0, 0); // Tilt along the X-axis
+        const tiltAngle = (Math.PI / 6) * -1; // Tilt by 30 degrees
+        globe.setRotationFromAxisAngle(tiltAxis, tiltAngle);
 
         // After initializing the globe
         globe.rendererSize(new THREE.Vector2(window.innerWidth, window.innerHeight));
@@ -165,7 +152,7 @@
                 const char = hero_text[i];
                 const charGeometry = new TextGeometry(char, {
                     font: font,
-                    size: 26,
+                    size: 24,
                     depth: 2,
                     curveSegments: 64,
                     bevelEnabled: true,
@@ -219,8 +206,7 @@
         
             // Add delay for text to appear
             gsap.to(group.children, {
-                delay: 1,
-                duration: 2,
+                duration: 4,
                 opacity: 1,
                 ease: "power2.inOut",
                 onStart: () => { group.visible = true; },
@@ -236,8 +222,8 @@
 
             // Animate the text orbiting around the globe into the camera's frame
             gsap.to(group.rotation, {
-                y: Math.PI * 1.25, // Move text 270 degrees into view
-                delay: 0.65,
+                x: Math.PI * 0.12,
+                y: Math.PI * 1.25,
                 duration: 3,
                 ease: "power2.inOut",
             });
