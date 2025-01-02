@@ -235,15 +235,17 @@
         outline: none; /* Removes focus outline */
     }
 
-    .role-text, .year {
+    .year {
         padding-left: 20vw;
         z-index: 2;
     }
 
     .role-text {
+        overflow: hidden;
         font-size: 2vmin;
+        padding-left: 20vw;
+        padding-right: 20vw;
         font-style: italic;
-        width: 100%;
         transition: opacity 0.5s ease-in-out;
         opacity: 1;
     }
