@@ -128,7 +128,7 @@
             const idealDistance =
                 globe.getGlobeRadius() /
                 Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) *
-                (window.innerWidth < 768 ? 1.8 : 1.5); // Adjust scaling for smaller screens
+                (window.innerWidth < 768 ? 2.5 : 1.5); // Adjust scaling for smaller screens
 
             // Set camera position based on city coordinates
             camera.position.set(
@@ -260,30 +260,39 @@
         };
         animate();
 
+        let resizeTimeout: number;
         const onWindowResize = () => {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
+            clearTimeout(resizeTimeout);
+            resizeTimeout = window.setTimeout(() => {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
 
-            // Update globe renderer size
-            globe.rendererSize(new THREE.Vector2(window.innerWidth, window.innerHeight));
+                // Update globe renderer size
+                globe.rendererSize(new THREE.Vector2(window.innerWidth, window.innerHeight));
 
-            // Adjust camera distance dynamically for smaller screens
-            const idealDistance =
-                globe.getGlobeRadius() /
-                Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) *
-                (window.innerWidth < 768 ? 1.8 : 1.5);
+                // Adjust camera distance dynamically for smaller screens
+                const idealDistance =
+                    globe.getGlobeRadius() /
+                    Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) *
+                    (window.innerWidth < 768 ? 2.5 : 1.5);
 
-            camera.position.z = idealDistance;
-
-            // Dynamically resize labels
-            globe.labelSize(() => (window.innerWidth < 768 ? 1 : 1.5));
+                camera.position.z = idealDistance;
+            }, 200); // Delay to allow scrolling to stabilize
         };
         window.addEventListener('resize', onWindowResize);
+
+        const updateVh = () => {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+        updateVh();
+        window.addEventListener('resize', updateVh);
 
         // Cleanup on destroy
         onDestroy(() => {
             window.removeEventListener('resize', onWindowResize);
+            window.removeEventListener('resize', updateVh);
             renderer.dispose();
         });
     });
@@ -295,7 +304,7 @@
     div {
         position: relative;
         width: 100vw;
-        height: 100vh; /* Leave room for mobile browser controls */
+        height: calc(var(--vh, 1vh) * 100);
         overflow: hidden;
     }
 </style>
