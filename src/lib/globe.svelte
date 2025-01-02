@@ -112,14 +112,42 @@
 
         scene.add(globe);
 
-        // Position the camera close to a random region
-        const randomRegion = regionsLived[Math.floor(Math.random() * regionsLived.length)];
+        // // Position the camera close to a random region
+        // const randomRegion = regionsLived[Math.floor(Math.random() * regionsLived.length)];
+        
         // Calculate and apply the ideal distance for consistent globe sizing
-        const globeRadius = 50;
+        const globeRadius = globe.getGlobeRadius();
         const fov = camera.fov;
         const idealDistance = globeRadius / Math.tan(THREE.MathUtils.degToRad(fov / 2));
 
-        camera.position.set(idealDistance * 4, 0, 0); // Center the globe
+        // camera.position.set(idealDistance * 2, 0, 0); // Center the globe
+
+        // Select a city to focus on
+        const cityName = "Arlington"; // Replace with the city of your choice
+        const selectedCity = regionsLived
+            .flatMap(region => region.states)
+            .find(state => state.name === cityName);
+
+        if (selectedCity) {
+            const phi = (90 - selectedCity.lat) * (Math.PI / 180); // Latitude to spherical
+            const theta = (180 - selectedCity.lng) * (Math.PI / 180); // Longitude to spherical
+
+            const globeRadius = globe.getGlobeRadius(); // Approximate radius of the globe
+            const fov = camera.fov;
+            const idealDistance = globeRadius / Math.tan(THREE.MathUtils.degToRad(fov / 2)) * 1.5;
+
+            // Set camera position based on city coordinates
+            camera.position.set(
+                idealDistance * Math.sin(phi) * Math.cos(theta),
+                idealDistance * Math.cos(phi),
+                idealDistance * Math.sin(phi) * Math.sin(theta)
+            );
+
+            camera.lookAt(globeRadius, 0, 100); // Focus on the globe's center
+        } else {
+            console.warn(`City "${cityName}" not found in the regionsLived data.`);
+        }
+
 
         // Enhance globe appearance
         const globeMaterial = globe.globeMaterial() as THREE.MeshPhongMaterial;
@@ -137,7 +165,7 @@
         const fontLoader = new FontLoader();
         fontLoader.load('/Kenney Future_Regular.json', function (font: any) {
             const group = new THREE.Group(); // Group for the text
-            const radiusOffset = 62; // Base radius offset
+            const radiusOffset = globeRadius * 0.6; // Base radius offset
 
             for (let i = 0; i < hero_text.length; i++) {
                 const char = hero_text[i];
@@ -212,17 +240,21 @@
                 }
             });
 
+            // Animate the text orbiting around the globe into the camera's frame
+            gsap.to(group.rotation, {
+                y: Math.PI * 1.25, // Move text 270 degrees into view
+                delay: 0.65,
+                duration: 3,
+                ease: "power2.inOut",
+            });
         });
 
         // Add camera controls
         const controls = new TrackballControls(camera, renderer.domElement);
         controls.noZoom = true;
+        controls.noPan = true;
         controls.rotateSpeed = 2;
-        controls.zoomSpeed = 0.85;
-
-        // Restrict globe rotation to one axis
-        globe.rotation.x = 0;
-        globe.rotation.z = 0;
+        controls.dynamicDampingFactor = 0.05;
 
         const resizeRendererToDisplaySize = (renderer: THREE.WebGLRenderer) => {
             const canvas = renderer.domElement;

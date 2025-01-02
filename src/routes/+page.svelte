@@ -6,7 +6,7 @@
     import MainContent from '$lib/mainContent.svelte';
     import { onMount } from 'svelte';
 
-    let hero_text = 'Dylan P.'
+    let hero_text = 'Dylan Posner'
 
     onMount(() => {
         window.scrollTo(0, 0);
@@ -18,8 +18,8 @@
 
     <ToolBar />
 
-    <RetroConsole {hero_text} />
-    <!-- <Globe {hero_text} /> -->
+    <!-- <RetroConsole {hero_text} /> -->
+    <Globe {hero_text} />
 
     <MainContent />
 </main>
