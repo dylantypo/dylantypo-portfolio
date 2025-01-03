@@ -184,6 +184,31 @@
         // After initializing the globe
         globe.rendererSize(new THREE.Vector2(window.innerWidth, window.innerHeight));
 
+        // Check Screen Size
+        const checkInitialScreenSize = () => {
+            const isMobile = window.innerWidth < 768;
+
+            // Update labelRenderer visibility
+            labelRenderer.domElement.style.display = isMobile ? 'none' : 'flex';
+
+            // Update renderer sizes
+            renderers.forEach(r => r.setSize(window.innerWidth, window.innerHeight));
+
+            // Update camera properties
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            // Adjust globe renderer size
+            globe.rendererSize(new THREE.Vector2(window.innerWidth, window.innerHeight));
+
+            // Adjust camera distance dynamically for smaller screens
+            const idealDistance = globe.getGlobeRadius() /
+                Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) *
+                (isMobile ? 2.5 : 1.5);
+            camera.position.z = idealDistance;
+        };
+        checkInitialScreenSize();
+
         // Select a city to focus on
         const cityName = "Arlington"; // Replace with the city of your choice
         const selectedCity = regionsLived
@@ -304,39 +329,18 @@
             globe.rotation.y -= 0.00055; // Rotate globe on one axis
 
             controls.update();
-            renderer.render(scene, camera);
-            labelRenderer.render(scene, camera); // Render HTML elements
+
+            // Render the scene with both renderers
+            renderers.forEach(r => r.render(scene, camera));
         };
         animate();
 
         let resizeTimeout: number;
-        const onWindowResize = () => {
+        // Add resize event listener
+        window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
-            resizeTimeout = window.setTimeout(() => {
-                if (window.innerWidth < 768) {
-                    labelRenderer.domElement.style.display = 'none'; // Hide labels on mobile
-                } else {
-                    labelRenderer.domElement.style.display = 'flex';
-                    labelRenderer.setSize(window.innerWidth, window.innerHeight);
-                }
-                renderer.setSize(window.innerWidth, window.innerHeight);
-
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-
-                // Update globe renderer size
-                globe.rendererSize(new THREE.Vector2(window.innerWidth, window.innerHeight));
-
-                // Adjust camera distance dynamically for smaller screens
-                const idealDistance =
-                    globe.getGlobeRadius() /
-                    Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) *
-                    (window.innerWidth < 768 ? 2.5 : 1.5);
-
-                camera.position.z = idealDistance;
-            }, 200); // Delay to allow scrolling to stabilize
-        };
-        window.addEventListener('resize', onWindowResize);
+            resizeTimeout = window.setTimeout(checkInitialScreenSize, 200); // Delay for debounce
+        });
 
         const updateVh = () => {
             const vh = window.innerHeight * 0.01;
@@ -345,12 +349,18 @@
         updateVh();
         window.addEventListener('resize', updateVh);
 
-        // Cleanup on destroy
         onDestroy(() => {
-            window.removeEventListener('resize', onWindowResize);
+            // Remove event listeners
             window.removeEventListener('resize', updateVh);
-            renderer.dispose();
+            window.removeEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = window.setTimeout(checkInitialScreenSize, 200); // Delay for debounce
+            });
+
+            // Clear the scene
+            scene.clear();
         });
+
     });
 </script>
 
