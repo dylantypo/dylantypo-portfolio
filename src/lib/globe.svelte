@@ -9,46 +9,44 @@
     gsap.registerPlugin(ScrollTrigger);
 
     let container: HTMLDivElement;
+    export let hero_text: string;
 
     type Region = {
         country: string;
         description: string;
-        states: { name: string; description: string; lat: number; lng: number }[];
+        states: { name: string; description: string; lat: number; lng: number; years: number; }[];
     };
-
-    export let hero_text: string;
 
     const regionsLived: Region[] = [
         {
             country: "United States",
             description: "Lived in California, Maine, Virginia, Illinois, and Georgia",
             states: [
-                { name: "Palo Alto", description: "Lived in Palo Alto", lat: 37.4419, lng: -122.1430 },
-                { name: "Aliso Viejo", description: "Lived in Aliso Viejo", lat: 33.5686, lng: -117.7267 },
-                { name: "Bangor", description: "Lived in Bangor", lat: 44.8012, lng: -68.7778 },
-                { name: "Arlington", description: "Lived in Arlington", lat: 38.8797, lng: -77.1057 },
-                { name: "Blacksburg", description: "Lived in Blacksburg", lat: 37.2296, lng: -80.4139 },
-                { name: "Chicago", description: "Lived in Chicago", lat: 41.8781, lng: -87.6298 },
-                { name: "Atlanta", description: "Lived in Atlanta", lat: 33.7490, lng: -84.3880 }
+                { name: "Palo Alto", description: "Lived in Palo Alto", lat: 37.4419, lng: -122.1430, years: 0.5 },
+                { name: "Aliso Viejo", description: "Lived in Aliso Viejo", lat: 33.5686, lng: -117.7267, years: 6 },
+                { name: "Bangor", description: "Lived in Bangor", lat: 44.8012, lng: -68.7778, years: 0.5 },
+                { name: "Arlington", description: "Lived in Arlington", lat: 38.8797, lng: -77.1057, years: 8 },
+                { name: "Blacksburg", description: "Lived in Blacksburg", lat: 37.2296, lng: -80.4139, years: 4 },
+                { name: "Chicago", description: "Lived in Chicago", lat: 41.8781, lng: -87.6298, years: 0.5 },
+                { name: "Atlanta", description: "Lived in Atlanta", lat: 33.7490, lng: -84.3880, years: 4 }
             ]
         },
-        //São Paulo        
         {
             country: "Brazil",
             description: "Lived in São Paulo",
             states: [
-                { name: "São Paulo", description: "Lived in São Paulo", lat: -23.5505, lng: -46.6333 }
+                { name: "São Paulo", description: "Lived in São Paulo", lat: -23.5505, lng: -46.6333, years: 2 }
             ]
         },
-        //Rīga
         {
             country: "Latvia",
             description: "Lived in Rīga",
             states: [
-                { name: "Rīga", description: "Lived in Rīga", lat: 56.9496, lng: 24.1052 }
+                { name: "Rīga", description: "Lived in Rīga", lat: 56.9496, lng: 24.1052, years: 2 }
             ]
         }
     ];
+
 
     onMount(async () => {
         // Check if we are in the browser
@@ -112,7 +110,8 @@
                 lat: state.lat,
                 lng: state.lng,
                 name: region.country === "United States" ? state.name : `${state.name}, ${region.country}`,
-                description: state.description
+                description: state.description,
+                years: state.years
             }))
         );
 
@@ -125,9 +124,10 @@
             .bumpImageUrl('/geo/elev_bump_4k.jpg')
             // Adding Loction Markers
             .pointsData(labData)
-            .pointAltitude(() => 0.025)
-            .pointColor(() => 'rgba(255, 255, 255, 0.8)')
-            .pointRadius(() => 0.75);
+            .pointAltitude((d: any) => Math.max(0.015, d.years * 0.01)) // Use years to calculate altitude
+            .pointColor(() => 'rgba(255, 255, 255, 0.55)')
+            .pointRadius(() => 0.75)
+            .pointsMerge(true);
 
         scene.add(globe);
 
@@ -137,7 +137,7 @@
             .htmlLat((d: any) => d.lat) // Use latitude from data
             .htmlLng((d: any) => d.lng) // Use longitude from data
             .htmlAltitude(() => 0.055) // Set altitude
-            globe.htmlElement((d: any) => {
+            .htmlElement((d: any) => {
                 const div = document.createElement('div');
                 div.textContent = d.name;
                 div.style.color = 'rgba(255, 255, 255, 0.5)';
@@ -145,7 +145,7 @@
                 div.style.position = 'absolute';
                 div.style.transition = 'opacity 0.5s ease-in-out';
                 return div;
-            })
+            });
 
 
         // Adding CLouds layer
