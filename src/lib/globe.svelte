@@ -151,7 +151,7 @@
         // Adding CLouds layer
         const CLOUDS_IMG_URL = '/geo/fair_clouds_4k.png'; // from https://github.com/turban/webgl-earth
         const CLOUDS_ALT = 0.005;
-        const CLOUDS_ROTATION_SPEED = -0.008; // deg/frame
+        const CLOUDS_ROTATION_SPEED = -0.015; // deg/frame
 
         const Clouds = new THREE.Mesh(new THREE.SphereGeometry(globe.getGlobeRadius() * (1 + CLOUDS_ALT), 75, 75));
         new THREE.TextureLoader().load(CLOUDS_IMG_URL, cloudsTexture => {
