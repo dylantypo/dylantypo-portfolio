@@ -32,18 +32,20 @@
                 { name: "Atlanta", description: "Lived in Atlanta", lat: 33.7490, lng: -84.3880 }
             ]
         },
+        //São Paulo        
         {
             country: "Brazil",
-            description: "Lived in Sao Paulo",
+            description: "Lived in São Paulo",
             states: [
-                { name: "Sao Paulo", description: "Lived in Sao Paulo", lat: -23.5505, lng: -46.6333 }
+                { name: "São Paulo", description: "Lived in São Paulo", lat: -23.5505, lng: -46.6333 }
             ]
         },
+        //Rīga
         {
             country: "Latvia",
-            description: "Lived in Riga",
+            description: "Lived in Rīga",
             states: [
-                { name: "Riga", description: "Lived in Riga", lat: 56.9496, lng: 24.1052 }
+                { name: "Rīga", description: "Lived in Rīga", lat: 56.9496, lng: 24.1052 }
             ]
         }
     ];
@@ -53,47 +55,127 @@
         if (typeof window === 'undefined') return;
         
         // Dynamically import browser-only dependencies
+        const { CSS2DRenderer } = await import('three/examples/jsm/renderers/CSS2DRenderer.js');
         const { default: Globe } = await import('three-globe');
         const { TrackballControls } = await import('three/examples/jsm/controls/TrackballControls.js');
 
         // Initialize scene, camera, and renderer
         const scene = new THREE.Scene();
         scene.background = new THREE.Color('#004643');
-
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer();
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        container.appendChild(renderer.domElement);
+        const labelRenderer = new CSS2DRenderer();
+
+        const renderers = [renderer, labelRenderer];
+        renderers.forEach((r, idx) => {
+            r.setSize(window.innerWidth, window.innerHeight);
+            if (idx > 0) {
+                r.domElement.style.position = 'absolute';
+                r.domElement.style.top = '0px';
+                r.domElement.style.pointerEvents = 'none';
+            }
+            container.appendChild(r.domElement);
+        });
 
         // Add light
         const ambientLight = new THREE.AmbientLight('#ffffff', 1); // Even lighting
-        const directionalLight = new THREE.DirectionalLight('#f9bc60', 0.8); // Highlight
-        directionalLight.position.set(5, 3, 5);
+        const directionalLight = new THREE.DirectionalLight('#ffffff', 1); // Highlight
+        // directionalLight.position.set(5, 3, 5);
+        directionalLight.position.set(100, 200, 100); // Position the light in the sky
+        directionalLight.castShadow = true; // Enable shadows
+
+        // Configure shadow properties (optional)
+        directionalLight.shadow.mapSize.width = 1024; // Shadow map resolution (higher = better quality)
+        directionalLight.shadow.mapSize.height = 1024;
+        directionalLight.shadow.camera.near = 0.5; // Adjust near plane
+        directionalLight.shadow.camera.far = 500; // Adjust far plane
+        directionalLight.shadow.camera.left = -50; // Adjust shadow frustum
+        directionalLight.shadow.camera.right = 50;
+        directionalLight.shadow.camera.top = 50;
+        directionalLight.shadow.camera.bottom = -50;
         scene.add(ambientLight, directionalLight);
+
+        // Add camera controls
+        const controls = new TrackballControls(camera, renderer.domElement);
+        controls.noZoom = true;
+        controls.noPan = true;
+        controls.rotateSpeed = 2;
+        controls.dynamicDampingFactor = 0.05;
+
+        controls.addEventListener('change', () => {
+            globe.setPointOfView(camera);
+        })
+
+        // 
+        const labData = regionsLived.flatMap(region =>
+            region.states.map(state => ({
+                lat: state.lat,
+                lng: state.lng,
+                name: region.country === "United States" ? state.name : `${state.name}, ${region.country}`,
+                description: state.description
+            }))
+        );
 
         // Create globe
         const globe = new Globe()
             .showAtmosphere(true)
+            .atmosphereAltitude(0.15)
             .atmosphereColor('rgb(171, 209, 198)')
-            .globeImageUrl('//unpkg.com/three-globe/example/img/earth-day.jpg')
-            .pointsData(regionsLived.flatMap(region =>
-                region.states.map(state => ({
-                    lat: state.lat,
-                    lng: state.lng,
-                    name: `${state.name}, ${region.country}`,
-                    description: state.description
-                }))
-            ))
-            .labelText((d: any) => d.name) // Or use type casting as shown above
+            .globeImageUrl('/geo/2_no_clouds_4k.jpg')
+            .bumpImageUrl('/geo/elev_bump_4k.jpg')
+            // Adding Loction Markers
+            .pointsData(labData)
             .pointAltitude(() => 0.025)
-            .pointColor(() => '#FFFFFF')
-            .pointRadius(() => 1)
-            .labelSize(() => 1.5)
-            .labelDotRadius(() => 1)
-            .labelColor(() => '#FFFFFF');
+            .pointColor(() => 'rgba(255, 255, 255, 0.8)')
+            .pointRadius(() => 0.75);
 
         scene.add(globe);
+
+        // Adding Labels using HTML Elements
+        globe
+            .htmlElementsData(labData) // Set the label data
+            .htmlLat((d: any) => d.lat) // Use latitude from data
+            .htmlLng((d: any) => d.lng) // Use longitude from data
+            .htmlAltitude(() => 0.055) // Set altitude
+            globe.htmlElement((d: any) => {
+                const div = document.createElement('div');
+                div.textContent = d.name;
+                div.style.color = 'rgba(255, 255, 255, 0.5)';
+                div.style.fontSize = '0.5rem';
+                div.style.position = 'absolute';
+                div.style.transition = 'opacity 0.5s ease-in-out';
+                return div;
+            })
+
+
+        // Adding CLouds layer
+        const CLOUDS_IMG_URL = '/geo/fair_clouds_4k.png'; // from https://github.com/turban/webgl-earth
+        const CLOUDS_ALT = 0.005;
+        const CLOUDS_ROTATION_SPEED = -0.008; // deg/frame
+
+        const Clouds = new THREE.Mesh(new THREE.SphereGeometry(globe.getGlobeRadius() * (1 + CLOUDS_ALT), 75, 75));
+        new THREE.TextureLoader().load(CLOUDS_IMG_URL, cloudsTexture => {
+        Clouds.material = new THREE.MeshPhongMaterial({ map: cloudsTexture, transparent: true });
+        });
+
+        globe.add(Clouds);
+
+        (function rotateClouds() {
+        Clouds.rotation.y += CLOUDS_ROTATION_SPEED * Math.PI / 180;
+        requestAnimationFrame(rotateClouds);
+        })();
+
+        // Enhance globe appearance
+        const globeMaterial = globe.globeMaterial() as THREE.MeshPhongMaterial;
+        if (globeMaterial instanceof THREE.MeshPhongMaterial) {
+            new THREE.TextureLoader().load('//unpkg.com/three-globe/example/img/earth-water.png', texture => {
+                globeMaterial.specularMap = texture;
+                globeMaterial.specular = new THREE.Color('grey');
+                globeMaterial.shininess = 100;
+            });
+        } else {
+            console.warn('globeMaterial is not a MeshPhongMaterial. Custom properties are not applied.');
+        }
 
         const tiltAxis = new THREE.Vector3(1, 0, 0); // Tilt along the X-axis
         const tiltAngle = (Math.PI / 6) * -1; // Tilt by 30 degrees
@@ -127,19 +209,6 @@
             camera.lookAt(globe.getGlobeRadius(), 0, 100); // Focus on the globe's center
         } else {
             console.warn(`City "${cityName}" not found in the regionsLived data.`);
-        }
-
-
-        // Enhance globe appearance
-        const globeMaterial = globe.globeMaterial() as THREE.MeshPhongMaterial;
-        if (globeMaterial instanceof THREE.MeshPhongMaterial) {
-            new THREE.TextureLoader().load('//unpkg.com/three-globe/example/img/earth-water.png', texture => {
-                globeMaterial.specularMap = texture;
-                globeMaterial.specular = new THREE.Color('grey');
-                globeMaterial.shininess = 15;
-            });
-        } else {
-            console.warn('globeMaterial is not a MeshPhongMaterial. Custom properties are not applied.');
         }
 
         // Add hero text
@@ -207,7 +276,7 @@
             // Add delay for text to appear
             gsap.to(group.children, {
                 duration: 4,
-                opacity: 1,
+                opacity: 0.85,
                 ease: "power2.inOut",
                 onStart: () => { group.visible = true; },
                 onUpdate: () => {
@@ -229,20 +298,14 @@
             });
         });
 
-        // Add camera controls
-        const controls = new TrackballControls(camera, renderer.domElement);
-        controls.noZoom = true;
-        controls.noPan = true;
-        controls.rotateSpeed = 2;
-        controls.dynamicDampingFactor = 0.05;
-
         const animate = () => {
             requestAnimationFrame(animate);
 
-            globe.rotation.y -= 0.002; // Rotate globe on one axis
+            globe.rotation.y -= 0.00055; // Rotate globe on one axis
 
             controls.update();
             renderer.render(scene, camera);
+            labelRenderer.render(scene, camera); // Render HTML elements
         };
         animate();
 
@@ -251,6 +314,7 @@
             clearTimeout(resizeTimeout);
             resizeTimeout = window.setTimeout(() => {
                 renderer.setSize(window.innerWidth, window.innerHeight);
+                labelRenderer.setSize(window.innerWidth, window.innerHeight);
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
 
