@@ -1,12 +1,12 @@
 <script lang="ts">
+    import Globe from '$lib/globe.svelte';
     import { goto } from '$app/navigation';
-    import RetroConsole from '$lib/RetroConsole.svelte';
 
     let hero_text = '4 0 4';
 </script>
 
 <main>
-    <RetroConsole {hero_text} />
+    <Globe {hero_text} />
 
     <section class="message">
         <button on:click={() => goto('/')}>
