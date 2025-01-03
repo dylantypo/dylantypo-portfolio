@@ -313,8 +313,14 @@
         const onWindowResize = () => {
             clearTimeout(resizeTimeout);
             resizeTimeout = window.setTimeout(() => {
+                if (window.innerWidth < 768) {
+                    labelRenderer.domElement.style.display = 'none'; // Hide labels on mobile
+                } else {
+                    labelRenderer.domElement.style.display = 'flex';
+                    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+                }
                 renderer.setSize(window.innerWidth, window.innerHeight);
-                labelRenderer.setSize(window.innerWidth, window.innerHeight);
+
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
 
