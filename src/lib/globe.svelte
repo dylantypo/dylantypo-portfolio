@@ -42,18 +42,27 @@
             ]
         }
     ];
-
+    
+    let cleanupFn: (() => void) | undefined;
 
     onMount(async () => {
         // Check if we are in the browser
         if (typeof window === 'undefined') return;
         
         // Dynamically import browser-only dependencies
-        const { CSS2DRenderer } = await import('three/examples/jsm/renderers/CSS2DRenderer.js');
-        const { default: Globe } = await import('three-globe');
-        const { TrackballControls } = await import('three/examples/jsm/controls/TrackballControls.js');
-        const { gsap } = await import('gsap');
-        const { CSSPlugin } = await import('gsap/CSSPlugin');
+        const [
+            { CSS2DRenderer },
+            { default: Globe },
+            { TrackballControls },
+            { gsap },
+            { CSSPlugin }
+        ] = await Promise.all([
+            import('three/examples/jsm/renderers/CSS2DRenderer.js'),
+            import('three-globe'),
+            import('three/examples/jsm/controls/TrackballControls.js'),
+            import('gsap'),
+            import('gsap/CSSPlugin')
+        ]);
 
         gsap.registerPlugin(CSSPlugin)
 
@@ -258,27 +267,23 @@
             updateCameraAspect();
         };
 
-        let resizeTimeout: NodeJS.Timeout;
         const handleResize = () => {
-            // clearTimeout(resizeTimeout);
-            // resizeTimeout = setTimeout(() => {
-                const newWidth = window.innerWidth;
-                const newHeight = window.innerHeight;
+            const newWidth = window.innerWidth;
+            const newHeight = window.innerHeight;
 
-                if (newWidth === lastWidth && newHeight === lastHeight) return;
+            if (newWidth === lastWidth && newHeight === lastHeight) return;
 
-                lastWidth = newWidth;
-                lastHeight = newHeight;
+            lastWidth = newWidth;
+            lastHeight = newHeight;
 
-                const isMobile = newWidth < 768;
+            const isMobile = newWidth < 768;
 
-                CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(isMobile);
+            CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(isMobile);
 
-                updateVH();
-                resizeRenderers();
-                toggleLabelRenderer(isMobile);
-                adjustCamera(isMobile);
-            // }, 50);
+            updateVH();
+            resizeRenderers();
+            toggleLabelRenderer(isMobile);
+            adjustCamera(isMobile);
         };
 
         // Initialize
@@ -305,21 +310,31 @@
                     font: font,
                     size: 24,
                     depth: 2,
-                    curveSegments: 64,
+                    curveSegments: 256,
                     bevelEnabled: true,
-                    bevelThickness: 0.75,
-                    bevelSize: 0.5,
+                    bevelThickness: 1.5,
+                    bevelSize: 0.8,
                     bevelOffset: 0,
-                    bevelSegments: 100
+                    bevelSegments: 128
                 });
 
                 const charMaterial = new THREE.MeshPhongMaterial({
-                    color: 0xfffffe,
+                    color: 0xffffff,
                     specular: 0xffffff,
-                    shininess: 10
+                    shininess: 10,
+                    transparent: true, // Enable transparency
+                    opacity: 0 // Start fully transparent
                 });
 
+                charMaterial.side = THREE.DoubleSide; // Render both sides
+                // Enable high quality shadows if you're using them
+                charMaterial.shadowSide = THREE.DoubleSide;
+
                 const charMesh = new THREE.Mesh(charGeometry, charMaterial);
+
+                // Enable shadow casting/receiving if you're using shadows
+                charMesh.castShadow = true;
+                charMesh.receiveShadow = true;
 
                 charGeometry.computeBoundingBox();
                 if (charGeometry.boundingBox) {
@@ -352,31 +367,39 @@
         
             group.position.set(0, 0, 0);
             group.visible = false; // Initially hide the text
-        
             scene.add(group);
-        
+
             // Animate text opacity
-            gsap.to(group.children, {
-                duration: 4,
+            gsap.to({}, {
+                duration: 3.5,
                 ease: "power2.inOut",
                 onStart: () => {
                     group.visible = true;
-                    group.children.forEach((charMesh: any) => {
-                        if (charMesh.material instanceof THREE.MeshPhongMaterial) {
-                            charMesh.material.transparent = true; // Ensure transparency is enabled before animation
-                            charMesh.material.opacity = 0; // Initialize opacity
+                    group.children.forEach((obj: THREE.Object3D) => {
+                        const mesh = obj as THREE.Mesh;
+                        if (mesh.material instanceof THREE.MeshPhongMaterial) {
+                            mesh.material.transparent = true;
+                            mesh.material.opacity = 0;
                         }
                     });
                 },
-                onUpdate: () => {
-                    const animationProgress = gsap.getProperty(group.children[0], "opacity"); // Get GSAP opacity progress
-                    group.children.forEach((charMesh: any) => {
-                        if (charMesh.material instanceof THREE.MeshPhongMaterial) {
-                            charMesh.material.opacity = animationProgress as number; // Safely cast to number
+                onUpdate: function() {
+                    const progress = this.progress()
+                    group.children.forEach((obj: THREE.Object3D) => {
+                        const mesh = obj as THREE.Mesh;
+                        if (mesh.material instanceof THREE.MeshPhongMaterial) {
+                            mesh.material.opacity = progress * 0.5;
                         }
                     });
                 },
-                opacity: 0.85, // Target opacity
+                onComplete: () => {
+                    group.children.forEach((obj: THREE.Object3D) => {
+                        const mesh = obj as THREE.Mesh;
+                        if (mesh.material instanceof THREE.MeshPhongMaterial) {
+                            mesh.material.opacity = 0.5; // Ensure opacity is exactly 0.85 at the end
+                        }
+                    });
+                }
             });
 
             // Animate the text orbiting around the globe into the camera's frame
@@ -388,37 +411,34 @@
             });
         });
 
+        let animationFrameId: number;
         const animate = () => {
-            requestAnimationFrame(animate);
+            animationFrameId = requestAnimationFrame(animate);
 
-            globe.rotation.y -= 0.00055; // Rotate globe on one axis
-
+            globe.rotation.y -= 0.00055;
             Clouds.rotation.y += CLOUDS_ROTATION_SPEED * Math.PI / 180;
-            
             controls.update();
-
-            // Render the scene with both renderers
             renderers.forEach(r => r.render(scene, camera));
         };
+        
         animate();
 
-        onDestroy(() => {
-            // Remove resize event listener
+        // Set up the cleanup function
+        cleanupFn = () => {
+            cancelAnimationFrame(animationFrameId);
             window.removeEventListener('resize', handleResize);
-
-            // Dispose of renderers and their DOM elements
             renderers.forEach(r => {
                 if (r instanceof THREE.WebGLRenderer) r.dispose();
                 if (r.domElement?.parentNode) r.domElement.parentNode.removeChild(r.domElement);
             });
-
-            // Dispose controls and clear the scene
             controls.dispose();
             scene.clear();
-
-            // Clear container content
             if (container) container.innerHTML = "";
-        });
+        };
+    });
+    
+    onDestroy(() => {
+        if (cleanupFn) cleanupFn();
     });
 </script>
 
