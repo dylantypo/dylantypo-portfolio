@@ -7,19 +7,25 @@
 
     let hero_text = 'Dylan Posner'
 
+    let isCoolBarVisible = false;
+
+    function triggerRevealCoolBar() {
+        isCoolBarVisible = true; // Ensure CoolBar is visible
+    }
+
     onMount(() => {
         window.scrollTo(0, 0);
     });
 </script>
 
 <main>
-    <CoolBar />
+    <CoolBar visible={isCoolBarVisible} />
 
     <ToolBar />
 
     <Globe {hero_text} />
 
-    <MainContent />
+    <MainContent on:triggerRevealCoolBar={triggerRevealCoolBar} />
 </main>
 
 <style>

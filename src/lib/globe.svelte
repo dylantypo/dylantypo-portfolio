@@ -80,17 +80,6 @@
         const directionalLight = new THREE.DirectionalLight('#ffffff', 1); // Highlight
         // directionalLight.position.set(5, 3, 5);
         directionalLight.position.set(100, 200, 100); // Position the light in the sky
-        directionalLight.castShadow = true; // Enable shadows
-
-        // Configure shadow properties (optional)
-        directionalLight.shadow.mapSize.width = 1024; // Shadow map resolution (higher = better quality)
-        directionalLight.shadow.mapSize.height = 1024;
-        directionalLight.shadow.camera.near = 0.5; // Adjust near plane
-        directionalLight.shadow.camera.far = 500; // Adjust far plane
-        directionalLight.shadow.camera.left = -50; // Adjust shadow frustum
-        directionalLight.shadow.camera.right = 50;
-        directionalLight.shadow.camera.top = 50;
-        directionalLight.shadow.camera.bottom = -50;
         scene.add(ambientLight, directionalLight);
 
         // Add camera controls
@@ -115,6 +104,9 @@
             }))
         );
 
+        // Min Point Altitude
+        const MIN_ALTITUDE = 0.0125;
+
         // Create globe
         const globe = new Globe()
             .showAtmosphere(true)
@@ -124,7 +116,7 @@
             .bumpImageUrl('/geo/elev_bump_4k.jpg')
             // Adding Loction Markers
             .pointsData(labData)
-            .pointAltitude((d: any) => Math.max(0.015, d.years * 0.01)) // Use years to calculate altitude
+            .pointAltitude((d: any) => Math.max(MIN_ALTITUDE, d.years * 0.01)) // Use years to calculate altitude
             .pointColor(() => 'rgba(255, 255, 255, 0.55)')
             .pointRadius(() => 0.75)
             .pointsMerge(true);
@@ -136,7 +128,7 @@
             .htmlElementsData(labData) // Set the label data
             .htmlLat((d: any) => d.lat) // Use latitude from data
             .htmlLng((d: any) => d.lng) // Use longitude from data
-            .htmlAltitude(() => 0.055) // Set altitude
+            .htmlAltitude((d: any) => (window.innerWidth < 768 ? 0.03 : 0.055)) // Set altitude
             .htmlElement((d: any) => {
                 const div = document.createElement('div');
                 div.textContent = d.name;
@@ -152,18 +144,11 @@
         const CLOUDS_IMG_URL = '/geo/fair_clouds_4k.png'; // from https://github.com/turban/webgl-earth
         const CLOUDS_ALT = 0.005;
         const CLOUDS_ROTATION_SPEED = -0.015; // deg/frame
-
         const Clouds = new THREE.Mesh(new THREE.SphereGeometry(globe.getGlobeRadius() * (1 + CLOUDS_ALT), 75, 75));
         new THREE.TextureLoader().load(CLOUDS_IMG_URL, cloudsTexture => {
-        Clouds.material = new THREE.MeshPhongMaterial({ map: cloudsTexture, transparent: true });
+            Clouds.material = new THREE.MeshPhongMaterial({ map: cloudsTexture, transparent: true });
         });
-
         globe.add(Clouds);
-
-        (function rotateClouds() {
-        Clouds.rotation.y += CLOUDS_ROTATION_SPEED * Math.PI / 180;
-        requestAnimationFrame(rotateClouds);
-        })();
 
         // Enhance globe appearance
         const globeMaterial = globe.globeMaterial() as THREE.MeshPhongMaterial;
@@ -184,57 +169,99 @@
         // After initializing the globe
         globe.rendererSize(new THREE.Vector2(window.innerWidth, window.innerHeight));
 
-        // Check Screen Size
-        const checkInitialScreenSize = () => {
-            const isMobile = window.innerWidth < 768;
+        let lastWidth = window.innerWidth;
+        let lastHeight = window.innerHeight;
 
-            // Update labelRenderer visibility
-            labelRenderer.domElement.style.display = isMobile ? 'none' : 'flex';
-
-            // Update renderer sizes
-            renderers.forEach(r => r.setSize(window.innerWidth, window.innerHeight));
-
-            // Update camera properties
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-
-            // Adjust globe renderer size
-            globe.rendererSize(new THREE.Vector2(window.innerWidth, window.innerHeight));
-
-            // Adjust camera distance dynamically for smaller screens
-            const idealDistance = globe.getGlobeRadius() /
-                Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) *
-                (isMobile ? 2.5 : 1.5);
-            camera.position.z = idealDistance;
+        const updateVH = () => {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
         };
-        checkInitialScreenSize();
 
-        // Select a city to focus on
-        const cityName = "Arlington"; // Replace with the city of your choice
-        const selectedCity = regionsLived
-            .flatMap(region => region.states)
-            .find(state => state.name === cityName);
+        const resizeRenderers = () => {
+            const newWidth = window.innerWidth;
+            const newHeight = window.innerHeight;
 
-        if (selectedCity) {
-            const phi = (90 - selectedCity.lat) * (Math.PI / 180); // Latitude to spherical
-            const theta = (180 - selectedCity.lng) * (Math.PI / 180); // Longitude to spherical
+            renderers.forEach(r => r.setSize(newWidth, newHeight));
+            globe.rendererSize(new THREE.Vector2(newWidth, newHeight));
+        };
 
-            const idealDistance =
-                globe.getGlobeRadius() /
+        const toggleLabelRenderer = () => {
+            const isMobile = window.innerWidth < 768;
+            labelRenderer.domElement.style.display = isMobile ? 'none' : 'flex';
+        };
+
+        let cachedIsMobile: boolean | null = null;
+        let cachedIdealDistance: number | null = null;
+
+        const calculateIdealDistance = (isMobile: boolean) => {
+            return globe.getGlobeRadius() /
                 Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) *
-                (window.innerWidth < 768 ? 2.5 : 1.5); // Adjust scaling for smaller screens
+                (isMobile ? 2.2 : 1.6);
+        };
 
-            // Set camera position based on city coordinates
+        const setCameraPosition = (lat: number, lng: number, idealDistance: number) => {
+            const phi = (90 - lat) * (Math.PI / 180); // Latitude to spherical
+            const theta = (180 - lng) * (Math.PI / 180); // Longitude to spherical
+
             camera.position.set(
                 idealDistance * Math.sin(phi) * Math.cos(theta),
                 idealDistance * Math.cos(phi),
                 idealDistance * Math.sin(phi) * Math.sin(theta)
             );
-
             camera.lookAt(globe.getGlobeRadius(), 0, 100); // Focus on the globe's center
-        } else {
-            console.warn(`City "${cityName}" not found in the regionsLived data.`);
-        }
+        };
+        
+        const adjustCamera = (focusedCity?: { lat: number; lng: number }) => {
+            const isMobile = window.innerWidth < 768;
+            const idealDistance = calculateIdealDistance(isMobile);
+
+            // Avoid unnecessary adjustments if nothing has changed
+            if (isMobile === cachedIsMobile && idealDistance === cachedIdealDistance) return;
+
+            cachedIsMobile = isMobile;
+            cachedIdealDistance = idealDistance;
+
+            if (focusedCity) {
+                setCameraPosition(focusedCity.lat, focusedCity.lng, idealDistance);
+            } else {
+                camera.position.z = idealDistance;
+            }
+
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        };
+
+        const focusOnCity = (cityName: string) => {
+            const selectedCity = regionsLived
+                .flatMap(region => region.states)
+                .find(state => state.name === cityName);
+
+            if (selectedCity) {
+                adjustCamera(selectedCity);
+            } else {
+                console.warn(`City "${cityName}" not found in the regionsLived data.`);
+            }
+        };
+
+        const handleResize = () => {
+            const newWidth = window.innerWidth;
+            const newHeight = window.innerHeight;
+
+            if (newWidth === lastWidth && newHeight === lastHeight) return;
+
+            lastWidth = newWidth;
+            lastHeight = newHeight;
+
+            updateVH();
+            resizeRenderers();
+            toggleLabelRenderer();
+            adjustCamera();
+        };
+
+        // Initialize camera position and event listeners
+        focusOnCity("Arlington");
+        window.addEventListener('resize', handleResize);
+
 
         // Add hero text
         const fontLoader = new FontLoader();
@@ -328,6 +355,8 @@
 
             globe.rotation.y -= 0.00055; // Rotate globe on one axis
 
+            Clouds.rotation.y += CLOUDS_ROTATION_SPEED * Math.PI / 180;
+            
             controls.update();
 
             // Render the scene with both renderers
@@ -335,32 +364,19 @@
         };
         animate();
 
-        let resizeTimeout: number;
-        // Add resize event listener
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = window.setTimeout(checkInitialScreenSize, 200); // Delay for debounce
-        });
-
-        const updateVh = () => {
-            const vh = window.innerHeight * 0.01;
-            document.documentElement.style.setProperty('--vh', `${vh}px`);
-        };
-        updateVh();
-        window.addEventListener('resize', updateVh);
-
         onDestroy(() => {
-            // Remove event listeners
-            window.removeEventListener('resize', updateVh);
-            window.removeEventListener('resize', () => {
-                clearTimeout(resizeTimeout);
-                resizeTimeout = window.setTimeout(checkInitialScreenSize, 200); // Delay for debounce
+            window.removeEventListener('resize', handleResize);
+            renderers.forEach(r => {
+                if (r instanceof THREE.WebGLRenderer) {
+                    r.dispose();
+                }
+                if (r.domElement && r.domElement.parentNode) {
+                    r.domElement.parentNode.removeChild(r.domElement);
+                }
             });
-
-            // Clear the scene
+            controls.dispose();
             scene.clear();
         });
-
     });
 </script>
 

@@ -2,6 +2,13 @@
     import { onMount } from 'svelte';
     import gsap from 'gsap';
 
+    import { createEventDispatcher } from 'svelte';
+    const dispatch = createEventDispatcher<{ triggerRevealCoolBar: undefined }>(); // Typing the event
+
+    function triggerRevealCoolBar() {
+        dispatch('triggerRevealCoolBar'); // Dispatches the event with no detail
+    }
+
     let ScrollTrigger;
     let elements: HTMLElement[] | undefined;
 
@@ -158,7 +165,15 @@
 
     <div id="footer-content">
         <p class="footer"><span id="copyright">&#169</span> Dylan Posner 2025</p>
-        <div class="headshot"><img src="favicon.png" alt="avatar headshot by midjourney"></div>
+        <div 
+            class="headshot" 
+            tabindex="0" 
+            role="button" 
+            on:click={triggerRevealCoolBar} 
+            on:keydown={(e) => e.key === 'Enter' && triggerRevealCoolBar()}
+        >
+            <img src="favicon.png" alt="avatar headshot by midjourney">
+        </div>
     </div>
 </div>
 

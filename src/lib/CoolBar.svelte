@@ -2,11 +2,15 @@
     import gsap from 'gsap';
     import { onMount, onDestroy } from 'svelte';
 
+    let timeline: gsap.core.Timeline;
+
     let expandedCool = false;
 
     let isTouchDevice = false;
 
-    let coolbar: HTMLElement // Declare the variable coolbar
+    export let visible: boolean = false;
+
+    let coolbar: HTMLElement; // Declare the variable coolbar
 
     // Toggle function for coolbar
     function toggleCoolbar() {
@@ -31,9 +35,19 @@
         }
     }
 
+    $: if (visible) {
+        timeline = gsap.timeline()
+            .fromTo(
+                coolbar,
+                { x: '-185' }, // Start
+                { x: '0', duration: 3, ease: "back" } // End
+            );
+    }
+
+    $: console.log('CoolBar visibility:', visible);
+
     onMount(async () => {
         isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-        gsap.fromTo(coolbar, { x: '200' }, { delay: 0.5, duration: 4, x: '0', ease: "back" });
 
         if (isTouchDevice) {
             document.addEventListener('touchstart', handleOutsideTouch);
@@ -50,7 +64,7 @@
 <!-- Connections Bubble -->
 <div
     bind:this={coolbar}
-    class="coolbar {expandedCool ? 'expandedCool' : ''}"
+    class="coolbar {visible ? 'visible' : ''} {expandedCool ? 'expandedCool' : ''}"
     on:click={toggleCoolbar}
     on:keydown={handleKeydown}
     on:mouseleave={isTouchDevice ? undefined : handleCloseCoolbar}
@@ -60,13 +74,6 @@
     aria-label="{expandedCool ? 'Collapse connections menu' : 'Expand connections menu'}"
 >
     <div class="coolbar-content">
-        <div class="wrapper">
-            <i
-                class="fa-solid fa-angle-up fa-beat-fade fa-2xl"
-                style="--fa-animation-delay: 3s"
-                aria-hidden="true"
-            ></i>
-        </div>
         <a
             href="https://dylanposner.com/mav"
             target="_blank"
@@ -97,6 +104,13 @@
                 <i class="fa-solid fa-staff-snake fa-2xl" aria-hidden="true"></i>
             </div>
         </a>
+        <div class="wrapper">
+            <i
+                class="fa-solid fa-angle-up fa-beat-fade fa-2xl"
+                style="--fa-animation-delay: 3s"
+                aria-hidden="true"
+            ></i>
+        </div>
     </div>
     {#if !expandedCool}
         <i
@@ -119,20 +133,25 @@
 
     .coolbar {
         position: fixed;
-        top: 5em;
-        right: 5em;
+        bottom: 5em;
+        left: 5em;
         background: #f9bc60;
-        opacity: 45%;
+        opacity: 0;
         border-radius: 50%;
         width: 50px;
         height: 50px;
-        transition: height 0.6s cubic-bezier(.28,1.79,.72,.72), border-radius 1s cubic-bezier(.28,1.79,.72,.72), opacity 1s;
+        transition: height 0.6s cubic-bezier(.28,1.79,.72,.72), border-radius 1s cubic-bezier(.28,1.79,.72,.72), opacity 1s, transform 0.3s;
         color: #004643;
         display: flex;
         justify-content: center;
         align-items: center;
-        cursor: pointer;
+        user-select: none;
         z-index: 3;
+    }
+    .coolbar.visible {
+        opacity: 45%;
+        transform: scale(1);
+        user-select: all;
     }
     .coolbar.expandedCool {
         height: 228px;
@@ -154,9 +173,15 @@
 
     @media (max-width: 1030px) {
         .coolbar {
+            opacity: 0;
+            bottom: 2em;
+            left: 1em;
+            user-select: none;
+        }
+        .coolbar.visible {
             opacity: 35%;
-            top: 2em;
-            right: 1em;
+            transform: scale(1);
+            user-select: all;
         }
         .coolbar.expandedCool {
             opacity: 75%;
