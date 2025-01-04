@@ -310,7 +310,7 @@
                     font: font,
                     size: 24,
                     depth: 2,
-                    curveSegments: 256,
+                    curveSegments: 12,
                     bevelEnabled: true,
                     bevelThickness: 1.5,
                     bevelSize: 0.8,
@@ -371,6 +371,7 @@
 
             // Animate text opacity
             gsap.to({}, {
+                delay: 0.75,
                 duration: 3.5,
                 ease: "power2.inOut",
                 onStart: () => {
