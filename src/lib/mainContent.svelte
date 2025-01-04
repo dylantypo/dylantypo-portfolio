@@ -102,6 +102,19 @@
                 duration: 1, // Animation duration of 1 second
             });
         });
+        
+        // Add a document click listener
+        document.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            if (!target.closest('.job')) {
+                jobs.forEach((job, index) => {
+                    if (job.showDescription) {
+                        job.showDescription = false;
+                    }
+                });
+                jobs = [...jobs]; // Trigger reactivity
+            }
+        });
     });
 </script>
 
