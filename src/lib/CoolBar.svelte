@@ -37,15 +37,16 @@
 
     $: if (visible) {
         timeline = gsap.timeline()
-            .fromTo(
+            .to(
                 coolbar,
-                { x: '-185' }, // Start
                 { x: '0', duration: 3, ease: "back" } // End
             );
     }
 
     onMount(async () => {
         isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+        coolbar.style.transform = 'translate(-185px, 0)';
 
         if (isTouchDevice) {
             document.addEventListener('touchstart', handleOutsideTouch);

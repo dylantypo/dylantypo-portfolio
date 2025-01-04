@@ -133,7 +133,15 @@
         <p class="header">History</p>
         {#each jobs as job, i}
             <!-- Use a button for better accessibility and style it to remove default button appearance -->
-            <button class="job" type="button" on:click={() => toggleDescription(i)} on:keydown={(e) => e.key === 'Enter' && toggleDescription(i)} on:mouseleave={() => resetDescription(i)} aria-expanded={job.showDescription}>
+            <div 
+                class="job" 
+                on:mouseover={() => !job.showDescription && toggleDescription(i)} 
+                on:focus={() => !job.showDescription && toggleDescription(i)} 
+                on:mouseleave={() => resetDescription(i)} 
+                aria-expanded={job.showDescription} 
+                tabindex="0" 
+                role="button"
+            >   
                 <h1 class="year">{job.year}</h1>
                 <div class="text-wrapper">
                     <h1 class="company">{job.company}</h1>
@@ -149,7 +157,7 @@
                     {/if}
                 </div>
                 <div class="background"></div>
-            </button>
+            </div>
         {/each}
     </div>
 
