@@ -196,7 +196,7 @@
         const calculateIdealDistance = (isMobile: boolean) => {
             return globe.getGlobeRadius() /
                 Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) *
-                (isMobile ? 2.2 : 1.6);
+                (isMobile ? 2.2 : 1.5);
         };
 
         const setCameraPosition = (lat: number, lng: number, idealDistance: number) => {
@@ -259,6 +259,7 @@
         };
 
         // Initialize camera position and event listeners
+        toggleLabelRenderer();
         focusOnCity("Arlington");
         window.addEventListener('resize', handleResize);
 
