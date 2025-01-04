@@ -1,12 +1,8 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     import * as THREE from 'three';
-    import { gsap } from 'gsap';
     import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
     import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
-    import ScrollTrigger from 'gsap/ScrollTrigger';
-
-    gsap.registerPlugin(ScrollTrigger);
 
     let container: HTMLDivElement;
     export let hero_text: string;
@@ -56,6 +52,10 @@
         const { CSS2DRenderer } = await import('three/examples/jsm/renderers/CSS2DRenderer.js');
         const { default: Globe } = await import('three-globe');
         const { TrackballControls } = await import('three/examples/jsm/controls/TrackballControls.js');
+        const { gsap } = await import('gsap');
+        const { CSSPlugin } = await import('gsap/CSSPlugin');
+
+        gsap.registerPlugin(CSSPlugin)
 
         // Initialize scene, camera, and renderer
         const scene = new THREE.Scene();
@@ -76,10 +76,33 @@
         });
 
         // Add light
-        const ambientLight = new THREE.AmbientLight('#ffffff', 1); // Even lighting
-        const directionalLight = new THREE.DirectionalLight('#ffffff', 1); // Highlight
-        // directionalLight.position.set(5, 3, 5);
-        directionalLight.position.set(100, 200, 100); // Position the light in the sky
+        const ambientLight = new THREE.AmbientLight('#ffffff', 1); // Slightly dimmed ambient light
+        const directionalLight = new THREE.DirectionalLight('#ffffff', 0.95); // Sunlight-like directional light
+        directionalLight.position.set(-200, 200, 100); // Place the light in the "sky"
+
+        // Set the light target (where it points to)
+        const targetObject = new THREE.Object3D(); // Create an object as the target
+        targetObject.position.set(0,0,0); // Focus on the globe's center
+        scene.add(targetObject);
+        directionalLight.target = targetObject;
+
+        // Adjust shadow camera to control spread
+        directionalLight.castShadow = true; // Enable shadows
+        directionalLight.shadow.camera.near = 50; // Start of shadow projection
+        directionalLight.shadow.camera.far = 500; // End of shadow projection
+        directionalLight.shadow.camera.left = -500; // Left boundary of shadow projection
+        directionalLight.shadow.camera.right = 500; // Right boundary of shadow projection
+        directionalLight.shadow.camera.top = 500; // Top boundary of shadow projection
+        directionalLight.shadow.camera.bottom = -500; // Bottom boundary of shadow projection
+        directionalLight.shadow.mapSize.width = 2048; // Default is 512
+        directionalLight.shadow.mapSize.height = 2048;
+
+        // FOR DEBUGGING: Add helpers to visualize the light
+        // const lightHelper = new THREE.DirectionalLightHelper(directionalLight, 10); // Visualize light direction
+        // const shadowHelper = new THREE.CameraHelper(directionalLight.shadow.camera); // Visualize shadow bounds
+        // scene.add(lightHelper, shadowHelper);
+
+        // Add lights to the scene
         scene.add(ambientLight, directionalLight);
 
         // Add camera controls
@@ -143,7 +166,10 @@
         // Adding CLouds layer
         const CLOUDS_IMG_URL = '/geo/fair_clouds_4k.png'; // from https://github.com/turban/webgl-earth
         const CLOUDS_ALT = 0.005;
-        const CLOUDS_ROTATION_SPEED = -0.015; // deg/frame
+        const calculateCloudsRotationSpeed = (isMobile: boolean) => {
+            const BASE_SPEED = -0.015; // Base speed for desktop
+            return isMobile ? BASE_SPEED * 1.25 : BASE_SPEED; // Faster on mobile
+        };
         const Clouds = new THREE.Mesh(new THREE.SphereGeometry(globe.getGlobeRadius() * (1 + CLOUDS_ALT), 75, 75));
         new THREE.TextureLoader().load(CLOUDS_IMG_URL, cloudsTexture => {
             Clouds.material = new THREE.MeshPhongMaterial({ map: cloudsTexture, transparent: true });
@@ -166,9 +192,6 @@
         const tiltAngle = (Math.PI / 6) * -1; // Tilt by 30 degrees
         globe.setRotationFromAxisAngle(tiltAxis, tiltAngle);
 
-        // After initializing the globe
-        globe.rendererSize(new THREE.Vector2(window.innerWidth, window.innerHeight));
-
         let lastWidth = window.innerWidth;
         let lastHeight = window.innerHeight;
 
@@ -177,26 +200,30 @@
             document.documentElement.style.setProperty('--vh', `${vh}px`);
         };
 
+        const updateCameraAspect = () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        };
+
         const resizeRenderers = () => {
             const newWidth = window.innerWidth;
             const newHeight = window.innerHeight;
 
             renderers.forEach(r => r.setSize(newWidth, newHeight));
             globe.rendererSize(new THREE.Vector2(newWidth, newHeight));
+
+            updateCameraAspect();
         };
 
-        const toggleLabelRenderer = () => {
-            const isMobile = window.innerWidth < 768;
+        const toggleLabelRenderer = (isMobile: boolean) => {
             labelRenderer.domElement.style.display = isMobile ? 'none' : 'flex';
         };
 
-        let cachedIsMobile: boolean | null = null;
-        let cachedIdealDistance: number | null = null;
-
         const calculateIdealDistance = (isMobile: boolean) => {
+            const baseFactor = 1.95;
+            const mobileAdjustment = isMobile ? 3 : 1.5;
             return globe.getGlobeRadius() /
-                Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) *
-                (isMobile ? 2.2 : 1.5);
+                Math.tan(THREE.MathUtils.degToRad(camera.fov / (baseFactor + mobileAdjustment)));
         };
 
         const setCameraPosition = (lat: number, lng: number, idealDistance: number) => {
@@ -210,13 +237,14 @@
             );
             camera.lookAt(globe.getGlobeRadius(), 0, 100); // Focus on the globe's center
         };
+
+        let cachedIsMobile: boolean | null = null;
+        let cachedIdealDistance: number | null = null;
         
-        const adjustCamera = (focusedCity?: { lat: number; lng: number }) => {
-            const isMobile = window.innerWidth < 768;
+        const adjustCamera = (isMobile: boolean, focusedCity?: { lat: number; lng: number }) => {
             const idealDistance = calculateIdealDistance(isMobile);
 
-            // Avoid unnecessary adjustments if nothing has changed
-            if (isMobile === cachedIsMobile && idealDistance === cachedIdealDistance) return;
+            if (idealDistance === cachedIdealDistance && isMobile === cachedIsMobile) return;
 
             cachedIsMobile = isMobile;
             cachedIdealDistance = idealDistance;
@@ -227,42 +255,43 @@
                 camera.position.z = idealDistance;
             }
 
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
+            updateCameraAspect();
         };
 
-        const focusOnCity = (cityName: string) => {
-            const selectedCity = regionsLived
-                .flatMap(region => region.states)
-                .find(state => state.name === cityName);
-
-            if (selectedCity) {
-                adjustCamera(selectedCity);
-            } else {
-                console.warn(`City "${cityName}" not found in the regionsLived data.`);
-            }
-        };
-
+        let resizeTimeout: NodeJS.Timeout;
         const handleResize = () => {
-            const newWidth = window.innerWidth;
-            const newHeight = window.innerHeight;
+            // clearTimeout(resizeTimeout);
+            // resizeTimeout = setTimeout(() => {
+                const newWidth = window.innerWidth;
+                const newHeight = window.innerHeight;
 
-            if (newWidth === lastWidth && newHeight === lastHeight) return;
+                if (newWidth === lastWidth && newHeight === lastHeight) return;
 
-            lastWidth = newWidth;
-            lastHeight = newHeight;
+                lastWidth = newWidth;
+                lastHeight = newHeight;
 
-            updateVH();
-            resizeRenderers();
-            toggleLabelRenderer();
-            adjustCamera();
+                const isMobile = newWidth < 768;
+
+                CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(isMobile);
+
+                updateVH();
+                resizeRenderers();
+                toggleLabelRenderer(isMobile);
+                adjustCamera(isMobile);
+            // }, 50);
         };
 
-        // Initialize camera position and event listeners
-        toggleLabelRenderer();
-        focusOnCity("Arlington");
-        window.addEventListener('resize', handleResize);
+        // Initialize
+        const focusedCity = regionsLived.flatMap(region => region.states).find(state => state.name === "Arlington");
+        const isMobile = window.innerWidth < 768;
 
+        updateVH();
+        resizeRenderers();
+        toggleLabelRenderer(isMobile);
+        adjustCamera(isMobile, focusedCity);
+        let CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(isMobile);
+
+        window.addEventListener('resize', handleResize);
 
         // Add hero text
         const fontLoader = new FontLoader();
@@ -326,20 +355,28 @@
         
             scene.add(group);
         
-            // Add delay for text to appear
+            // Animate text opacity
             gsap.to(group.children, {
                 duration: 4,
-                opacity: 0.85,
                 ease: "power2.inOut",
-                onStart: () => { group.visible = true; },
-                onUpdate: () => {
+                onStart: () => {
+                    group.visible = true;
                     group.children.forEach((charMesh: any) => {
                         if (charMesh.material instanceof THREE.MeshPhongMaterial) {
-                            charMesh.material.opacity = gsap.getProperty(charMesh, "opacity");
-                            charMesh.material.transparent = true;
+                            charMesh.material.transparent = true; // Ensure transparency is enabled before animation
+                            charMesh.material.opacity = 0; // Initialize opacity
                         }
                     });
-                }
+                },
+                onUpdate: () => {
+                    const animationProgress = gsap.getProperty(group.children[0], "opacity"); // Get GSAP opacity progress
+                    group.children.forEach((charMesh: any) => {
+                        if (charMesh.material instanceof THREE.MeshPhongMaterial) {
+                            charMesh.material.opacity = animationProgress as number; // Safely cast to number
+                        }
+                    });
+                },
+                opacity: 0.85, // Target opacity
             });
 
             // Animate the text orbiting around the globe into the camera's frame
@@ -366,17 +403,21 @@
         animate();
 
         onDestroy(() => {
+            // Remove resize event listener
             window.removeEventListener('resize', handleResize);
+
+            // Dispose of renderers and their DOM elements
             renderers.forEach(r => {
-                if (r instanceof THREE.WebGLRenderer) {
-                    r.dispose();
-                }
-                if (r.domElement && r.domElement.parentNode) {
-                    r.domElement.parentNode.removeChild(r.domElement);
-                }
+                if (r instanceof THREE.WebGLRenderer) r.dispose();
+                if (r.domElement?.parentNode) r.domElement.parentNode.removeChild(r.domElement);
             });
+
+            // Dispose controls and clear the scene
             controls.dispose();
             scene.clear();
+
+            // Clear container content
+            if (container) container.innerHTML = "";
         });
     });
 </script>

@@ -44,8 +44,6 @@
             );
     }
 
-    $: console.log('CoolBar visibility:', visible);
-
     onMount(async () => {
         isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
