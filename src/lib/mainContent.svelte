@@ -103,17 +103,26 @@
             });
         });
         
-        // Add a document click listener
-        document.addEventListener('click', (e) => {
+        // Add a document touch listener
+        document.addEventListener('touchstart', (e) => {
             const target = e.target as HTMLElement;
-            if (!target.closest('.job')) {
-                jobs.forEach((job, index) => {
-                    if (job.showDescription) {
-                        job.showDescription = false;
-                    }
-                });
-                jobs = [...jobs]; // Trigger reactivity
+            const job = target.closest('.job');
+
+            // If tapping inside the current job, prevent reset
+            if (job) {
+                const index = Array.from(document.querySelectorAll('.job')).indexOf(job);
+                if (jobs[index].showDescription) {
+                    // Let the interaction happen without resetting
+                    return;
+                }
+                // Open the job description for the tapped element
+                toggleDescription(index);
+                return;
             }
+
+            // Close all jobs if touched outside
+            jobs.forEach((job) => (job.showDescription = false));
+            jobs = [...jobs]; // Trigger reactivity
         });
     });
 </script>
@@ -256,9 +265,7 @@
     }
 
     .job {
-        all: unset; /* Removes all default button styles */
         width: 100vw;
-        cursor: pointer;
         display: flex;
         flex-direction: row;
         align-items: center;
