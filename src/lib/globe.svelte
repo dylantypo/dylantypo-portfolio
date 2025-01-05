@@ -80,6 +80,10 @@
                 r.domElement.style.position = 'absolute';
                 r.domElement.style.top = '0px';
                 r.domElement.style.pointerEvents = 'none';
+                // Make sure the label renderer is positioned correctly
+                r.domElement.style.left = '0px';
+                r.domElement.style.width = '100%';
+                r.domElement.style.height = '100%';
             }
             container.appendChild(r.domElement);
         });
@@ -163,11 +167,19 @@
             .htmlAltitude((d: any) => (window.innerWidth < 768 ? 0.03 : 0.055)) // Set altitude
             .htmlElement((d: any) => {
                 const div = document.createElement('div');
+                const isMobile = window.innerWidth < 768;
+                
                 div.textContent = d.name;
                 div.style.color = 'rgba(255, 255, 255, 0.5)';
-                div.style.fontSize = '0.5rem';
+                div.style.fontSize = isMobile ? '0.35rem' : '0.5rem';
                 div.style.position = 'absolute';
-                div.style.transition = 'opacity 0.5s ease-in-out';
+                div.style.opacity = (isMobile && d.years < 2) ? '0' : '1';
+                
+                // Add data attributes for tracking
+                div.dataset.lat = d.lat.toString();
+                div.dataset.lng = d.lng.toString();
+                div.dataset.years = d.years.toString();
+                
                 return div;
             });
 
@@ -225,7 +237,11 @@
         };
 
         const toggleLabelRenderer = (isMobile: boolean) => {
-            labelRenderer.domElement.style.display = isMobile ? 'none' : 'flex';
+            const labels = labelRenderer.domElement.querySelectorAll('div');
+            labels.forEach((label) => {
+                const years = parseFloat(label.dataset.years || '0');
+                label.style.opacity = (isMobile && years < 2) ? '0' : '1';
+            });
         };
 
         const calculateIdealDistance = (isMobile: boolean) => {
@@ -413,11 +429,19 @@
         });
 
         let animationFrameId: number;
+        let frameCount = 0;
         const animate = () => {
             animationFrameId = requestAnimationFrame(animate);
+            frameCount++;
 
             globe.rotation.y -= 0.00055;
             Clouds.rotation.y += CLOUDS_ROTATION_SPEED * Math.PI / 180;
+
+            // Update point of view every 3rd frame
+            if (frameCount % 5 === 0) {
+                globe.setPointOfView(camera);
+            }
+
             controls.update();
             renderers.forEach(r => r.render(scene, camera));
         };
