@@ -429,20 +429,18 @@
         });
 
         let animationFrameId: number;
-        let frameCount = 0;
         const animate = () => {
             animationFrameId = requestAnimationFrame(animate);
-            frameCount++;
 
+            // Update only what's necessary
+            if (controls.enabled) {
+                controls.update();
+                globe.setPointOfView(camera);
+            }
+            
             globe.rotation.y -= 0.00055;
             Clouds.rotation.y += CLOUDS_ROTATION_SPEED * Math.PI / 180;
 
-            // Update point of view every 3rd frame
-            if (frameCount % 5 === 0) {
-                globe.setPointOfView(camera);
-            }
-
-            controls.update();
             renderers.forEach(r => r.render(scene, camera));
         };
         
@@ -452,6 +450,17 @@
         cleanupFn = () => {
             cancelAnimationFrame(animationFrameId);
             window.removeEventListener('resize', handleResize);
+            // Dispose of materials and geometries
+            scene.traverse((object) => {
+                if (object instanceof THREE.Mesh) {
+                    object.geometry.dispose();
+                    if (Array.isArray(object.material)) {
+                        object.material.forEach(material => material.dispose());
+                    } else {
+                        object.material.dispose();
+                    }
+                }
+            });
             renderers.forEach(r => {
                 if (r instanceof THREE.WebGLRenderer) r.dispose();
                 if (r.domElement?.parentNode) r.domElement.parentNode.removeChild(r.domElement);
