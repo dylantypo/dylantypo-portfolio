@@ -1,7 +1,7 @@
 <script lang="ts">
     type Subskill = {
         name: string;
-        proficiency: number;
+        years: number;
     };
 
     type Skill = {
@@ -16,12 +16,10 @@
             name: "Data Science & ML",
             description: "Core data science tools and machine learning implementations",
             subskills: [
-                { name: "Python", proficiency: 95 },
-                { name: "NumPy/Pandas", proficiency: 90 },
-                { name: "Scikit-learn", proficiency: 85 },
-                { name: "PyTorch", proficiency: 80 },
-                { name: "R (dplyr/ggplot2)", proficiency: 85 },
-                { name: "OpenCV", proficiency: 80 }
+                { name: "Python", years: 6 },
+                { name: "NumPy/Pandas", years: 5 },
+                { name: "Scikit-learn", years: 2.5 },
+                { name: "R", years: 1 }
             ],
             showDescription: false
         },
@@ -29,11 +27,10 @@
             name: "Cloud & Database",
             description: "Cloud infrastructure and database management",
             subskills: [
-                { name: "AWS Services", proficiency: 85 },
-                { name: "SQL/PostgreSQL", proficiency: 90 },
-                { name: "Snowflake", proficiency: 85 },
-                { name: "ETL Pipelines", proficiency: 85 },
-                { name: "Data Warehousing", proficiency: 80 }
+                { name: "AWS Services", years: 3 },
+                { name: "SQL/PostgreSQL", years: 4 },
+                { name: "Snowflake", years: 1 },
+                { name: "Excel VBA", years: 5 }
             ],
             showDescription: false
         },
@@ -41,10 +38,8 @@
             name: "Visualization",
             description: "Data visualization and business intelligence tools",
             subskills: [
-                { name: "Tableau", proficiency: 90 },
-                { name: "D3.js", proficiency: 85 },
-                { name: "Excel Advanced", proficiency: 90 },
-                { name: "PowerBI", proficiency: 80 }
+                { name: "Tableau", years: 2 },
+                { name: "Excel Advanced", years: 4 }
             ],
             showDescription: false
         },
@@ -52,11 +47,11 @@
             name: "Web Development",
             description: "Full-stack web development technologies",
             subskills: [
-                { name: "Svelte/SvelteKit", proficiency: 85 },
-                { name: "JavaScript", proficiency: 80 },
-                { name: "HTML/CSS", proficiency: 85 },
-                { name: "Flask", proficiency: 80 },
-                { name: "PHP", proficiency: 75 }
+                { name: "Svelte/SvelteKit", years: 4 },
+                { name: "JavaScript", years: 5 },
+                { name: "HTML/CSS", years: 6 },
+                { name: "Flask", years: 1.5 },
+                { name: "PHP", years: 1 }
             ],
             showDescription: false
         },
@@ -64,10 +59,10 @@
             name: "Development Tools",
             description: "Development and deployment tools",
             subskills: [
-                { name: "Git/GitLab", proficiency: 85 },
-                { name: "Jenkins", proficiency: 65 },
-                { name: "Agile/Scrum", proficiency: 85 },
-                { name: "Tkinter", proficiency: 90 }
+                { name: "Git/GitLab", years: 5 },
+                { name: "Jenkins", years: 1 },
+                { name: "Agile/Scrum", years: 4 },
+                { name: "Tkinter", years: 3 }
             ],
             showDescription: false
         }
@@ -76,6 +71,17 @@
     const toggleSkill = (index: number) => {
         skills[index].showDescription = !skills[index].showDescription;
         skills = [...skills];
+        
+        // After toggle, set custom property for each subskill
+        if (skills[index].showDescription) {
+            requestAnimationFrame(() => {
+                const bars = document.querySelectorAll(`[data-skill="${index}"] .progress-fill`) as NodeListOf<HTMLElement>;
+                bars.forEach((bar, i) => {
+                    const width = (skills[index].subskills[i].years / 10) * 100;
+                    bar.style.width = `${width}%`;
+                });
+            });
+        }
     };
 </script>
 
@@ -90,6 +96,7 @@
                 on:keydown={(e) => e.key === 'Enter' && toggleSkill(i)}
                 tabindex="0"
                 role="button"
+                data-skill={i}
             >
                 <div class="legend-header">
                     <span class="legend-marker"></span>
@@ -105,10 +112,10 @@
                                 <div class="subskill">
                                     <div class="subskill-header">
                                         <span class="subskill-name">{subskill.name}</span>
-                                        <span class="proficiency">{subskill.proficiency}%</span>
+                                        <span class="proficiency">{subskill.years} year{subskill.years !== 1 ? 's' : ''}</span>
                                     </div>
                                     <div class="progress-bar">
-                                        <div class="progress-fill" style="width: {subskill.proficiency}%"></div>
+                                        <div class="progress-fill"></div>
                                     </div>
                                 </div>
                             {/each}
@@ -228,7 +235,8 @@
     .progress-fill {
         height: 100%;
         background-color: #f9bc60;
-        transition: width 0.6s ease;
+        width: 0;
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     @media (max-width: 925px) {
