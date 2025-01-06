@@ -123,15 +123,17 @@
 <style>
     .section {
         margin-bottom: 12.5vh;
-        padding: 0 20vw;
     }
 
     .header {
+        width: max-content;
+        padding-left: 20vw;
         font-size: 3.5vmin;
         margin-bottom: 2em;
     }
 
     .legend-container {
+        padding: 0 20vw;
         display: flex;
         flex-direction: column;
         gap: 1rem;
@@ -231,12 +233,23 @@
 
     @media (max-width: 925px) {
         .section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            padding-left: 0;
+        }
+
+        .legend-container {
+            width: 85%;
             padding: 0 10vw;
         }
     }
 
     @media (max-width: 610px) {
-        .section {
+        .legend-container {
             padding: 0 5vw;
         }
         
@@ -250,7 +263,7 @@
     }
 
     @media (max-width: 480px) {
-        .section {
+        .legend-container {
             padding: 0 3vw;
         }
         
