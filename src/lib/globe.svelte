@@ -89,7 +89,7 @@
         });
 
         // Add light
-        const ambientLight = new THREE.AmbientLight('#ffffff', 1); // Slightly dimmed ambient light
+        const ambientLight = new THREE.AmbientLight('#ffffff', 1.5); // Slightly dimmed ambient light
         const directionalLight = new THREE.DirectionalLight('#ffffff', 0.95); // Sunlight-like directional light
         directionalLight.position.set(-200, 200, 100); // Place the light in the "sky"
 
@@ -102,13 +102,13 @@
         // Adjust shadow camera to control spread
         directionalLight.castShadow = true; // Enable shadows
         directionalLight.shadow.camera.near = 50; // Start of shadow projection
-        directionalLight.shadow.camera.far = 500; // End of shadow projection
-        directionalLight.shadow.camera.left = -500; // Left boundary of shadow projection
-        directionalLight.shadow.camera.right = 500; // Right boundary of shadow projection
-        directionalLight.shadow.camera.top = 500; // Top boundary of shadow projection
-        directionalLight.shadow.camera.bottom = -500; // Bottom boundary of shadow projection
-        directionalLight.shadow.mapSize.width = 2048; // Default is 512
-        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.camera.far = 650; // End of shadow projection
+        directionalLight.shadow.camera.left = -650; // Left boundary of shadow projection
+        directionalLight.shadow.camera.right = 650; // Right boundary of shadow projection
+        directionalLight.shadow.camera.top = 650; // Top boundary of shadow projection
+        directionalLight.shadow.camera.bottom = -650; // Bottom boundary of shadow projection
+        directionalLight.shadow.mapSize.width = 1024; // Default is 512
+        directionalLight.shadow.mapSize.height = 1024;
 
         // FOR DEBUGGING: Add helpers to visualize the light
         // const lightHelper = new THREE.DirectionalLightHelper(directionalLight, 10); // Visualize light direction
@@ -388,7 +388,7 @@
             // Animate text opacity
             gsap.to({}, {
                 delay: 0.75,
-                duration: 3.5,
+                duration: 2.25,
                 ease: "power2.inOut",
                 onStart: () => {
                     group.visible = true;
