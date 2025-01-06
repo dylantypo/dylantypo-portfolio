@@ -1,9 +1,10 @@
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import path from 'path';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-  preprocess: vitePreprocess({ script: true }), // Enable script preprocessing
+  preprocess: vitePreprocess({ script: true }),
   kit: {
     adapter: adapter({
       fallback: '200.html',
@@ -11,8 +12,11 @@ const config = {
       assets: 'build',
     }),
     prerender: {
-      entries: ['*'], // Prerender all routes
+      entries: ['*'],
     },
+    alias: {
+      $lib: path.resolve('./src/lib')
+    }
   },
 };
 
