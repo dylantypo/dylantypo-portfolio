@@ -153,10 +153,6 @@
         z-index: 2;
     }
 
-    /* .job:hover .company {
-        color: #004643;
-    } */
-
     .company, .year {
         font-size: 4vmin;
     }
