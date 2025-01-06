@@ -123,6 +123,7 @@
 
     .year {
         padding-left: 20vw;
+        color: #e8e4e6;
         z-index: 2;
     }
 
@@ -152,9 +153,9 @@
         z-index: 2;
     }
 
-    .job:hover .company {
+    /* .job:hover .company {
         color: #004643;
-    }
+    } */
 
     .company, .year {
         font-size: 4vmin;
@@ -172,7 +173,7 @@
     }
 
     .job:hover .description {
-        color: #004643;
+        color: #abd1c6;
         opacity: 1;
         transform: scale(1);
     }
@@ -182,7 +183,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgb(249, 188, 96);
+        background: rgba(249, 188, 96, 0.1);
         transform-origin: center; 
         transform: scaleY(0);
         transition: transform 0.3s ease-in-out;
@@ -194,7 +195,7 @@
     }
 
     .job:hover {
-        color: #004643;
+        color: #e8e4e6;
     }
 
     @media (max-width: 925px) {
