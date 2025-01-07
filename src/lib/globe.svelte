@@ -89,9 +89,9 @@
         });
 
         // Add light
-        const ambientLight = new THREE.AmbientLight('#ffffff', 1.5); // Slightly dimmed ambient light
+        const ambientLight = new THREE.AmbientLight('#ffffff', 1.05); // Slightly dimmed ambient light
         const directionalLight = new THREE.DirectionalLight('#ffffff', 0.95); // Sunlight-like directional light
-        directionalLight.position.set(-200, 200, 100); // Place the light in the "sky"
+        directionalLight.position.set(-100, 0, 200); // Place the light in the "sky"
 
         // Set the light target (where it points to)
         const targetObject = new THREE.Object3D(); // Create an object as the target
