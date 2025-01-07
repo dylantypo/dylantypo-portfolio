@@ -35,82 +35,88 @@
 
 <style>
   /* Base styles */
+  :global(body) {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background: linear-gradient(
+      145deg,
+      rgba(0, 0, 0, 0.97) 0%,
+      rgba(0, 0, 0, 0.99) 100%
+    );
+  }
+
+  .outer-container {
+    width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0;
+    box-sizing: border-box;
+  }
+
+  .resume-scroll-container {
+    width: 100%;
+    max-width: calc(210mm + 4rem); /* A4 width + margin */
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    padding: 0 2rem;
+    box-sizing: border-box;
+  }
+
   .resume-container {
     width: 210mm; /* A4 width */
     min-height: 297mm; /* A4 height */
-    max-width: 100%;
     background: white;
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-top: 2%;
-    padding: 0 5%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
+    margin: 2rem 0;
+    border-radius: 1cqb;
   }
 
-  /* Screen-specific styles */
-  @media screen {
-    .resume-container {
-      box-shadow: 
-        0 1px 2px rgba(0, 0, 0, 0.05),
-        0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .background-gradient {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(
-        145deg,
-        rgba(0, 0, 0, 0.97) 0%,
-        rgba(0, 0, 0, 0.99) 100%
-      );
-      backdrop-filter: blur(20px);
-    }
+  .resume-content {
+    padding: 4cqmin;
+    box-sizing: border-box;
   }
 
-  /* Print-specific styles */
+  /* Print styles */
   @media print {
-    .controls,
-    .background-gradient {
+    :global(body) {
+      background: white !important;
+    }
+
+    .outer-container {
+      padding: 0;
+    }
+
+    .resume-scroll-container {
+      padding: 0;
+      max-width: 100%;
+    }
+
+    .controls {
       display: none !important;
     }
 
     .resume-container {
-      position: relative !important;
-      left: 0 !important;
-      transform: none !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      box-shadow: none !important;
-      min-height: 100% !important;
-      width: 100% !important;
-    }
-
-    .resume-content {
-      padding: 0 !important;
-      margin: 0 !important;
-    }
-
-    :global(body) {
-      margin: 0 !important;
-      padding: 0 !important;
-      background: white !important;
+      box-shadow: none;
+      margin: 0;
+      width: 100%;
     }
 
     @page {
       size: A4;
-      margin: 2cm;
+      margin: 1rem;
     }
   }
 
-  /* Typography styles - applied to both screen and print */
+  /* Typography styles */
   :global(.resume-content) {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     line-height: 1.6;
     font-size: 14px;
-    padding: 2.5cm 0;
   }
 
   :global(.resume-content h1) {
@@ -177,6 +183,8 @@
     z-index: 50;
     display: flex;
     gap: 1rem;
+    top: 2rem;
+    right: 2rem;
   }
 
   .control-button {
@@ -198,14 +206,7 @@
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
 
-  /* Responsive controls */
-  @media (min-width: 641px) {
-    .controls {
-      top: 2rem;
-      right: 2rem;
-    }
-  }
-
+  /* Mobile styles */
   @media (max-width: 640px) {
     .controls {
       position: fixed;
@@ -218,16 +219,30 @@
       justify-content: center;
     }
 
+    .outer-container {
+      padding-bottom: 5rem;
+    }
+
+    .resume-scroll-container {
+      padding: 0 1rem;
+    }
+
     .resume-container {
-      margin-bottom: 5rem;
+      margin: 1rem 0;
+      width: 100%;
+    }
+
+    .resume-content {
+      padding: 1.5cm;
+    }
+
+    :global(.resume-content ul) {
+      margin: 0;
     }
   }
 </style>
 
-<div class="min-h-screen w-full flex flex-col items-center justify-center relative overflow-x-hidden">
-  <!-- Background -->
-  <div class="background-gradient"></div>
-
+<div class="outer-container">
   <!-- Controls -->
   <div class="controls">
     <button onclick={handlePrint} class="control-button">
@@ -249,9 +264,11 @@
   </div>
 
   <!-- Resume -->
-  <div class="resume-container">
-    <div class="resume-content">
-      {@html safeHtml}
+  <div class="resume-scroll-container">
+    <div class="resume-container">
+      <div class="resume-content">
+        {@html safeHtml}
+      </div>
     </div>
   </div>
 </div>
