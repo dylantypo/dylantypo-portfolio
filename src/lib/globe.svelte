@@ -88,35 +88,42 @@
             container.appendChild(r.domElement);
         });
 
-        // Add light
-        const ambientLight = new THREE.AmbientLight('#ffffff', 1.05); // Slightly dimmed ambient light
-        const directionalLight = new THREE.DirectionalLight('#ffffff', 1); // Sunlight-like directional light
-        directionalLight.position.set(-100, 0, 200); // Place the light in the "sky"
+        // Setup lighting
+        const ambientLight = new THREE.AmbientLight('#ffffff', 0.15); // Slightly dimmed ambient light
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.75);
+        hemiLight.color.setHSL(0.6, 0.75, 0.5); // Sky color
+        hemiLight.groundColor.setHSL(0.095, 0.5, 0.5); // Ground color
+        hemiLight.position.set(0, -500, 0);
 
-        // Set the light target (where it points to)
-        const targetObject = new THREE.Object3D(); // Create an object as the target
-        targetObject.position.set(0,0,0); // Focus on the globe's center
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(-1, 0.75, 1);
+        dirLight.position.multiplyScalar(100);
+
+        // Configure shadows
+        dirLight.castShadow = true;
+        dirLight.shadow.camera.near = 50;
+        dirLight.shadow.camera.far = 3500;
+        dirLight.shadow.camera.left = -650;
+        dirLight.shadow.camera.right = 650;
+        dirLight.shadow.camera.top = 650;
+        dirLight.shadow.camera.bottom = -650;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.bias = -0.0001;
+
+        // Target light at globe center
+        const targetObject = new THREE.Object3D();
+        targetObject.position.set(0, 0, 0);
         scene.add(targetObject);
-        directionalLight.target = targetObject;
+        dirLight.target = targetObject;
 
-        // Adjust shadow camera to control spread
-        directionalLight.castShadow = true; // Enable shadows
-        directionalLight.shadow.camera.near = 50; // Start of shadow projection
-        directionalLight.shadow.camera.far = 650; // End of shadow projection
-        directionalLight.shadow.camera.left = -650; // Left boundary of shadow projection
-        directionalLight.shadow.camera.right = 650; // Right boundary of shadow projection
-        directionalLight.shadow.camera.top = 650; // Top boundary of shadow projection
-        directionalLight.shadow.camera.bottom = -650; // Bottom boundary of shadow projection
-        directionalLight.shadow.mapSize.width = 1024; // Default is 512
-        directionalLight.shadow.mapSize.height = 1024;
-
-        // FOR DEBUGGING: Add helpers to visualize the light
-        // const lightHelper = new THREE.DirectionalLightHelper(directionalLight, 10); // Visualize light direction
-        // const shadowHelper = new THREE.CameraHelper(directionalLight.shadow.camera); // Visualize shadow bounds
+        // Debug helpers (uncomment to use)
+        // const lightHelper = new THREE.DirectionalLightHelper(dirLight, 10);
+        // const shadowHelper = new THREE.CameraHelper(dirLight.shadow.camera);
         // scene.add(lightHelper, shadowHelper);
 
-        // Add lights to the scene
-        scene.add(ambientLight, directionalLight);
+        // Add lights to scene
+        scene.add(ambientLight,hemiLight, dirLight);
 
         // Add camera controls
         const controls = new TrackballControls(camera, renderer.domElement);
