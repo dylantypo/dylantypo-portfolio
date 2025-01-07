@@ -9,8 +9,8 @@
 
     let isCoolBarVisible = false;
 
-    function triggerRevealCoolBar() {
-        isCoolBarVisible = true; // Ensure CoolBar is visible
+    function handleRevealCoolBar() {
+        isCoolBarVisible = true;
     }
 
     onMount(() => {
@@ -25,7 +25,7 @@
 
     <Globe {hero_text} />
 
-    <MainContent on:triggerRevealCoolBar={triggerRevealCoolBar} />
+    <MainContent triggerRevealCoolBar={handleRevealCoolBar} />
 </main>
 
 <style>

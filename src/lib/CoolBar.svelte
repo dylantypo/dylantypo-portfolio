@@ -64,9 +64,9 @@
 <div
     bind:this={coolbar}
     class="coolbar {visible ? 'visible' : ''} {expandedCool ? 'expandedCool' : ''}"
-    on:click={toggleCoolbar}
-    on:keydown={handleKeydown}
-    on:mouseleave={isTouchDevice ? undefined : handleCloseCoolbar}
+    onclick={toggleCoolbar}
+    onkeydown={handleKeydown}
+    onmouseleave={isTouchDevice ? undefined : handleCloseCoolbar}
     tabindex="0"
     role="button"
     aria-pressed="{expandedCool}"

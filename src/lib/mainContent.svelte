@@ -4,11 +4,16 @@
     import Skills from '$lib/skills.svelte';
     import History from '$lib/history.svelte';
 
-    import { createEventDispatcher } from 'svelte';
-    const dispatch = createEventDispatcher<{ triggerRevealCoolBar: undefined }>(); // Typing the event
+    let { triggerRevealCoolBar } = $props<{
+        triggerRevealCoolBar: () => void
+    }>();
 
-    function triggerRevealCoolBar() {
-        dispatch('triggerRevealCoolBar'); // Dispatches the event with no detail
+    function handleHeadshotClick() {
+        triggerRevealCoolBar();
+    }
+
+    function handleKeydown(e: KeyboardEvent) {
+        if (e.key === 'Enter') triggerRevealCoolBar();
     }
 
     let ScrollTrigger;
@@ -64,7 +69,7 @@
                     scrub: true, // Smooth scrolling animation
                 },
                 autoAlpha: 0.025, // Initial opacity set to 5%
-                duration: 1, // Animation duration of 1 second
+                duration: 1.75, // Animation duration of 1 second
             });
         });
     });
@@ -91,8 +96,8 @@
             class="headshot" 
             tabindex="0" 
             role="button" 
-            on:click={triggerRevealCoolBar} 
-            on:keydown={(e) => e.key === 'Enter' && triggerRevealCoolBar()}
+            onclick={triggerRevealCoolBar} 
+            onkeydown={(e) => e.key === 'Enter' && triggerRevealCoolBar()}
         >
             <img src="favicon.png" alt="avatar headshot by midjourney">
         </div>

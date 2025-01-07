@@ -92,8 +92,8 @@
             <div 
                 class="legend-item"
                 class:active={skill.showDescription}
-                on:click={() => toggleSkill(i)}
-                on:keydown={(e) => e.key === 'Enter' && toggleSkill(i)}
+                onclick={() => toggleSkill(i)}
+                onkeydown={(e) => e.key === 'Enter' && toggleSkill(i)}
                 tabindex="0"
                 role="button"
                 data-skill={i}

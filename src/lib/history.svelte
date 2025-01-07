@@ -68,9 +68,9 @@
     {#each jobs as job, i}
         <div 
             class="job" 
-            on:mouseover={() => !job.showDescription && toggleDescription(i)} 
-            on:focus={() => !job.showDescription && toggleDescription(i)} 
-            on:mouseleave={() => resetDescription(i)} 
+            onmouseover={() => !job.showDescription && toggleDescription(i)} 
+            onfocus={() => !job.showDescription && toggleDescription(i)} 
+            onmouseleave={() => resetDescription(i)} 
             aria-expanded={job.showDescription} 
             tabindex="0" 
             role="button"

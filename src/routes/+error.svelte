@@ -2,14 +2,14 @@
     import Globe from '$lib/globe.svelte';
     import { goto } from '$app/navigation';
 
-    let hero_text = '4 0 4';
+    let hero_text = ' 404 ';
 </script>
 
 <main>
     <Globe {hero_text} />
 
     <section class="message">
-        <button on:click={() => goto('/')}>
+        <button onclick={() => goto('/')}>
             <i class="fa-regular fa-rocket fa-bounce fa-2xl" style="--fa-animation-duration: 3.25s"></i>
             <h1>Page not found</h1>
             <i class="fa-regular fa-rocket fa-bounce fa-2xl" style="--fa-animation-duration: 3.67s"></i>

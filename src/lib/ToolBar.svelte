@@ -51,9 +51,9 @@
 <div
     bind:this={toolbar}
     class="toolbar {expandedTool ? 'expandedTool' : ''}"
-    on:click={toggleToolbar}
-    on:keydown={handleKeydown}
-    on:mouseleave={isTouchDevice ? undefined : handleCloseToolbar}
+    onclick={toggleToolbar}
+    onkeydown={handleKeydown}
+    onmouseleave={isTouchDevice ? undefined : handleCloseToolbar}
     tabindex="0"
     role="button"
     aria-pressed="{expandedTool}"
