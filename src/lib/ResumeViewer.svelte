@@ -81,8 +81,75 @@
     box-sizing: border-box;
   }
 
+  /* New Print Styles */
   /* Print styles */
-  @media print {
+@media print {
+  /* Reset the body background */
+  :global(body) {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: initial !important;
+  }
+
+  /* Reset containers to full A4 size */
+  .outer-container {
+    padding: 0 !important;
+    width: 100% !important;
+    min-height: initial !important;
+  }
+
+  .resume-scroll-container {
+    padding: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .resume-container {
+    width: 100% !important;
+    min-height: initial !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .resume-content {
+    padding: 0 !important;
+  }
+
+  /* Hide controls */
+  .controls {
+    display: none !important;
+  }
+
+  /* Reset any mobile-specific styles */
+  :global(.resume-content ul) {
+    margin-left: 1.25rem !important;
+  }
+
+  /* Set print-specific page settings */
+  @page {
+    size: A4 portrait;
+    margin: 2cm;
+    bleed: 0;
+  }
+
+  /* Ensure proper text sizing and spacing */
+  :global(.resume-content) {
+    font-size: 12pt !important;
+    line-height: 1.6 !important;
+  }
+
+  /* Ensure proper content flow */
+  * {
+    overflow: visible !important;
+  }
+}
+
+  /* Print styles */
+  /* @media print {
     :global(body) {
       background: white !important;
     }
@@ -110,7 +177,7 @@
       size: A4;
       margin: 1rem;
     }
-  }
+  } */
 
   /* Typography styles */
   :global(.resume-content) {
