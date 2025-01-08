@@ -41,7 +41,7 @@
 
     /* Component-specific focus styles */
     :global([role="button"]:focus) {
-        outline: 3px solid var(--focus-outline-color);
+        outline: 1.25px solid var(--focus-outline-color);
         outline-offset: 2px;
     }
 </style>
