@@ -28,7 +28,11 @@
     ]);
 
     // Single toggle function for all interactions
-    function toggleDescription(index: number) {
+    function toggleDescription(index: number, event?: Event) {
+        if (event) {
+            event.preventDefault(); // Prevent default touch behavior
+            event.stopPropagation(); // Stop event bubbling
+        }
         const job = jobs[index];
         job.showDescription = !job.showDescription;
     }
@@ -42,15 +46,18 @@
         jobs[index].isKeyboardControl = false;
     }
 
-    // Touch handler - simplified
+    // Touch handler - improved version
     $effect(() => {
         function handleTouch(e: TouchEvent) {
             const target = e.target as HTMLElement;
-            const job = target.closest('.job');
+            const jobButton = target.closest('.job') as HTMLButtonElement;
 
-            if (job) {
-                const index = Array.from(document.querySelectorAll('.job')).indexOf(job);
-                toggleDescription(index);
+            if (jobButton) {
+                e.preventDefault();
+                const index = parseInt(jobButton.dataset.index || '-1');
+                if (index >= 0) {
+                    toggleDescription(index, e);
+                }
                 return;
             }
 
@@ -60,7 +67,8 @@
             });
         }
 
-        document.addEventListener('touchstart', handleTouch);
+        // Add passive: false to ensure preventDefault works
+        document.addEventListener('touchstart', handleTouch, { passive: false });
         return () => document.removeEventListener('touchstart', handleTouch);
     });
 </script>
@@ -70,9 +78,10 @@
     {#each jobs as job, i}
         <button 
             class="job" 
+            data-index={i}
             onfocus={() => handleFocus(i)}
             onblur={() => handleBlur(i)}
-            onclick={() => toggleDescription(i)}
+            onclick={(e) => toggleDescription(i, e)}
             onkeydown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -124,6 +133,7 @@
 
     button.job {
         width: 100vw;
+        min-height: 15vh;
         display: flex;
         flex-direction: row;
         align-items: center;
@@ -133,7 +143,7 @@
         transition: color 0.3s;
         border: none;
         margin: 0;
-        padding: 0;
+        padding: 2vh 0;
         font-family: inherit;
         cursor: pointer;
         color: inherit;
@@ -149,6 +159,7 @@
         color: #e8e4e6;
         z-index: 2;
         margin: 0;
+        align-self: center;
     }
 
     .role-text {
@@ -160,6 +171,7 @@
         transition: opacity 0.5s ease-in-out;
         opacity: 1;
         text-align: left;
+        margin-top: 1rem;
     }
 
     .text-wrapper {
@@ -170,6 +182,7 @@
         display: flex;
         flex-direction: column;
         align-items: flex-start;
+        justify-content: center;
     }
 
     .company {
@@ -179,7 +192,8 @@
         transition: color 0.3s ease-in-out, opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
         opacity: 1;
         z-index: 2;
-        margin: 2rem 0 0 0;
+        margin: 0;
+        text-align: left;
     }
 
     .company, .year {
@@ -196,10 +210,7 @@
         transform: scale(1);
         z-index: 2;
         text-align: left;
-    }
-
-    button.job:hover .description {
-        color: #abd1c6;
+        margin-top: 1rem;
     }
 
     .background {
@@ -214,12 +225,46 @@
         z-index: 1;
     }
 
-    button.job:hover .background {
-        transform: scaleY(1);
+    /* Desktop hover animations */
+    @media (hover: hover) {
+        button.job:hover .background {
+            transform: scaleY(1);
+        }
+        
+        button.job:hover {
+            color: #e8e4e6;
+        }
+
+        button.job:hover .description {
+            color: #abd1c6;
+        }
     }
 
-    button.job:hover {
-        color: #e8e4e6;
+    /* Touch device animations and states */
+    @media (hover: none) {
+        button.job:active .background {
+            transform: scaleY(1);
+        }
+        
+        button.job:active {
+            color: #e8e4e6;
+        }
+
+        button.job:active .description {
+            color: #abd1c6;
+        }
+
+        button.job[aria-expanded="true"] .background {
+            transform: scaleY(1);
+        }
+
+        button.job[aria-expanded="true"] {
+            color: #e8e4e6;
+        }
+
+        button.job[aria-expanded="true"] .description {
+            color: #abd1c6;
+        }
     }
 
     @media (max-width: 925px) {
@@ -236,36 +281,44 @@
         }
         .role-text {
             padding-left: 10vw;
+            padding-right: 10vw;
         }
         .year {
-            padding: 0;
+            padding: 2vh 0 0 0;
             font-size: 3vmin;
+            margin-bottom: 1rem;
         }
         .company {
             padding-left: 10vw;
             padding-right: 10vw;
             font-size: 3.5vmin;
+            margin-bottom: 0.75rem;
         }
         .description {
             font-size: 3vmin;
             padding-left: 10vw;
             padding-right: 10vw;
         }
+        .background {
+            top: 0;
+        }
     }
 
     @media (max-width: 610px) {
         .role-text {
             padding-left: 5vw;
+            padding-right: 5vw;
             font-size: 2.8vmin;
         }
         .year {
-            padding: 0;
             font-size: 2.5vmin;
+            margin-bottom: 0.5rem;
         }
         .company {
             padding-left: 5vw;
             padding-right: 5vw;
             font-size: 3vmin;
+            margin-bottom: 0.5rem;
         }
         .description {
             font-size: 2.5vmin;
@@ -277,16 +330,18 @@
     @media (max-width: 480px) {
         .role-text {
             padding-left: 3vw;
+            padding-right: 3vw;
             font-size: 2.5vmin;
         }
         .year {
-            padding: 0;
             font-size: 2vmin;
+            margin-bottom: 0.5rem;
         }
         .company {
             padding-left: 3vw;
             padding-right: 3vw;
             font-size: 2.8vmin;
+            margin-bottom: 0.5rem;
         }
         .description {
             font-size: 2.3vmin;
