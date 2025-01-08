@@ -81,37 +81,29 @@
     box-sizing: border-box;
   }
 
-  /* New Print Styles */
-  /* Print styles */
-@media print {
-  /* Reset the body background */
+  @media print {
+  /* Reset everything to desktop-like state */
   :global(body) {
     background: white !important;
     margin: 0 !important;
     padding: 0 !important;
-    min-height: initial !important;
   }
 
-  /* Reset containers to full A4 size */
   .outer-container {
     padding: 0 !important;
-    width: 100% !important;
-    min-height: initial !important;
+    padding-bottom: 0 !important; /* Override mobile padding-bottom */
   }
 
   .resume-scroll-container {
     padding: 0 !important;
     max-width: none !important;
-    width: 100% !important;
-    margin: 0 !important;
+    width: 210mm !important; /* Force A4 width */
   }
 
   .resume-container {
-    width: 100% !important;
-    min-height: initial !important;
-    margin: 0 !important;
-    padding: 0 !important;
     box-shadow: none !important;
+    margin: 0 !important;
+    width: 210mm !important; /* Force A4 width */
     border-radius: 0 !important;
   }
 
@@ -119,65 +111,31 @@
     padding: 0 !important;
   }
 
-  /* Hide controls */
+  /* Override mobile-specific styles */
+  @media (max-width: 640px) {
+    .resume-container {
+      width: 210mm !important;
+    }
+    
+    .resume-content {
+      padding: 0 !important;
+    }
+    
+    .resume-scroll-container {
+      padding: 0 !important;
+      width: 210mm !important;
+    }
+  }
+
   .controls {
     display: none !important;
   }
 
-  /* Reset any mobile-specific styles */
-  :global(.resume-content ul) {
-    margin-left: 1.25rem !important;
-  }
-
-  /* Set print-specific page settings */
   @page {
-    size: A4 portrait;
-    margin: 2cm;
-    bleed: 0;
-  }
-
-  /* Ensure proper text sizing and spacing */
-  :global(.resume-content) {
-    font-size: 12pt !important;
-    line-height: 1.6 !important;
-  }
-
-  /* Ensure proper content flow */
-  * {
-    overflow: visible !important;
+    size: A4;
+    margin: 1rem;
   }
 }
-
-  /* Print styles */
-  /* @media print {
-    :global(body) {
-      background: white !important;
-    }
-
-    .outer-container {
-      padding: 0;
-    }
-
-    .resume-scroll-container {
-      padding: 0;
-      max-width: 100%;
-    }
-
-    .controls {
-      display: none !important;
-    }
-
-    .resume-container {
-      box-shadow: none;
-      margin: 0;
-      width: 100%;
-    }
-
-    @page {
-      size: A4;
-      margin: 1rem;
-    }
-  } */
 
   /* Typography styles */
   :global(.resume-content) {
