@@ -82,6 +82,12 @@
   }
 
   @media print {
+  /* Enable background printing */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   /* Reset everything to desktop-like state */
   :global(body) {
     background: white !important;
