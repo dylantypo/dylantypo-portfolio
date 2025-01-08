@@ -77,24 +77,36 @@
 </script>
 
 <main id="content">
-    <article class="section" id="aboutME">
-        <h2 class="header">About Me</h2>
-        <div 
-            class="long-text fade-in"
-            aria-label="I'm a versatile data scientist, expertly crafting cutting-edge analytics that illuminate data from fresh and inventive perspectives."
+    <article class="section" id="aboutMe" role="region" aria-labelledby="aboutMe-header">
+        <button 
+            class="section-button"
+            aria-controls="aboutMe-content"
         >
-            I'm a versatile data scientist, expertly crafting <span class="highlighted-text">cutting-edge</span> analytics that illuminate data from fresh and inventive perspectives.
-        </div>
+            <h2 id="aboutMe-header" class="header">About Me</h2>
+            <div 
+                id="aboutMe-content"
+                class="long-text fade-in"
+                aria-label="I'm a versatile data scientist, expertly crafting cutting-edge analytics that illuminate data from fresh and inventive perspectives."
+            >
+                I'm a versatile data scientist, expertly crafting <span class="highlighted-text">cutting-edge</span> analytics that illuminate data from fresh and inventive perspectives.
+            </div>
+        </button>
     </article>
     
-    <article class="section" id="experience">
-        <h2 class="header">Experience</h2>
-        <div 
-            class="long-text fade-in"
-            aria-label="Nearly half a decade of diverse experience, enhancing data-driven decisions with a unique blend of creativity and innovation."
+    <article class="section" id="experience" role="region" aria-labelledby="experience-header">
+        <button 
+            class="section-button"
+            aria-controls="experience-content"
         >
-            Nearly <span class="highlighted-text">half a decade</span> of diverse experience, enhancing data-driven decisions with a unique blend of creativity and innovation.
-        </div>
+            <h2 id="experience-header" class="header">Experience</h2>
+            <div 
+                id="experience-content"
+                class="long-text fade-in"
+                aria-label="Nearly half a decade of diverse experience, enhancing data-driven decisions with a unique blend of creativity and innovation."
+            >
+                Nearly <span class="highlighted-text">half a decade</span> of diverse experience, enhancing data-driven decisions with a unique blend of creativity and innovation.
+            </div>
+        </button>
     </article>
 
     <History />
@@ -130,7 +142,6 @@
         align-items: center;
     }
 
-    /* Add to your existing styles */
     .headshot {
         background: none;
         border: none;
@@ -163,6 +174,21 @@
         margin-bottom: 12.5vh;
         display: flex;
         flex-direction: column;
+    }
+
+    .section-button {
+        background: none;
+        border: none;
+        padding: 5vh;
+        width: 100%;
+        text-align: left;
+        color: inherit;
+        font-family: var(--font-family-kenney);
+    }
+
+    .section-button:focus-visible {
+        outline: 1px solid #f9bc60;
+        outline-offset: 4px;
     }
 
     .header, .footer {

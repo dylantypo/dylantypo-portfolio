@@ -27,41 +27,22 @@
         },
     ]);
 
-    // Toggle for keyboard/click interaction
+    // Single toggle function for all interactions
     function toggleDescription(index: number) {
-        jobs[index].showDescription = !jobs[index].showDescription;
+        const job = jobs[index];
+        job.showDescription = !job.showDescription;
     }
 
-    // Mouse-only handlers
-    function handleMouseEnter(index: number) {
-        if (!jobs[index].isKeyboardControl) {
-            jobs[index].showDescription = true;
-        }
-    }
-
-    function handleMouseLeave(index: number) {
-        if (!jobs[index].isKeyboardControl) {
-            jobs[index].showDescription = false;
-        }
-    }
-
-    // Keyboard interaction handlers
+    // Keyboard handlers - just for accessibility
     function handleFocus(index: number) {
         jobs[index].isKeyboardControl = true;
     }
 
     function handleBlur(index: number) {
         jobs[index].isKeyboardControl = false;
-        jobs[index].showDescription = false;
     }
 
-    function handleKeyDown(e: KeyboardEvent, index: number) {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            toggleDescription(index);
-        }
-    }
-
+    // Touch handler - simplified
     $effect(() => {
         function handleTouch(e: TouchEvent) {
             const target = e.target as HTMLElement;
@@ -69,10 +50,7 @@
 
             if (job) {
                 const index = Array.from(document.querySelectorAll('.job')).indexOf(job);
-                if (jobs[index].showDescription) {
-                    return; // Let the interaction happen without resetting
-                }
-                toggleDescription(index); // Open the job description
+                toggleDescription(index);
                 return;
             }
 
@@ -83,10 +61,7 @@
         }
 
         document.addEventListener('touchstart', handleTouch);
-
-        return () => {
-            document.removeEventListener('touchstart', handleTouch);
-        };
+        return () => document.removeEventListener('touchstart', handleTouch);
     });
 </script>
 
@@ -95,11 +70,9 @@
     {#each jobs as job, i}
         <button 
             class="job" 
-            onmouseenter={() => handleMouseEnter(i)}
-            onmouseleave={() => handleMouseLeave(i)}
             onfocus={() => handleFocus(i)}
             onblur={() => handleBlur(i)}
-            onclick={() => job.isKeyboardControl && toggleDescription(i)}
+            onclick={() => toggleDescription(i)}
             onkeydown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -219,16 +192,14 @@
         padding-right: 20vw;
         color: #e8e4e6;
         transition: color 0.5s ease, opacity 0.5s ease, transform 0.5s ease;
-        opacity: 0;
-        transform: scale(0.95);
+        opacity: 1;
+        transform: scale(1);
         z-index: 2;
         text-align: left;
     }
 
     button.job:hover .description {
         color: #abd1c6;
-        opacity: 1;
-        transform: scale(1);
     }
 
     .background {
