@@ -1,5 +1,4 @@
 <script lang="ts">
-    // Array of jobs with details including descriptions and visibility toggle
     let jobs = $state([
         {
             year: "Now",
@@ -27,17 +26,27 @@
         },
     ]);
 
-    // Single toggle function for all interactions
-    function toggleDescription(index: number, event?: Event) {
-        if (event) {
-            event.preventDefault(); // Prevent default touch behavior
-            event.stopPropagation(); // Stop event bubbling
-        }
-        const job = jobs[index];
-        job.showDescription = !job.showDescription;
+    // Helper function to close all descriptions
+    function closeAllDescriptions() {
+        jobs.forEach((job) => {
+            job.showDescription = false;
+        });
     }
 
-    // Keyboard handlers - just for accessibility
+    function toggleDescription(index: number, event?: Event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        const wasOpen = jobs[index].showDescription;
+        closeAllDescriptions();
+        
+        if (!wasOpen) {
+            jobs[index].showDescription = true;
+        }
+    }
+
     function handleFocus(index: number) {
         jobs[index].isKeyboardControl = true;
     }
@@ -46,8 +55,24 @@
         jobs[index].isKeyboardControl = false;
     }
 
-    // Touch handler - improved version
+    // Handle mouse leave for desktop
+    function handleMouseLeave() {
+        // Only handle mouse leave if device supports hover
+        if (window.matchMedia('(hover: hover)').matches) {
+            closeAllDescriptions();
+        }
+    }
+
+    // Document click handler
     $effect(() => {
+        function handleDocumentClick(e: MouseEvent) {
+            const target = e.target as HTMLElement;
+            if (!target.closest('.job')) {
+                closeAllDescriptions();
+            }
+        }
+
+        // Touch handler
         function handleTouch(e: TouchEvent) {
             const target = e.target as HTMLElement;
             const jobButton = target.closest('.job') as HTMLButtonElement;
@@ -61,15 +86,18 @@
                 return;
             }
 
-            // Close all jobs if touched outside
-            jobs.forEach((_, i) => {
-                jobs[i].showDescription = false;
-            });
+            closeAllDescriptions();
         }
 
-        // Add passive: false to ensure preventDefault works
+        // Add both event listeners
+        document.addEventListener('click', handleDocumentClick);
         document.addEventListener('touchstart', handleTouch, { passive: false });
-        return () => document.removeEventListener('touchstart', handleTouch);
+
+        // Cleanup
+        return () => {
+            document.removeEventListener('click', handleDocumentClick);
+            document.removeEventListener('touchstart', handleTouch);
+        };
     });
 </script>
 
@@ -82,6 +110,7 @@
             onfocus={() => handleFocus(i)}
             onblur={() => handleBlur(i)}
             onclick={(e) => toggleDescription(i, e)}
+            onmouseleave={() => handleMouseLeave()}
             onkeydown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
