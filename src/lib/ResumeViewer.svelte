@@ -146,7 +146,7 @@
   /* Typography styles */
   :global(.resume-content) {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    line-height: 1.6;
+    line-height: 1.25;
     font-size: 14px;
   }
 
