@@ -1,12 +1,11 @@
 <script lang="ts">
     import Globe from '$lib/globe.svelte';
-	import ToolBar from '$lib/ToolBar.svelte';
+    import ToolBar from '$lib/ToolBar.svelte';
     import CoolBar from '$lib/CoolBar.svelte';
     import MainContent from '$lib/mainContent.svelte';
     import { onMount } from 'svelte';
 
-    let hero_text = 'Dylan Posner'
-
+    let hero_text = 'Dylan Posner';
     let isCoolBarVisible = false;
 
     function handleRevealCoolBar() {
@@ -18,8 +17,10 @@
     });
 </script>
 
-<main>
-    <CoolBar visible={isCoolBarVisible} />
+<main id="main-content" aria-label="Portfolio Content">
+    <CoolBar 
+        visible={isCoolBarVisible} 
+    />
 
     <ToolBar />
 
@@ -29,17 +30,6 @@
 </main>
 
 <style>
-    :root {
-        --font-family-kenney: 'KenneyFuture', sans-serif;
-        --background-color-default: #004643;
-    }
-
-    @font-face {
-        font-family: var(--font-family-kenney);
-        src: url('/Kenney Future.ttf') format('truetype');
-        font-display: swap;
-    }
-    
     main {
         font-family: var(--font-family-kenney);
         background-color: var(--background-color-default);
@@ -49,14 +39,9 @@
         padding: 0;
     }
 
-    /* Hide scrollbar for all elements */
-    :global(::-webkit-scrollbar) {
-        display: none;
-    }
-
-    :global(html) {
-        scrollbar-width: none;
-        width: 100vw;
-        height: 100%;
+    /* Component-specific focus styles */
+    :global([role="button"]:focus) {
+        outline: 3px solid var(--focus-outline-color);
+        outline-offset: 2px;
     }
 </style>

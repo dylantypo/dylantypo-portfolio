@@ -69,6 +69,7 @@
     onmouseleave={isTouchDevice ? undefined : handleCloseCoolbar}
     tabindex="0"
     role="button"
+    aria-hidden={!visible}
     aria-pressed="{expandedCool}"
     aria-label="{expandedCool ? 'Collapse connections menu' : 'Expand connections menu'}"
 >

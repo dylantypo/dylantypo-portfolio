@@ -85,47 +85,57 @@
     };
 </script>
 
-<div class="section">
-    <p class="header">Skills</p>
+<section class="section" aria-labelledby="skills-header">
+    <h2 id="skills-header" class="header">Skills</h2>
     <div class="legend-container">
         {#each skills as skill, i}
-            <div 
+            <button 
                 class="legend-item"
                 class:active={skill.showDescription}
                 onclick={() => toggleSkill(i)}
-                onkeydown={(e) => e.key === 'Enter' && toggleSkill(i)}
-                tabindex="0"
-                role="button"
                 data-skill={i}
+                aria-expanded={skill.showDescription}
+                aria-controls={`skill-details-${i}`}
             >
                 <div class="legend-header">
-                    <span class="legend-marker"></span>
+                    <span class="legend-marker" aria-hidden="true"></span>
                     <h3 class="skill-name">{skill.name}</h3>
-                    <span class="expand-icon">{skill.showDescription ? '−' : '+'}</span>
+                    <span class="expand-icon" aria-hidden="true">{skill.showDescription ? '−' : '+'}</span>
                 </div>
                 
                 {#if skill.showDescription}
-                    <div class="skill-details">
+                    <div 
+                        id={`skill-details-${i}`}
+                        class="skill-details"
+                        aria-live="polite"
+                    >
                         <p class="description">{skill.description}</p>
-                        <div class="subskills-grid">
+                        <ul class="subskills-grid">
                             {#each skill.subskills as subskill}
-                                <div class="subskill">
+                                <li class="subskill">
                                     <div class="subskill-header">
                                         <span class="subskill-name">{subskill.name}</span>
                                         <span class="proficiency">{subskill.years} year{subskill.years !== 1 ? 's' : ''}</span>
                                     </div>
-                                    <div class="progress-bar">
+                                    <div 
+                                        class="progress-bar"
+                                        role="progressbar"
+                                        aria-valuemin="0"
+                                        aria-valuemax="10"
+                                        aria-valuenow={subskill.years}
+                                        aria-label={`${subskill.years} years of experience in ${subskill.name}`}
+                                    >
                                         <div class="progress-fill"></div>
                                     </div>
-                                </div>
+                                </li>
                             {/each}
-                        </div>
+                        </ul>
                     </div>
                 {/if}
-            </div>
+            </button>
         {/each}
     </div>
-</div>
+</section>
 
 <style>
     .section {
@@ -147,15 +157,24 @@
     }
 
     .legend-item {
-        background-color: rgba(171, 209, 198, 0.05);
+        width: 100%;
+        text-align: left;
+        border: none;
         border-radius: 0.5rem;
         padding: 1rem;
         cursor: pointer;
+        background-color: rgba(171, 209, 198, 0.05);
         transition: all 0.3s ease;
+        font-family: var(--font-family-kenney);
     }
 
     .legend-item:hover {
         background-color: rgba(249, 188, 96, 0.1);
+    }
+
+    .legend-item:focus-visible {
+        outline: 3px solid #f9bc60;
+        outline-offset: 2px;
     }
 
     .legend-item.active {
@@ -201,6 +220,9 @@
     .subskills-grid {
         display: grid;
         gap: 1rem;
+        list-style: none;
+        padding: 0;
+        margin: 0;
     }
 
     .subskill {

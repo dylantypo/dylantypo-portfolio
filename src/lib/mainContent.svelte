@@ -7,11 +7,7 @@
     let { triggerRevealCoolBar } = $props<{
         triggerRevealCoolBar: () => void
     }>();
-
-    function handleHeadshotClick() {
-        triggerRevealCoolBar();
-    }
-
+    
     function handleKeydown(e: KeyboardEvent) {
         if (e.key === 'Enter') triggerRevealCoolBar();
     }
@@ -34,12 +30,16 @@
                 // Clears the element's content to prepare for animation
                 el.innerHTML = '';
 
+                const originalContent = el.textContent; // Store original content for aria-label
+                el.setAttribute('aria-label', originalContent || '');
+
                 nodes.forEach(node => {
                     if (node.nodeType === Node.TEXT_NODE) {
                         // Splits plain text into words and wraps each in a span
                         let words = node.textContent ? node.textContent.split(" ") : [];
                         words.forEach(word => {
                             let span = document.createElement('span');
+                            span.setAttribute('aria-hidden', 'true');
                             span.textContent = word + " ";
                             el.appendChild(span);
                         });
@@ -48,6 +48,7 @@
                         let words = node.textContent ? node.textContent.split(" ") : [];
                         words.forEach(word => {
                             let span = document.createElement('span');
+                            span.setAttribute('aria-hidden', 'true');
                             span.style.color = "#f9bc60"; // Applies specific highlight color
                             span.textContent = word + " ";
                             el.appendChild(span);
@@ -75,45 +76,47 @@
     });
 </script>
 
-<div id="content">
-    <div class="section">
-        <p class="header">About Me</p>
-        <h1 class="long-text fade-in">I'm a versatile data scientist, expertly crafting <span class="highlighted-text">cutting-edge</span> analytics that illuminate data from fresh and inventive perspectives.</h1>
-    </div>
+<main id="content">
+    <article class="section" id="aboutME">
+        <h2 class="header">About Me</h2>
+        <div 
+            class="long-text fade-in"
+            aria-label="I'm a versatile data scientist, expertly crafting cutting-edge analytics that illuminate data from fresh and inventive perspectives."
+        >
+            I'm a versatile data scientist, expertly crafting <span class="highlighted-text">cutting-edge</span> analytics that illuminate data from fresh and inventive perspectives.
+        </div>
+    </article>
     
-    <div class="section">
-        <p class="header">Experience</p>
-        <h1 class="long-text fade-in">Nearly <span class="highlighted-text">half a decade</span> of diverse experience, enhancing data-driven decisions with a unique blend of creativity and innovation.</h1>
-    </div>
+    <article class="section" id="experience">
+        <h2 class="header">Experience</h2>
+        <div 
+            class="long-text fade-in"
+            aria-label="Nearly half a decade of diverse experience, enhancing data-driven decisions with a unique blend of creativity and innovation."
+        >
+            Nearly <span class="highlighted-text">half a decade</span> of diverse experience, enhancing data-driven decisions with a unique blend of creativity and innovation.
+        </div>
+    </article>
 
     <History />
 
     <Skills />
 
-    <div id="footer-content">
-        <p class="footer"><span id="copyright">&#169</span> Dylan Posner 2025</p>
-        <div 
+    <footer id="footer-content" aria-label="Copyright and contact">
+        <p class="footer">
+            <span id="copyright" aria-label="Copyright">©</span> Dylan Posner 2025
+        </p>
+        <button 
             class="headshot" 
-            tabindex="0" 
-            role="button" 
             onclick={triggerRevealCoolBar} 
-            onkeydown={(e) => e.key === 'Enter' && triggerRevealCoolBar()}
+            onkeydown={handleKeydown}
+            aria-label="View contact information"
         >
-            <img src="favicon.png" alt="avatar headshot by midjourney">
-        </div>
-    </div>
-</div>
+            <img src="favicon.png" alt="Stylized avatar headshot created by Midjourney">
+        </button>
+    </footer>
+</main>
 
 <style>
-    :global(html), :global(body) {
-        scrollbar-width: none;
-        width: 100vw;
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        background-color: #004643;
-    }
-
     #content {
         color: #e8e4e6;
         user-select: none;
@@ -125,6 +128,19 @@
         flex-direction: row;
         justify-content: flex-start;
         align-items: center;
+    }
+
+    /* Add to your existing styles */
+    .headshot {
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+    }
+
+    .headshot:focus-visible {
+        outline: 3px solid #f9bc60;
+        border-radius: 50%;
     }
 
     .headshot img {
@@ -157,6 +173,7 @@
 
     .long-text {
         font-size: 7.5vmin;
+        font-weight: 600;
         padding: 0 20vw;
         color: #abd1c6;
     }

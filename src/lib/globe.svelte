@@ -7,6 +7,10 @@
     let container: HTMLDivElement;
     export let hero_text: string;
 
+    // Add keyboard controls state
+    let currentLocationIndex = -1;
+    let isControlsEnabled = false;
+
     type Region = {
         country: string;
         description: string;
@@ -48,6 +52,22 @@
     onMount(async () => {
         // Check if we are in the browser
         if (typeof window === 'undefined') return;
+
+        container.setAttribute('role', 'region');
+        container.setAttribute('aria-label', 'Interactive 3D Globe showing places I\'ve lived');
+
+        // Add keyboard instructions for screen readers
+        const instructions = document.createElement('div');
+        instructions.className = 'sr-only';
+        instructions.textContent = 'Use arrow keys to navigate between locations. Press Enter to focus on a location. Press Escape to exit navigation mode.';
+        container.appendChild(instructions);
+
+        // Add controls container
+        const controlsContainer = document.createElement('div');
+        controlsContainer.className = 'globe-controls sr-only';
+        controlsContainer.setAttribute('role', 'toolbar');
+        controlsContainer.setAttribute('aria-label', 'Globe navigation controls');
+        container.appendChild(controlsContainer);
         
         // Dynamically import browser-only dependencies
         const [
@@ -136,7 +156,6 @@
             globe.setPointOfView(camera);
         })
 
-        // 
         const labData = regionsLived.flatMap(region =>
             region.states.map(state => ({
                 lat: state.lat,
@@ -146,6 +165,48 @@
                 years: state.years
             }))
         );
+
+        document.addEventListener('keydown', handleKeyboardNavigation);
+
+        function focusOnLocation(lat: number, lng: number) {
+            const isMobile = window.innerWidth < 768;
+            adjustCamera(isMobile, { lat, lng });
+        }
+
+        function handleKeyboardNavigation(e: KeyboardEvent) {
+            if (!isControlsEnabled) {
+                if (e.key === 'Tab') {
+                    isControlsEnabled = true;
+                    announceControlsEnabled();
+                }
+                return;
+            }
+
+            switch (e.key) {
+                case 'ArrowRight':
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    navigateLocations(e.key === 'ArrowRight' ? 1 : -1);
+                    break;
+                case 'Enter':
+                    if (currentLocationIndex >= 0) {
+                        const location = labData[currentLocationIndex];
+                        focusOnLocation(location.lat, location.lng);
+                    }
+                    break;
+                case 'Escape':
+                    isControlsEnabled = false;
+                    announceControlsDisabled();
+                    break;
+            }
+        }
+
+        function navigateLocations(direction: number) {
+            const totalLocations = labData.length;
+            currentLocationIndex = (currentLocationIndex + direction + totalLocations) % totalLocations;
+            const location = labData[currentLocationIndex];
+            announceLocation(location);
+        }
 
         // Min Point Altitude
         const MIN_ALTITUDE = 0.0125;
@@ -176,13 +237,25 @@
                 const div = document.createElement('div');
                 const isMobile = window.innerWidth < 768;
                 
+                // Make location markers focusable and accessible
+                div.setAttribute('role', 'button');
+                div.setAttribute('tabindex', '0');
+                div.setAttribute('aria-label', `${d.name}: Lived here for ${d.years} ${d.years === 1 ? 'year' : 'years'}`);
+                
+                // Add keyboard interaction
+                div.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        focusOnLocation(d.lat, d.lng);
+                        announceLocationFocus(d.name);
+                    }
+                });
+
                 div.textContent = d.name;
                 div.style.color = 'rgba(255, 255, 255, 0.5)';
                 div.style.fontSize = isMobile ? '0.35rem' : '0.5rem';
                 div.style.position = 'absolute';
                 div.style.opacity = (isMobile && d.years < 2) ? '0' : '1';
                 
-                // Add data attributes for tracking
                 div.dataset.lat = d.lat.toString();
                 div.dataset.lng = d.lng.toString();
                 div.dataset.years = d.years.toString();
@@ -453,10 +526,48 @@
         
         animate();
 
+        function announceLocation(location: any) {
+            const announcement = document.createElement('div');
+            announcement.setAttribute('role', 'alert');
+            announcement.setAttribute('aria-live', 'polite');
+            announcement.className = 'sr-only';
+            announcement.textContent = `${location.name}: Lived here for ${location.years} ${location.years === 1 ? 'year' : 'years'}`;
+            container.appendChild(announcement);
+            setTimeout(() => announcement.remove(), 1000);
+        }
+
+        function announceControlsEnabled() {
+            const announcement = document.createElement('div');
+            announcement.setAttribute('role', 'alert');
+            announcement.className = 'sr-only';
+            announcement.textContent = 'Globe navigation enabled. Use arrow keys to explore locations.';
+            container.appendChild(announcement);
+            setTimeout(() => announcement.remove(), 1000);
+        }
+
+        function announceControlsDisabled() {
+            const announcement = document.createElement('div');
+            announcement.setAttribute('role', 'alert');
+            announcement.className = 'sr-only';
+            announcement.textContent = 'Globe navigation disabled.';
+            container.appendChild(announcement);
+            setTimeout(() => announcement.remove(), 1000);
+        }
+
+        function announceLocationFocus(locationName: string) {
+            const announcement = document.createElement('div');
+            announcement.setAttribute('role', 'alert');
+            announcement.className = 'sr-only';
+            announcement.textContent = `Focusing on ${locationName}`;
+            container.appendChild(announcement);
+            setTimeout(() => announcement.remove(), 1000);
+        }
+
         // Set up the cleanup function
         cleanupFn = () => {
             cancelAnimationFrame(animationFrameId);
             window.removeEventListener('resize', handleResize);
+            document.removeEventListener('keydown', handleKeyboardNavigation)
             // Dispose of materials and geometries
             scene.traverse((object) => {
                 if (object instanceof THREE.Mesh) {
@@ -483,7 +594,14 @@
     });
 </script>
 
-<div bind:this={container}></div>
+<div 
+    bind:this={container}
+    aria-describedby="globe-description"
+>
+    <span id="globe-description" class="sr-only">
+        Interactive 3D globe showing locations I've lived in around the world. Use Tab to enable navigation, arrow keys to explore locations, Enter to focus on a location, and Escape to exit navigation mode.
+    </span>
+</div>
 
 <style>
     div {

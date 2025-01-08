@@ -1,14 +1,13 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-
     // Array of jobs with details including descriptions and visibility toggle
-    let jobs = [
+    let jobs = $state([
         {
             year: "Now",
             company: "Booz Allen Hamilton",
             role: "Data Scientist (Senior Consultant)  ",
             description: "Developed Python-based tools and automated workflows, integrating AWS and Tableau to improve data analysis and visualization  ",
-            showDescription: false, // Toggles between showing role details or description
+            showDescription: false,
+            isKeyboardControl: false,
         },
         {
             year: "2019",
@@ -16,6 +15,7 @@
             role: "Data Analytics Intern  ",
             description: "Used Snowflake and SQL to organize data and developed efficient pipelines for supply chain analysis  ",
             showDescription: false,
+            isKeyboardControl: false,
         },
         {
             year: "2018",
@@ -23,75 +23,118 @@
             role: "Product Development Intern  ",
             description: "Leveraged agile practices to support product design and coordinated efforts to deliver a client-focused white paper  ",
             showDescription: false,
+            isKeyboardControl: false,
         },
-    ];
+    ]);
 
-    // Toggles the display of the description or role details for a job
-    const toggleDescription = (index: number) => {
+    // Toggle for keyboard/click interaction
+    function toggleDescription(index: number) {
         jobs[index].showDescription = !jobs[index].showDescription;
-        jobs = [...jobs]; // Ensures reactivity by creating a new array reference
-    };
+    }
 
-    // Resets showDescription to false when the mouse leaves the job
-    const resetDescription = (index: number) => {
+    // Mouse-only handlers
+    function handleMouseEnter(index: number) {
+        if (!jobs[index].isKeyboardControl) {
+            jobs[index].showDescription = true;
+        }
+    }
+
+    function handleMouseLeave(index: number) {
+        if (!jobs[index].isKeyboardControl) {
+            jobs[index].showDescription = false;
+        }
+    }
+
+    // Keyboard interaction handlers
+    function handleFocus(index: number) {
+        jobs[index].isKeyboardControl = true;
+    }
+
+    function handleBlur(index: number) {
+        jobs[index].isKeyboardControl = false;
         jobs[index].showDescription = false;
-        jobs = [...jobs]; // Ensures reactivity
-    };
+    }
 
-    onMount(() => {
-        // Add a document touch listener
-        document.addEventListener('touchstart', (e) => {
+    function handleKeyDown(e: KeyboardEvent, index: number) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleDescription(index);
+        }
+    }
+
+    $effect(() => {
+        function handleTouch(e: TouchEvent) {
             const target = e.target as HTMLElement;
             const job = target.closest('.job');
 
-            // If tapping inside the current job, prevent reset
             if (job) {
                 const index = Array.from(document.querySelectorAll('.job')).indexOf(job);
                 if (jobs[index].showDescription) {
-                    // Let the interaction happen without resetting
-                    return;
+                    return; // Let the interaction happen without resetting
                 }
-                // Open the job description for the tapped element
-                toggleDescription(index);
+                toggleDescription(index); // Open the job description
                 return;
             }
 
             // Close all jobs if touched outside
-            jobs.forEach((job) => (job.showDescription = false));
-            jobs = [...jobs]; // Trigger reactivity
-        });
+            jobs.forEach((_, i) => {
+                jobs[i].showDescription = false;
+            });
+        }
+
+        document.addEventListener('touchstart', handleTouch);
+
+        return () => {
+            document.removeEventListener('touchstart', handleTouch);
+        };
     });
 </script>
 
-<div class="section">
-    <p class="header">History</p>
+<section class="section" aria-labelledby="history-header">
+    <h2 id="history-header" class="header">History</h2>
     {#each jobs as job, i}
-        <div 
+        <button 
             class="job" 
-            onmouseover={() => !job.showDescription && toggleDescription(i)} 
-            onfocus={() => !job.showDescription && toggleDescription(i)} 
-            onmouseleave={() => resetDescription(i)} 
+            onmouseenter={() => handleMouseEnter(i)}
+            onmouseleave={() => handleMouseLeave(i)}
+            onfocus={() => handleFocus(i)}
+            onblur={() => handleBlur(i)}
+            onclick={() => job.isKeyboardControl && toggleDescription(i)}
+            onkeydown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleDescription(i);
+                }
+            }}
             aria-expanded={job.showDescription} 
-            tabindex="0" 
-            role="button"
+            aria-controls={`job-description-${i}`}
+            aria-label={`${job.company} - ${job.role}`}
         >   
-            <h1 class="year">{job.year}</h1>
+            <h3 class="year">{job.year}</h3>
             <div class="text-wrapper">
-                <h1 class="company">{job.company}</h1>
+                <h4 class="company">{job.company}</h4>
                 {#if job.showDescription}
-                    <div class="description">
-                        <p>{job.description}<i class="fa-solid fa-caret-up fa-fade"></i></p>
+                    <div 
+                        id={`job-description-${i}`}
+                        class="description"
+                        aria-live="polite"
+                    >
+                        <p>{job.description}
+                            <i class="fa-solid fa-caret-up fa-fade" aria-hidden="true"></i>
+                        </p>
                     </div>
                 {:else}
                     <div class="role-text">
-                        <p>{job.role}<i class="fa-solid fa-caret-down fa-beat"></i></p>
+                        <p>{job.role}
+                            <i class="fa-solid fa-caret-down fa-beat" aria-hidden="true"></i>
+                        </p>
                     </div>
                 {/if}
             </div>
-            <div class="background"></div>
-        </div>
+            <div class="background" aria-hidden="true"></div>
+        </button>
     {/each}
-</div>
+</section>
 
 <style>
     .section {
@@ -106,25 +149,33 @@
         font-size: 3.5vmin;
     }
 
-    .job {
+    button.job {
         width: 100vw;
         display: flex;
         flex-direction: row;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         position: relative;
         background-color: rgba(171, 209, 198, 0.05);
         transition: color 0.3s;
+        border: none;
+        margin: 0;
+        padding: 0;
+        font-family: inherit;
+        cursor: pointer;
+        color: inherit;
     }
 
-    .job:focus {
-        outline: none;
+    button.job:focus-visible {
+        outline: 3px solid #f9bc60;
+        outline-offset: 2px;
     }
 
     .year {
         padding-left: 20vw;
         color: #e8e4e6;
         z-index: 2;
+        margin: 0;
     }
 
     .role-text {
@@ -135,6 +186,7 @@
         font-style: italic;
         transition: opacity 0.5s ease-in-out;
         opacity: 1;
+        text-align: left;
     }
 
     .text-wrapper {
@@ -142,6 +194,9 @@
         width: 100%;
         height: 100%;
         z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
     }
 
     .company {
@@ -151,6 +206,7 @@
         transition: color 0.3s ease-in-out, opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
         opacity: 1;
         z-index: 2;
+        margin: 2rem 0 0 0;
     }
 
     .company, .year {
@@ -166,9 +222,10 @@
         opacity: 0;
         transform: scale(0.95);
         z-index: 2;
+        text-align: left;
     }
 
-    .job:hover .description {
+    button.job:hover .description {
         color: #abd1c6;
         opacity: 1;
         transform: scale(1);
@@ -186,11 +243,11 @@
         z-index: 1;
     }
 
-    .job:hover .background {
+    button.job:hover .background {
         transform: scaleY(1);
     }
 
-    .job:hover {
+    button.job:hover {
         color: #e8e4e6;
     }
 
@@ -198,30 +255,26 @@
         .section {
             align-items: center;
         }
-
         .header {
             padding-left: 0;
         }
         
-        .job {
+        button.job {
             flex-direction: column;
+            align-items: center;
         }
-
         .role-text {
             padding-left: 10vw;
         }
-
         .year {
             padding: 0;
             font-size: 3vmin;
         }
-
         .company {
             padding-left: 10vw;
             padding-right: 10vw;
             font-size: 3.5vmin;
         }
-
         .description {
             font-size: 3vmin;
             padding-left: 10vw;
@@ -230,26 +283,19 @@
     }
 
     @media (max-width: 610px) {
-        .job {
-            flex-direction: column;
-        }
-
         .role-text {
             padding-left: 5vw;
             font-size: 2.8vmin;
         }
-
         .year {
             padding: 0;
             font-size: 2.5vmin;
         }
-
         .company {
             padding-left: 5vw;
             padding-right: 5vw;
             font-size: 3vmin;
         }
-
         .description {
             font-size: 2.5vmin;
             padding-left: 5vw;
@@ -258,26 +304,19 @@
     }
 
     @media (max-width: 480px) {
-        .job {
-            flex-direction: column;
-        }
-
         .role-text {
             padding-left: 3vw;
             font-size: 2.5vmin;
         }
-
         .year {
             padding: 0;
             font-size: 2vmin;
         }
-
         .company {
             padding-left: 3vw;
             padding-right: 3vw;
             font-size: 2.8vmin;
         }
-
         .description {
             font-size: 2.3vmin;
             padding-left: 3vw;
