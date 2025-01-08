@@ -164,7 +164,7 @@
 
     .role-text {
         overflow: hidden;
-        font-size: 2vmin;
+        font-size: 3vmin;
         padding-left: 20vw;
         padding-right: 20vw;
         font-style: italic;
@@ -201,7 +201,7 @@
     }
 
     .description {
-        font-size: 2.5vmin;
+        font-size: 3vmin;
         padding-left: 20vw;
         padding-right: 20vw;
         color: #e8e4e6;
@@ -291,11 +291,9 @@
         .company {
             padding-left: 10vw;
             padding-right: 10vw;
-            font-size: 3.5vmin;
             margin-bottom: 0.75rem;
         }
         .description {
-            font-size: 3vmin;
             padding-left: 10vw;
             padding-right: 10vw;
         }
@@ -308,20 +306,16 @@
         .role-text {
             padding-left: 5vw;
             padding-right: 5vw;
-            font-size: 2.8vmin;
         }
         .year {
-            font-size: 2.5vmin;
             margin-bottom: 0.5rem;
         }
         .company {
             padding-left: 5vw;
             padding-right: 5vw;
-            font-size: 3vmin;
             margin-bottom: 0.5rem;
         }
         .description {
-            font-size: 2.5vmin;
             padding-left: 5vw;
             padding-right: 5vw;
         }
@@ -331,20 +325,16 @@
         .role-text {
             padding-left: 3vw;
             padding-right: 3vw;
-            font-size: 2.5vmin;
         }
         .year {
-            font-size: 2vmin;
             margin-bottom: 0.5rem;
         }
         .company {
             padding-left: 3vw;
             padding-right: 3vw;
-            font-size: 2.8vmin;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0;
         }
         .description {
-            font-size: 2.3vmin;
             padding-left: 3vw;
             padding-right: 3vw;
         }

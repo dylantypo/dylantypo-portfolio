@@ -198,7 +198,7 @@
     }
 
     .long-text {
-        font-size: 7.5vmin;
+        font-size: 7vmin;
         font-weight: 600;
         padding: 0 20vw;
         color: #abd1c6;
@@ -214,6 +214,7 @@
         }
 
         .long-text {
+            font-size: 6.65vmin;
             padding: 0 12vw;
         }
     }
