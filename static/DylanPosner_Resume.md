@@ -15,8 +15,8 @@ Data Scientist with 3+ years specializing in data visualization and automation. 
 
 ## Experience
 
-### Data Scientist (Senior Consultant)
-**[Booz Allen Hamilton Inc.](https://www.boozallen.com/)** | September 13, 2021 - Present
+### [Booz Allen Hamilton Inc.](https://www.boozallen.com/)
+**Data Scientist (Senior Consultant)** | September 13, 2021 - Present
 
 #### LCMP Sentinel
 - Architected and implemented a Python automation pipeline using Tkinter, reducing PowerPoint generation time from 3 days to 30 minutes and saving over 100 manual hours per quarter
@@ -41,16 +41,16 @@ Data Scientist with 3+ years specializing in data visualization and automation. 
 - Developed computer vision pipeline using PyTesseract and OpenCV to extract financial data from 1000+ documents monthly
 - Automated report generation system processing 5+ years of historical project data for financial analysis
 
-### Data Analytics Intern
-**[Interos, Inc.](https://www.interos.ai/)** | May 18, 2020 - August 26, 2020 | Arlington, VA
+### [Interos, Inc.](https://www.interos.ai/)
+**Data Analytics Intern** | May 18, 2020 - August 26, 2020 | Arlington, VA
 - Designed and implemented unified data schema in Snowflake, enabling cross-project querying and analysis for 10+ concurrent projects
 - Built automated supply chain mapping system by developing complex SQL queries to analyze relationships across G2 survey data
 - Optimized data warehouse performance by refactoring critical SQL queries, reducing average processing time by 50%
 - Led integration of USASpending.gov data into Snowflake infrastructure, creating scalable ETL pipeline for federal spending analysis
 - Developed documentation and query templates that standardized data access patterns across teams
 
-### Product Development Intern
-**[The Phoenix Team](https://phoenixoutcomes.com/)** | June 01, 2019 - August 28, 2019 | Arlington, VA
+### [The Phoenix Team](https://phoenixoutcomes.com/)
+**Product Development Intern** | June 01, 2019 - August 28, 2019 | Arlington, VA
 - Led team of 4 interns in researching and authoring comprehensive white paper on product management best practices, delivered to enterprise clients
 - Implemented agile methodologies across product development cycles, improving sprint velocity by establishing clear acceptance criteria and task estimation
 
@@ -64,5 +64,5 @@ Data Scientist with 3+ years specializing in data visualization and automation. 
 ---
 
 ## Education
-### Virginia Tech
+#### Virginia Tech
 B.S. Business Information Technology | August 28, 2017 - May 16, 2021
