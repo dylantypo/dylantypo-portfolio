@@ -187,7 +187,7 @@
       /* Enable background printing */
       * {
           -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
+          print-color-adjust: inherit !important;
       }
 
       /* Reset everything to desktop-like state */

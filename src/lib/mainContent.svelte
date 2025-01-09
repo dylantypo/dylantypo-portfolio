@@ -1,112 +1,140 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
     import gsap from 'gsap';
+    import { onMount } from 'svelte';
     import Skills from '$lib/skills.svelte';
     import History from '$lib/history.svelte';
 
-    let { triggerRevealCoolBar } = $props<{
-        triggerRevealCoolBar: () => void
-    }>();
-    
+    let { handleRevealCoolBar } = $props<{ handleRevealCoolBar: () => void }>();
+
     function handleKeydown(e: KeyboardEvent) {
-        if (e.key === 'Enter') triggerRevealCoolBar();
+        if (e.key === 'Enter') handleRevealCoolBar();
     }
 
-    let ScrollTrigger;
-    let elements: HTMLElement[] | undefined;
+    let elements: HTMLElement[] = [];
 
-    // Runs animations for elements with fade-in effects when scrolling
-    onMount(async () => {
-        const module = await import('gsap/ScrollTrigger');
-        ScrollTrigger = module.ScrollTrigger;
-        gsap.registerPlugin(ScrollTrigger);
+    function splitTextIntoLetters(text: string, highlight: boolean = false): string {
+        return text
+            .split(' ')
+            .map(
+                (word) =>
+                    `<span class="word-container">${word
+                        .split('')
+                        .map(
+                            (char) =>
+                                `<span class="letter${highlight ? ' highlight' : ''}">${char}</span>`
+                        )
+                        .join('')}</span> `
+            )
+            .join('');
+    }
 
-        elements = gsap.utils.toArray(".fade-in") as HTMLElement[];
+    // Initialize animations when the component is mounted
+    onMount(() => {
+        console.log("Component mounted. Initializing animations.");
 
-        if (elements) {
-            elements.forEach(el => {
-                let nodes = Array.from(el.childNodes);
+        const initializeAnimations = async () => {
+            const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+            console.log("ScrollTrigger imported");
+            gsap.registerPlugin(ScrollTrigger);
 
-                // Clears the element's content to prepare for animation
-                el.innerHTML = '';
+            // Wrap animations in GSAP context for cleanup and initialization
+            const ctx = gsap.context(() => {
+                elements = gsap.utils.toArray(".fade-in") as HTMLElement[];
+                console.log("Found elements:", elements);
 
-                const originalContent = el.textContent; // Store original content for aria-label
-                el.setAttribute('aria-label', originalContent || '');
+                elements.forEach((el, index) => {
+                    console.log(`Processing element ${index}:`, el);
 
-                nodes.forEach(node => {
-                    if (node.nodeType === Node.TEXT_NODE) {
-                        // Splits plain text into words and wraps each in a span
-                        let words = node.textContent ? node.textContent.split(" ") : [];
-                        words.forEach(word => {
-                            let span = document.createElement('span');
-                            span.setAttribute('aria-hidden', 'true');
-                            span.textContent = word + " ";
-                            el.appendChild(span);
-                        });
-                    } else if (node.nodeType === Node.ELEMENT_NODE && (node as Element).classList.contains('highlighted-text')) {
-                        // Handles highlighted text, preserving its style
-                        let words = node.textContent ? node.textContent.split(" ") : [];
-                        words.forEach(word => {
-                            let span = document.createElement('span');
-                            span.setAttribute('aria-hidden', 'true');
-                            span.style.color = "#f9bc60"; // Applies specific highlight color
-                            span.textContent = word + " ";
-                            el.appendChild(span);
-                        });
+                    // Split text into letters
+                    const nodes = Array.from(el.childNodes);
+                    el.innerHTML = '';
+                    const originalContent = el.textContent;
+                    el.setAttribute('aria-label', originalContent || '');
+
+                    nodes.forEach((node) => {
+                        if (node.nodeType === Node.TEXT_NODE) {
+                            const text = node.textContent || '';
+                            el.insertAdjacentHTML('beforeend', splitTextIntoLetters(text));
+                        } else if (
+                            node.nodeType === Node.ELEMENT_NODE &&
+                            (node as Element).classList.contains('highlighted-text')
+                        ) {
+                            const text = node.textContent || '';
+                            el.insertAdjacentHTML('beforeend', splitTextIntoLetters(text, true));
+                        }
+                    });
+
+                    // Animation timeline
+                    const letters = el.querySelectorAll('.letter');
+                    if (letters.length === 0) {
+                        gsap.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 1 });
+                        return;
                     }
+
+                    const timeline = gsap.timeline({
+                        scrollTrigger: {
+                            trigger: el,
+                            start: 'top 75%',
+                            end: 'top 25%',
+                            scrub: 2,
+                            // markers: true,
+                        },
+                    });
+
+                    timeline.fromTo(
+                        letters,
+                        { opacity: 0.05 },
+                        {
+                            opacity: 1,
+                            stagger: 0.15,
+                            ease: 'power1.inOut',
+                        }
+                    );
                 });
+                ScrollTrigger.refresh();
             });
-        }
 
-        let spans = gsap.utils.toArray(".fade-in span") as HTMLElement[];
+            // Cleanup animations when the component is destroyed
+            return () => {
+                ctx.revert();
+                console.log("Component destroyed. Animations cleaned up.");
+            };
+        };
 
-        spans.forEach(span => {
-            // Applies fade-in animation with ScrollTrigger
-            gsap.from(span, {
-                scrollTrigger: {
-                    trigger: span,
-                    start: "top 75%", // Animation starts when 75% of the span enters the viewport
-                    end: "bottom 25%", // Animation ends when 25% of the span leaves the viewport
-                    scrub: true, // Smooth scrolling animation
-                },
-                autoAlpha: 0.025, // Initial opacity set to 5%
-                duration: 1.75, // Animation duration of 1 second
-            });
-        });
+        initializeAnimations();
+    });
+
+    // Reactively log element updates if `elements` changes
+    $effect(() => {
+        console.log("Elements updated:", elements);
     });
 </script>
 
 <main id="content">
     <article class="section" id="aboutMe" role="region" aria-labelledby="aboutMe-header">
-        <button 
-            class="section-button"
-            aria-controls="aboutMe-content"
+        <h2 id="aboutMe-header" class="header">About Me</h2>
+        <div 
+            id="aboutMe-content"
+            class="long-text fade-in"
+            aria-label="I'm a versatile data scientist, expertly crafting cutting-edge analytics that illuminate data from fresh and inventive perspectives."
         >
-            <h2 id="aboutMe-header" class="header">About Me</h2>
-            <div 
-                id="aboutMe-content"
-                class="long-text fade-in"
-                aria-label="I'm a versatile data scientist, expertly crafting cutting-edge analytics that illuminate data from fresh and inventive perspectives."
-            >
-                I'm a versatile data scientist, expertly crafting <span class="highlighted-text">cutting-edge</span> analytics that illuminate data from fresh and inventive perspectives.
-            </div>
-        </button>
+            I'm a versatile data scientist, expertly crafting <!-- First segment -->
+            <span class="highlighted-text">cutting-edge</span> <!-- Highlighted -->
+            analytics that illuminate data from fresh and inventive perspectives. <!-- Last segment -->
+        </div>
     </article>
     
     <article class="section" id="experience" role="region" aria-labelledby="experience-header">
-        <button 
-            class="section-button"
-            aria-controls="experience-content"
+        <h2 id="experience-header" class="header">Experience</h2>
+        <div 
+            id="experience-content"
+            class="long-text fade-in"
+            aria-label="Nearly half a decade of diverse experience, enhancing data-driven decisions with a unique blend of creativity and innovation."
         >
-            <h2 id="experience-header" class="header">Experience</h2>
-            <div 
-                id="experience-content"
-                class="long-text fade-in"
-                aria-label="Nearly half a decade of diverse experience, enhancing data-driven decisions with a unique blend of creativity and innovation."
-            >
-                Nearly <span class="highlighted-text">half a decade</span> of diverse experience, enhancing data-driven decisions with a unique blend of creativity and innovation.
-            </div>
-        </button>
+            Nearly half a decade of diverse experience, enhancing <!-- First segment -->
+            <span class="highlighted-text">data-driven</span> <!-- Highlighted -->
+            decisions with a unique blend of creativity and innovation. <!-- Last segment -->
+        </div>
     </article>
 
     <History />
@@ -119,7 +147,7 @@
         </p>
         <button 
             class="headshot" 
-            onclick={triggerRevealCoolBar} 
+            onclick={handleRevealCoolBar} 
             onkeydown={handleKeydown}
             aria-label="View contact information"
         >
@@ -130,7 +158,7 @@
 
 <style>
     #content {
-        color: #e8e4e6;
+        color: var(--color-text-primary); 
         user-select: none;
     }
 
@@ -150,7 +178,7 @@
     }
 
     .headshot:focus-visible {
-        outline: 3px solid #f9bc60;
+        outline: 3px solid var(--color-secondary);
         border-radius: 50%;
     }
 
@@ -171,24 +199,10 @@
     }
 
     .section {
+        height: auto;
         margin-bottom: 12.5vh;
         display: flex;
         flex-direction: column;
-    }
-
-    .section-button {
-        background: none;
-        border: none;
-        padding: 5vh;
-        width: 100%;
-        text-align: left;
-        color: inherit;
-        font-family: var(--font-family-kenney);
-    }
-
-    .section-button:focus-visible {
-        outline: 1px solid #f9bc60;
-        outline-offset: 4px;
     }
 
     .header, .footer {
@@ -198,10 +212,23 @@
     }
 
     .long-text {
-        font-size: 7vmin;
+        font-size: clamp(2rem, 5vw, 4rem);
+        line-height: 1.25;
         font-weight: 600;
-        padding: 0 20vw;
-        color: #abd1c6;
+        padding: 0 max(20vw, 2rem);
+        color: var(--color-text-secondary);
+        max-width: 100%;
+    }
+
+    :global(.word-container) {
+        display: inline-block;
+        margin-right: 0.25em;
+        min-height: 1.3em;
+        vertical-align: middle;
+    }
+
+    :global(.letter.highlight) {
+        color: var(--color-secondary);
     }
 
     @media (max-width: 925px) {
@@ -214,8 +241,8 @@
         }
 
         .long-text {
-            font-size: 6.65vmin;
-            padding: 0 12vw;
+            font-size: clamp(1.8rem, 4.5vw, 3.5rem);
+            padding: 0 max(12vw, 1.5rem);
         }
     }
 
@@ -229,7 +256,8 @@
         }
 
         .long-text {
-            padding: 0 8vw;
+            font-size: clamp(1.5rem, 4vw, 3rem);
+            padding: 0 max(8vw, 1rem);
         }
     }
 
@@ -243,7 +271,7 @@
         }
 
         .long-text {
-            padding: 0 5vw;
+            padding: 0 max(5vw, 0.8rem);
         }
     }
 </style>
