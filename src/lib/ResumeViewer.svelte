@@ -211,11 +211,14 @@
           box-shadow: none !important;
           margin: 0 !important;
           width: 210mm !important;
-          border-radius: 0 !important;
+          border: none !important;
+          border-radius:0  !important;
       }
 
       .resume-content {
           padding: 0 !important;
+          border: none !important;
+          border-radius: 0 !important;
       }
 
       .controls {
