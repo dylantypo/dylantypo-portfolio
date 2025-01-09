@@ -152,6 +152,11 @@
         text-decoration: none;
     }
 
+    .toolbar-link:focus-visible {
+        border-radius: 50%;
+        border: var(--color-background);
+    }
+
     @media (max-width: 1030px) {
         .toolbar {
             opacity: 50%;

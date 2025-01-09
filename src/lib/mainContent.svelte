@@ -34,17 +34,19 @@
 
         const initializeAnimations = async () => {
             const { ScrollTrigger } = await import('gsap/ScrollTrigger');
-            console.log("ScrollTrigger imported");
             gsap.registerPlugin(ScrollTrigger);
+
+            const { CustomEase } = await import('gsap/CustomEase');
+            gsap.registerPlugin(CustomEase);
+
+            // Create a custom ease that mimics water movement
+            CustomEase.create("waterEase", "M0,0 C0.42,0 0.58,1 1,1");
 
             // Wrap animations in GSAP context for cleanup and initialization
             const ctx = gsap.context(() => {
                 elements = gsap.utils.toArray(".fade-in") as HTMLElement[];
-                console.log("Found elements:", elements);
 
                 elements.forEach((el, index) => {
-                    console.log(`Processing element ${index}:`, el);
-
                     // Split text into letters
                     const nodes = Array.from(el.childNodes);
                     el.innerHTML = '';
@@ -66,17 +68,12 @@
 
                     // Animation timeline
                     const letters = el.querySelectorAll('.letter');
-                    if (letters.length === 0) {
-                        gsap.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 1 });
-                        return;
-                    }
-
                     const timeline = gsap.timeline({
                         scrollTrigger: {
                             trigger: el,
                             start: 'top 75%',
                             end: () => `+=${el.offsetHeight * 0.9}`, // Dynamic end value
-                            scrub: 2,
+                            scrub: 1.65,
                             // markers: true,
                         },
                     });
@@ -86,8 +83,8 @@
                         { opacity: 0.05 },
                         {
                             opacity: 1,
-                            stagger: 0.15,
-                            ease: 'power1.inOut',
+                            stagger: 0.05,
+                            ease: "waterEase",
                         }
                     );
                 });
@@ -97,7 +94,7 @@
             // Cleanup animations when the component is destroyed
             return () => {
                 ctx.revert();
-                console.log("Component destroyed. Animations cleaned up.");
+                // console.log("Component destroyed. Animations cleaned up.");
             };
         };
 
@@ -106,7 +103,7 @@
 
     // Reactively log element updates if `elements` changes
     $effect(() => {
-        console.log("Elements updated:", elements);
+        // console.log("Elements updated:", elements);
     });
 </script>
 
@@ -178,14 +175,13 @@
     }
 
     .headshot:focus-visible {
-        outline: 3px solid var(--color-secondary);
         border-radius: 50%;
     }
 
     .headshot img {
         width: 10vmin;
         height: auto;
-        margin-left: 1em;
+        margin: 1em;
         border-radius: 50%;
         opacity: 0.6;
         box-shadow: 0 8px 10px rgba(0, 0, 0, 0.85);
@@ -224,7 +220,7 @@
         display: inline-block;
         margin-right: 0.25em;
         min-height: 1.3em;
-        vertical-align: middle;
+        vertical-align: middle; 
     }
 
     :global(.letter.highlight) {
