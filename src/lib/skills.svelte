@@ -144,16 +144,16 @@
 
     .header {
         width: max-content;
-        padding-left: 20vw;
-        font-size: 3.5vmin;
-        margin-bottom: 2em;
+        padding-left: var(--content-padding-desktop);
+        font-size: var(--font-size-lg);
+        margin-bottom: var(--spacing-xl);
     }
 
     .legend-container {
-        padding: 0 20vw;
+        padding: 0 var(--content-padding-desktop);
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        gap: var(--spacing-base);
     }
 
     .legend-item {
@@ -161,11 +161,11 @@
         text-align: left;
         border: none;
         border-radius: 0.5rem;
-        padding: 1rem;
+        padding: var(--spacing-base);
         cursor: pointer;
         background-color: rgba(171, 209, 198, 0.05);
-        transition: all 0.3s ease;
-        font-family: var(--font-family-kenney);
+        transition: all var(--transition-speed) ease;
+        font-family: var(--font-family-base);
     }
 
     .legend-item:hover {
@@ -173,7 +173,7 @@
     }
 
     .legend-item:focus-visible {
-        outline: 3px solid #f9bc60;
+        outline: 3px solid var(--color-secondary);
         outline-offset: 2px;
     }
 
@@ -184,13 +184,13 @@
     .legend-header {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: var(--spacing-base);
     }
 
     .legend-marker {
         width: 1rem;
         height: 1rem;
-        background-color: #f9bc60;
+        background-color: var(--color-secondary);
         border-radius: 50%;
     }
 
@@ -198,28 +198,28 @@
         flex: 1;
         font-size: 2.5vmin;
         margin: 0;
-        color: #e8e4e6;
+        color: var(--color-text-primary);
     }
 
     .expand-icon {
         font-size: 2vmin;
-        color: #abd1c6;
+        color: var(--color-text-secondary);
     }
 
     .skill-details {
-        margin-top: 1rem;
-        padding-left: 2rem;
+        margin-top: var(--spacing-base);
+        padding-left: var(--spacing-xl);
     }
 
     .description {
-        color: #abd1c6;
+        color: var(--color-text-secondary);
         font-size: 2vmin;
-        margin-bottom: 1rem;
+        margin-bottom: var(--spacing-base);
     }
 
     .subskills-grid {
         display: grid;
-        gap: 1rem;
+        gap: var(--spacing-base);
         list-style: none;
         padding: 0;
         margin: 0;
@@ -238,12 +238,12 @@
     }
 
     .subskill-name {
-        color: #e8e4e6;
+        color: var(--color-text-primary);
         font-size: 1.8vmin;
     }
 
     .proficiency {
-        color: #abd1c6;
+        color: var(--color-text-secondary);
         font-size: 1.8vmin;
     }
 
@@ -256,7 +256,7 @@
 
     .progress-fill {
         height: 100%;
-        background-color: #f9bc60;
+        background-color: var(--color-secondary);
         width: 0;
         transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -274,13 +274,13 @@
 
         .legend-container {
             width: 85%;
-            padding: 0 10vw;
+            padding: 0 var(--content-padding-tablet);
         }
     }
 
     @media (max-width: 610px) {
         .legend-container {
-            padding: 0 5vw;
+            padding: 0 var(--content-padding-mobile);
         }
         
         .skill-name {
@@ -294,7 +294,7 @@
 
     @media (max-width: 480px) {
         .legend-container {
-            padding: 0 3vw;
+            padding: 0 calc(var(--content-padding-mobile) * 0.6);
         }
         
         .legend-header {

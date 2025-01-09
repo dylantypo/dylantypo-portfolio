@@ -156,8 +156,8 @@
 
     .header {
         width: max-content;
-        padding-left: 20vw;
-        font-size: 3.5vmin;
+        padding-left: var(--content-padding-desktop);
+        font-size: var(--font-size-lg);
     }
 
     button.job {
@@ -169,23 +169,23 @@
         justify-content: flex-start;
         position: relative;
         background-color: rgba(171, 209, 198, 0.05);
-        transition: color 0.3s;
+        transition: color var(--transition-speed);
         border: none;
         margin: 0;
         padding: 2vh 0;
-        font-family: inherit;
+        font-family: var(--font-family-base);
         cursor: pointer;
         color: inherit;
     }
 
     button.job:focus-visible {
-        outline: 3px solid #f9bc60;
+        outline: 3px solid var(--color-secondary);
         outline-offset: 2px;
     }
 
     .year {
-        padding-left: 20vw;
-        color: #e8e4e6;
+        padding-left: var(--content-padding-desktop);
+        color: var(--color-text-primary);
         z-index: 2;
         margin: 0;
         align-self: center;
@@ -194,13 +194,13 @@
     .role-text {
         overflow: hidden;
         font-size: 3vmin;
-        padding-left: 20vw;
-        padding-right: 20vw;
+        padding-left: var(--content-padding-desktop);
+        padding-right: var(--content-padding-desktop);
         font-style: italic;
-        transition: opacity 0.5s ease-in-out;
+        transition: opacity var(--transition-speed) ease-in-out;
         opacity: 1;
         text-align: left;
-        margin-top: 1rem;
+        margin-top: var(--spacing-base);
     }
 
     .text-wrapper {
@@ -215,10 +215,12 @@
     }
 
     .company {
-        padding-left: 20vw;
-        padding-right: 20vw;
-        color: #e8e4e6;
-        transition: color 0.3s ease-in-out, opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        padding-left: var(--content-padding-desktop);
+        padding-right: var(--content-padding-desktop);
+        color: var(--color-text-primary);
+        transition: color var(--transition-speed) ease-in-out, 
+                  opacity var(--transition-speed) ease-in-out, 
+                  transform var(--transition-speed) ease-in-out;
         opacity: 1;
         z-index: 2;
         margin: 0;
@@ -231,15 +233,17 @@
 
     .description {
         font-size: 3vmin;
-        padding-left: 20vw;
-        padding-right: 20vw;
-        color: #e8e4e6;
-        transition: color 0.5s ease, opacity 0.5s ease, transform 0.5s ease;
+        padding-left: var(--content-padding-desktop);
+        padding-right: var(--content-padding-desktop);
+        color: var(--color-text-primary);
+        transition: color var(--transition-speed) ease, 
+                  opacity var(--transition-speed) ease, 
+                  transform var(--transition-speed) ease;
         opacity: 1;
         transform: scale(1);
         z-index: 2;
         text-align: left;
-        margin-top: 1rem;
+        margin-top: var(--spacing-base);
     }
 
     .background {
@@ -250,7 +254,7 @@
         background: rgba(249, 188, 96, 0.1);
         transform-origin: center; 
         transform: scaleY(0);
-        transition: transform 0.3s ease-in-out;
+        transition: transform var(--transition-speed) ease-in-out;
         z-index: 1;
     }
 
@@ -261,11 +265,11 @@
         }
         
         button.job:hover {
-            color: #e8e4e6;
+            color: var(--color-text-primary);
         }
 
         button.job:hover .description {
-            color: #abd1c6;
+            color: var(--color-text-secondary);
         }
     }
 
@@ -276,11 +280,11 @@
         }
         
         button.job:active {
-            color: #e8e4e6;
+            color: var(--color-text-primary);
         }
 
         button.job:active .description {
-            color: #abd1c6;
+            color: var(--color-text-secondary);
         }
 
         button.job[aria-expanded="true"] .background {
@@ -288,11 +292,11 @@
         }
 
         button.job[aria-expanded="true"] {
-            color: #e8e4e6;
+            color: var(--color-text-primary);
         }
 
         button.job[aria-expanded="true"] .description {
-            color: #abd1c6;
+            color: var(--color-text-secondary);
         }
     }
 
@@ -309,22 +313,22 @@
             align-items: center;
         }
         .role-text {
-            padding-left: 10vw;
-            padding-right: 10vw;
+            padding-left: var(--content-padding-tablet);
+            padding-right: var(--content-padding-tablet);
         }
         .year {
             padding: 2vh 0 0 0;
             font-size: 3vmin;
-            margin-bottom: 1rem;
+            margin-bottom: var(--spacing-base);
         }
         .company {
-            padding-left: 10vw;
-            padding-right: 10vw;
+            padding-left: var(--content-padding-tablet);
+            padding-right: var(--content-padding-tablet);
             margin-bottom: 0.75rem;
         }
         .description {
-            padding-left: 10vw;
-            padding-right: 10vw;
+            padding-left: var(--content-padding-tablet);
+            padding-right: var(--content-padding-tablet);
         }
         .background {
             top: 0;
@@ -332,40 +336,19 @@
     }
 
     @media (max-width: 610px) {
-        .role-text {
-            padding-left: 5vw;
-            padding-right: 5vw;
+        .role-text, .company, .description {
+            padding-left: var(--content-padding-mobile);
+            padding-right: var(--content-padding-mobile);
         }
         .year {
-            margin-bottom: 0.5rem;
-        }
-        .company {
-            padding-left: 5vw;
-            padding-right: 5vw;
-            margin-bottom: 0.5rem;
-        }
-        .description {
-            padding-left: 5vw;
-            padding-right: 5vw;
+            margin-bottom: calc(var(--spacing-base) * 0.5);
         }
     }
 
     @media (max-width: 480px) {
-        .role-text {
-            padding-left: 3vw;
-            padding-right: 3vw;
-        }
-        .year {
-            margin-bottom: 0.5rem;
-        }
-        .company {
-            padding-left: 3vw;
-            padding-right: 3vw;
-            margin-bottom: 0;
-        }
-        .description {
-            padding-left: 3vw;
-            padding-right: 3vw;
+        .role-text, .company, .description {
+            padding-left: calc(var(--content-padding-mobile) * 0.6);
+            padding-right: calc(var(--content-padding-mobile) * 0.6);
         }
     }
 </style>

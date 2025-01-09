@@ -1,10 +1,7 @@
 <script lang="ts">
-    let { children} = $props();
-
-    // Declare lang with a default value
+    let { children } = $props();
     let lang = $state("en");
 
-    // Use $effect to set the lang attribute on the <html> element
     $effect(() => {
         document.documentElement.lang = lang;
     });
@@ -14,22 +11,54 @@
 
 <style>
     :root {
-        --font-family-kenney: 'KenneyFuture', sans-serif;
-        --background-color-default: #004643;
-        --focus-outline-color: #f9bc60;
+        /* Color System */
+        --color-primary: #004643;
+        --color-secondary: #f9bc60;
+        --color-text-primary: #e8e4e6;
+        --color-text-secondary: #abd1c6;
+        --color-background: var(--color-primary);
+        --color-focus: var(--color-secondary);
+        
+        /* Typography */
+        --font-family-base: 'KenneyFuture', sans-serif;
+        --font-size-base: 16px;
+        --font-size-lg: 3.5vmin;
+        --font-size-xl: 7vmin;
+        
+        /* Spacing */
+        --spacing-base: 1rem;
+        --spacing-lg: 2rem;
+        --spacing-xl: 4rem;
+        
+        /* Layout */
+        --content-width-desktop: 80vw;
+        --content-padding-desktop: 20vw;
+        --content-padding-tablet: 10vw;
+        --content-padding-mobile: 5vw;
+        
+        /* Transitions */
+        --transition-speed: 0.3s;
+        --transition-ease: cubic-bezier(.28,1.79,.72,.72);
+        
+        /* Z-index layers */
+        --z-index-toolbar: 3;
+        --z-index-modal: 50;
     }
 
     @font-face {
-        font-family: var(--font-family-kenney);
+        font-family: var(--font-family-base);
         src: url('/Kenney Future.ttf') format('truetype');
         font-display: swap;
     }
 
+    /* Global Reset */
     :global(html) {
         scrollbar-width: none;
         width: 100vw;
         height: 100%;
-        background-color: var(--background-color-default);
+        background-color: var(--color-background);
+        font-family: var(--font-family-base);
+        font-size: var(--font-size-base);
     }
 
     :global(body) {
@@ -38,10 +67,12 @@
         line-height: 1.35;
     }
 
+    /* Hide scrollbars */
     :global(::-webkit-scrollbar) {
         display: none;
     }
 
+    /* Accessibility */
     :global(.sr-only) {
         position: absolute;
         width: 1px;
@@ -54,20 +85,26 @@
         border: 0;
     }
 
-    :global(:focus) {
-        outline: 3px solid var(--focus-outline-color);
-        outline-offset: 2px;
-    }
-
-    :global(:focus:not(:focus-visible)) {
-        outline: none;
-    }
-
+    /* Focus States */
     :global(:focus-visible) {
-        outline: 3px solid var(--focus-outline-color);
+        outline: 3px solid var(--color-focus);
         outline-offset: 2px;
     }
 
+    /* Common Media Queries */
+    @media (max-width: 925px) {
+        :root {
+            --content-padding-desktop: var(--content-padding-tablet);
+        }
+    }
+
+    @media (max-width: 610px) {
+        :root {
+            --content-padding-desktop: var(--content-padding-mobile);
+        }
+    }
+
+    /* Reduced Motion */
     @media (prefers-reduced-motion: reduce) {
         :global(*) {
             animation-duration: 0.01ms !important;

@@ -36,240 +36,227 @@
 <style>
   /* Base styles */
   :global(body) {
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
-    background: linear-gradient(
-      145deg,
-      rgba(0, 0, 0, 0.97) 0%,
-      rgba(0, 0, 0, 0.99) 100%
-    );
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(
+          145deg,
+          rgba(0, 0, 0, 0.97) 0%,
+          rgba(0, 0, 0, 0.99) 100%
+      );
+      min-height: 100%;
+      height: auto;
   }
 
   .outer-container {
-    width: 100vw;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 1rem 0;
-    box-sizing: border-box;
+      width: 100vw;
+      min-height: 100vh;
+      height: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--spacing-base) 0;
+      box-sizing: border-box;
+      background: linear-gradient(
+          145deg,
+          rgba(0, 0, 0, 0.97) 0%,
+          rgba(0, 0, 0, 0.99) 100%
+      );
   }
 
   .resume-scroll-container {
-    width: 100%;
-    max-width: calc(210mm + 4rem); /* A4 width + margin */
-    margin: 0 auto;
-    display: flex;
-    justify-content: center;
-    padding: 0 2rem;
-    box-sizing: border-box;
+      width: 100%;
+      max-width: calc(210mm + 4rem); /* A4 width + margin */
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      padding: 0 var(--spacing-lg);
+      box-sizing: border-box;
   }
 
   .resume-container {
-    width: 210mm; /* A4 width */
-    min-height: 297mm; /* A4 height */
-    background: white;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    position: relative;
-    margin: 2rem 0;
-    border-radius: 1cqb;
+      width: 210mm; /* A4 width */
+      min-height: 297mm; /* A4 height */
+      background: white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      position: relative;
+      margin: var(--spacing-lg) 0;
+      border-radius: 1cqb;
   }
 
   .resume-content {
-    padding: 4cqmin;
-    box-sizing: border-box;
+      padding: 4cqmin;
+      box-sizing: border-box;
   }
-
-  @media print {
-  /* Enable background printing */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  /* Reset everything to desktop-like state */
-  :global(body) {
-    background: white !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  .outer-container {
-    padding: 0 !important;
-    padding-bottom: 0 !important; /* Override mobile padding-bottom */
-  }
-
-  .resume-scroll-container {
-    padding: 0 !important;
-    max-width: none !important;
-    width: 210mm !important; /* Force A4 width */
-  }
-
-  .resume-container {
-    box-shadow: none !important;
-    margin: 0 !important;
-    width: 210mm !important; /* Force A4 width */
-    border-radius: 0 !important;
-  }
-
-  .resume-content {
-    padding: 0 !important;
-  }
-
-  /* Override mobile-specific styles */
-  @media (max-width: 640px) {
-    .resume-container {
-      width: 210mm !important;
-    }
-    
-    .resume-content {
-      padding: 0 !important;
-    }
-    
-    .resume-scroll-container {
-      padding: 0 !important;
-      width: 210mm !important;
-    }
-  }
-
-  .controls {
-    display: none !important;
-  }
-
-  @page {
-    size: A4;
-    margin: 1rem;
-  }
-}
 
   /* Typography styles */
   :global(.resume-content) {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    line-height: 1.25;
-    font-size: 14px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.25;
+      font-size: var(--font-size-base);
   }
 
   :global(.resume-content h1) {
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    color: #111827;
-    letter-spacing: -0.02em;
+      font-size: calc(var(--font-size-base) * 1.75);
+      font-weight: 700;
+      margin-bottom: var(--spacing-base);
+      color: var(--color-primary);
+      letter-spacing: -0.02em;
   }
 
   :global(.resume-content h2) {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 0.75rem;
-    margin-top: 1.5rem;
-    color: #1f2937;
-    letter-spacing: -0.01em;
-    page-break-after: avoid;
+      font-size: calc(var(--font-size-base) * 1.25);
+      font-weight: 600;
+      margin-bottom: calc(var(--spacing-base) * 0.75);
+      margin-top: var(--spacing-lg);
+      color: #1f2937;
+      letter-spacing: -0.01em;
+      page-break-after: avoid;
   }
 
   :global(.resume-content h3) {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    margin-top: 1rem;
-    color: #374151;
-    page-break-after: avoid;
+      font-size: var(--font-size-base);
+      font-weight: 600;
+      margin-bottom: calc(var(--spacing-base) * 0.5);
+      margin-top: var(--spacing-base);
+      color: #374151;
+      page-break-after: avoid;
   }
 
   :global(.resume-content p) {
-    color: #4b5563;
-    margin-bottom: 1rem;
-    line-height: 1.6;
+      color: #4b5563;
+      margin-bottom: var(--spacing-base);
+      line-height: 1.6;
   }
 
   :global(.resume-content ul) {
-    list-style-type: disc;
-    margin-left: 1.25rem;
-    margin-bottom: 1rem;
+      list-style-type: disc;
+      margin-left: calc(var(--spacing-base) * 1.25);
+      margin-bottom: var(--spacing-base);
   }
 
   :global(.resume-content li) {
-    margin-bottom: 0.5rem;
-    color: #4b5563;
+      margin-bottom: calc(var(--spacing-base) * 0.5);
+      color: #4b5563;
   }
 
   :global(.resume-content a) {
-    color: #111827;
-    text-decoration: none;
-    border-bottom: 1px solid #d1d5db;
+      color: var(--color-primary);
+      text-decoration: none;
+      border-bottom: 1px solid #d1d5db;
   }
 
   :global(.resume-content hr) {
-    margin: 1.5rem 0;
-    border: none;
-    height: 1px;
-    background-color: #e5e7eb;
+      margin: var(--spacing-lg) 0;
+      border: none;
+      height: 1px;
+      background-color: #e5e7eb;
   }
 
   /* Controls styling */
   .controls {
-    position: fixed;
-    padding: 1rem;
-    z-index: 50;
-    display: flex;
-    gap: 1rem;
-    top: 2rem;
-    right: 2rem;
+      position: fixed;
+      padding: var(--spacing-base);
+      z-index: var(--z-index-modal);
+      display: flex;
+      gap: var(--spacing-base);
+      top: var(--spacing-lg);
+      right: var(--spacing-lg);
   }
 
   .control-button {
-    background: rgba(255, 255, 255, 0.95);
-    color: #000;
-    padding: 0.75rem 1.25rem;
-    border-radius: 0.375rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 0.95);
+      color: var(--color-primary);
+      padding: calc(var(--spacing-base) * 0.75) calc(var(--spacing-base) * 1.25);
+      border-radius: 0.375rem;
+      display: flex;
+      align-items: center;
+      gap: calc(var(--spacing-base) * 0.5);
+      font-weight: 500;
+      transition: all var(--transition-speed) ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
   .control-button:hover {
-    background: rgba(255, 255, 255, 1);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 1);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Print styles */
+  @media print {
+      /* Enable background printing */
+      * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+      }
+
+      /* Reset everything to desktop-like state */
+      :global(body) {
+          background: white !important;
+          margin: 0 !important;
+          padding: 0 !important;
+      }
+
+      .outer-container {
+          padding: 0 !important;
+      }
+
+      .resume-scroll-container {
+          padding: 0 !important;
+          max-width: none !important;
+          width: 210mm !important; /* Force A4 width */
+      }
+
+      .resume-container {
+          box-shadow: none !important;
+          margin: 0 !important;
+          width: 210mm !important;
+          border-radius: 0 !important;
+      }
+
+      .resume-content {
+          padding: 0 !important;
+      }
+
+      .controls {
+          display: none !important;
+      }
+
+      @page {
+          size: A4;
+          margin: var(--spacing-base);
+      }
   }
 
   /* Mobile styles */
   @media (max-width: 640px) {
-    .controls {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      top: auto;
-      background: rgba(0, 0, 0, 0.9);
-      backdrop-filter: blur(10px);
-      justify-content: center;
-    }
+      .controls {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          top: auto;
+          background: rgba(0, 0, 0, 0.9);
+          backdrop-filter: blur(10px);
+          justify-content: center;
+      }
 
-    .outer-container {
-      padding-bottom: 5rem;
-    }
+      .outer-container {
+          padding-bottom: 5rem;
+      }
 
-    .resume-scroll-container {
-      padding: 0 1rem;
-    }
+      .resume-scroll-container {
+          padding: 0 var(--spacing-base);
+      }
 
-    .resume-container {
-      margin: 1rem 0;
-      width: 100%;
-    }
+      .resume-container {
+          margin: var(--spacing-base) 0;
+          width: 100%;
+      }
 
-    .resume-content {
-      padding: 1.5cm;
-    }
-
-    :global(.resume-content ul) {
-      margin: 0;
-    }
+      .resume-content {
+          padding: 1.5cm;
+      }
   }
 </style>
 

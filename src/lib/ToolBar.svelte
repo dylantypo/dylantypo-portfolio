@@ -115,34 +115,40 @@
         position: fixed;
         bottom: 5em;
         right: 5em;
-        background: #f9bc60;
+        background: var(--color-secondary);
         opacity: 65%;
         border-radius: 50%;
         width: 50px;
         height: 50px;
-        transition: height 0.6s cubic-bezier(.28,1.79,.72,.72), border-radius 1s cubic-bezier(.28,1.79,.72,.72), opacity 1s;
-        color: #004643;
+        transition: height 0.6s var(--transition-ease), 
+                  border-radius 1s var(--transition-ease), 
+                  opacity 1s;
+        color: var(--color-primary);
         display: flex;
         justify-content: center;
         align-items: center;
         cursor: pointer;
-        z-index: 3;
+        z-index: var(--z-index-toolbar);
     }
+
     .toolbar.expandedTool {
         height: 228px;
         border-radius: 25px;
     }
+
     .toolbar-content {
         display: none;
     }
+
     .toolbar.expandedTool .toolbar-content {
         display: flex;
         flex-direction: column;
         align-content: space-around;
     }
+
     .toolbar-link {
-        padding-bottom: 1rem;
-        color: #004643;
+        padding-bottom: var(--spacing-base);
+        color: var(--color-primary);
         text-decoration: none;
     }
 

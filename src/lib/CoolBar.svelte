@@ -135,39 +135,47 @@
         position: fixed;
         bottom: 5em;
         left: 5em;
-        background: #f9bc60;
+        background: var(--color-secondary);
         opacity: 0;
         border-radius: 50%;
         width: 50px;
         height: 50px;
-        transition: height 0.6s cubic-bezier(.28,1.79,.72,.72), border-radius 1s cubic-bezier(.28,1.79,.72,.72), opacity 1s, transform 0.3s;
-        color: #004643;
+        transition: height 0.6s var(--transition-ease), 
+                  border-radius 1s var(--transition-ease), 
+                  opacity 1s, 
+                  transform var(--transition-speed);
+        color: var(--color-primary);
         display: flex;
         justify-content: center;
         align-items: center;
         user-select: none;
-        z-index: 3;
+        z-index: var(--z-index-toolbar);
     }
+
     .coolbar.visible {
         opacity: 45%;
         transform: scale(1);
         user-select: all;
     }
+
     .coolbar.expandedCool {
         height: 228px;
         border-radius: 25px;
     }
+
     .coolbar-content {
         display: none;
     }
+
     .coolbar.expandedCool .coolbar-content {
         display: flex;
         flex-direction: column;
         align-content: space-around;
     }
+
     .coolbar-link {
-        padding-bottom: 1rem;
-        color: #004643;
+        padding-bottom: var(--spacing-base);
+        color: var(--color-primary);
         text-decoration: none;
     }
 
@@ -178,12 +186,27 @@
             left: 1em;
             user-select: none;
         }
+
         .coolbar.visible {
             opacity: 35%;
             transform: scale(1);
             user-select: all;
         }
+
         .coolbar.expandedCool {
+            opacity: 75%;
+        }
+    }
+
+    /* Focus styles */
+    .coolbar:focus-visible {
+        outline: 3px solid var(--color-focus);
+        outline-offset: 2px;
+    }
+
+    /* Hover styles on devices that support hover */
+    @media (hover: hover) {
+        .coolbar:hover {
             opacity: 75%;
         }
     }

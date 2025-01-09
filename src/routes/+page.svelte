@@ -5,8 +5,8 @@
     import MainContent from '$lib/mainContent.svelte';
     import { onMount } from 'svelte';
 
-    let hero_text = 'Dylan Posner';
-    let isCoolBarVisible = false;
+    let hero_text = $state('Dylan Posner');
+    let isCoolBarVisible = $state(false);
 
     function handleRevealCoolBar() {
         isCoolBarVisible = true;
@@ -17,31 +17,22 @@
     });
 </script>
 
-<main id="main-content" aria-label="Portfolio Content">
-    <CoolBar 
-        visible={isCoolBarVisible} 
-    />
-
+<main 
+    id="main-content" 
+    aria-label="Portfolio Content"
+>
+    <CoolBar visible={isCoolBarVisible} />
     <ToolBar />
-
     <Globe {hero_text} />
-
-    <MainContent triggerRevealCoolBar={handleRevealCoolBar} />
+    <MainContent {handleRevealCoolBar} />
 </main>
 
 <style>
     main {
-        font-family: var(--font-family-kenney);
-        background-color: var(--background-color-default);
         width: 100%;
         height: 100%;
-        margin: 0;
-        padding: 0;
-    }
-
-    /* Component-specific focus styles */
-    :global([role="button"]:focus) {
-        outline: 1.25px solid var(--focus-outline-color);
-        outline-offset: 2px;
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
     }
 </style>

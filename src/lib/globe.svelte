@@ -5,11 +5,11 @@
     import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 
     let container: HTMLDivElement;
-    export let hero_text: string;
+    let { hero_text } = $props<{ hero_text: string }>();
 
     // Add keyboard controls state
-    let currentLocationIndex = -1;
-    let isControlsEnabled = false;
+    let currentLocationIndex = $state(-1);
+    let isControlsEnabled = $state(false);
 
     type Region = {
         country: string;
@@ -48,6 +48,7 @@
     ];
     
     let cleanupFn: (() => void) | undefined;
+    let keydownHandlers = new Map<HTMLElement, (e: KeyboardEvent) => void>();
 
     onMount(async () => {
         // Check if we are in the browser
@@ -61,13 +62,6 @@
         instructions.className = 'sr-only';
         instructions.textContent = 'Use arrow keys to navigate between locations. Press Enter to focus on a location. Press Escape to exit navigation mode.';
         container.appendChild(instructions);
-
-        // Add controls container
-        const controlsContainer = document.createElement('div');
-        controlsContainer.className = 'globe-controls sr-only';
-        controlsContainer.setAttribute('role', 'toolbar');
-        controlsContainer.setAttribute('aria-label', 'Globe navigation controls');
-        container.appendChild(controlsContainer);
         
         // Dynamically import browser-only dependencies
         const [
@@ -238,17 +232,21 @@
                 const isMobile = window.innerWidth < 768;
                 
                 // Make location markers focusable and accessible
+                div.setAttribute('user-select', 'none');
                 div.setAttribute('role', 'button');
                 div.setAttribute('tabindex', '0');
+                div.className = 'location-marker';
                 div.setAttribute('aria-label', `${d.name}: Lived here for ${d.years} ${d.years === 1 ? 'year' : 'years'}`);
                 
                 // Add keyboard interaction
-                div.addEventListener('keydown', (e) => {
+                const keydownHandler = (e: KeyboardEvent) => {
                     if (e.key === 'Enter') {
                         focusOnLocation(d.lat, d.lng);
                         announceLocationFocus(d.name);
                     }
-                });
+                };
+                div.addEventListener('keydown', keydownHandler);
+                keydownHandlers.set(div, keydownHandler);
 
                 div.textContent = d.name;
                 div.style.color = 'rgba(255, 255, 255, 0.5)';
@@ -542,6 +540,13 @@
             announcement.className = 'sr-only';
             announcement.textContent = 'Globe navigation enabled. Use arrow keys to explore locations.';
             container.appendChild(announcement);
+            
+            // Focus first location marker
+            const firstMarker = container.querySelector('.location-marker');
+            if (firstMarker instanceof HTMLElement) {
+                firstMarker.focus();
+            }
+            
             setTimeout(() => announcement.remove(), 1000);
         }
 
@@ -567,7 +572,14 @@
         cleanupFn = () => {
             cancelAnimationFrame(animationFrameId);
             window.removeEventListener('resize', handleResize);
-            document.removeEventListener('keydown', handleKeyboardNavigation)
+            document.removeEventListener('keydown', handleKeyboardNavigation);
+            
+            // Clean up any remaining event listeners
+            keydownHandlers.forEach((handler, element) => {
+                element.removeEventListener('keydown', handler);
+            });
+            keydownHandlers.clear();
+
             // Dispose of materials and geometries
             scene.traverse((object) => {
                 if (object instanceof THREE.Mesh) {
@@ -604,10 +616,143 @@
 </div>
 
 <style>
+    /* Base container */
     div {
         position: relative;
         width: 100vw;
         height: calc(var(--vh, 1vh) * 100);
         overflow: hidden;
+        background-color: var(--color-background);
+    }
+
+    /* Canvas layering */
+    :global(canvas),
+    :global(.css2d-renderer) {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    :global(canvas) {
+        pointer-events: auto;
+    }
+
+    /* Location markers */
+    :global(.location-marker) {
+        color: var(--color-text-primary);
+        font-family: var(--font-family-base);
+        font-size: 0.8rem;
+        opacity: 0.5;
+        cursor: inherit;
+        pointer-events: auto;
+        padding: var(--spacing-base);
+        border-radius: 4px;
+        background-color: transparent;
+    }
+
+    :global(.location-marker:focus-visible) {
+        opacity: 1;
+        background-color: rgba(0, 0, 0, 0.3);
+        outline: 2px solid var(--color-focus);
+        outline-offset: 2px;
+    }
+
+    /* Loading overlay */
+    :global(.loading-overlay) {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: var(--color-background);
+        color: var(--color-text-primary);
+        font-family: var(--font-family-base);
+        z-index: var(--z-index-modal);
+    }
+
+    /* Error message */
+    :global(.error-message) {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: var(--spacing-lg);
+        background-color: rgba(0, 0, 0, 0.8);
+        color: var(--color-text-primary);
+        font-family: var(--font-family-base);
+        border-radius: 8px;
+        text-align: center;
+        z-index: var(--z-index-modal);
+    }
+
+    /* Navigation hints */
+    :global(.navigation-hint) {
+        position: absolute;
+        bottom: var(--spacing-lg);
+        right: var(--spacing-lg);
+        color: var(--color-text-secondary);
+        font-family: var(--font-family-base);
+        font-size: 0.8rem;
+        opacity: 0.7;
+        padding: var(--spacing-base);
+        background-color: rgba(0, 0, 0, 0.3);
+        border-radius: 4px;
+        transition: opacity var(--transition-speed) ease;
+    }
+
+    :global(.navigation-hint:hover) {
+        opacity: 1;
+    }
+
+    /* Keyboard focus indicator */
+    :global(.keyboard-focus-indicator) {
+        position: absolute;
+        padding: 4px 8px;
+        background-color: var(--color-secondary);
+        color: var(--color-primary);
+        border-radius: 4px;
+        font-size: 0.8rem;
+        pointer-events: none;
+        z-index: var(--z-index-modal);
+    }
+
+    /* Tooltip */
+    :global(.location-tooltip) {
+        position: absolute;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: var(--color-text-primary);
+        padding: var(--spacing-base);
+        border-radius: 4px;
+        font-size: 0.8rem;
+        pointer-events: none;
+        z-index: var(--z-index-modal);
+        transform: translate(-50%, -100%);
+        margin-top: -8px;
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 768px) {
+        :global(.navigation-hint) {
+            bottom: var(--spacing-base);
+            left: var(--spacing-base);
+        }
+
+        :global(.location-marker) {
+            font-size: 0.7rem;
+        }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+        :global(.location-marker),
+        :global(.navigation-hint) {
+            transition: none;
+        }
     }
 </style>
