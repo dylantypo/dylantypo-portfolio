@@ -75,7 +75,7 @@
                         scrollTrigger: {
                             trigger: el,
                             start: 'top 75%',
-                            end: 'top 25%',
+                            end: () => `+=${el.offsetHeight * 0.9}`, // Dynamic end value
                             scrub: 2,
                             // markers: true,
                         },
@@ -200,7 +200,7 @@
 
     .section {
         height: auto;
-        margin-bottom: 12.5vh;
+        margin-bottom: 20vh;
         display: flex;
         flex-direction: column;
     }
