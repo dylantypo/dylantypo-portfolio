@@ -78,20 +78,35 @@
             const jobButton = target.closest('.job') as HTMLButtonElement;
 
             if (jobButton) {
-                e.preventDefault();
-                const index = parseInt(jobButton.dataset.index || '-1');
-                if (index >= 0) {
-                    toggleDescription(index, e);
-                }
+                // Only prevent default if this is a tap interaction
+                // You can check if it's a tap by looking at movement
+                const touch = e.touches[0];
+                const startY = touch.clientY;
+
+                // Add a small threshold for tap vs scroll
+                const handleTouchEnd = (endEvent: TouchEvent) => {
+                    const endY = endEvent.changedTouches[0].clientY;
+                    const deltaY = Math.abs(endY - startY);
+                    
+                    if (deltaY < 10) { // Small threshold for tap
+                        const index = parseInt(jobButton.dataset.index || '-1');
+                        if (index >= 0) {
+                            toggleDescription(index, endEvent);
+                        }
+                    }
+                    
+                    document.removeEventListener('touchend', handleTouchEnd);
+                };
+
+                document.addEventListener('touchend', handleTouchEnd, { once: true });
                 return;
             }
 
             closeAllDescriptions();
         }
 
-        // Add both event listeners
         document.addEventListener('click', handleDocumentClick);
-        document.addEventListener('touchstart', handleTouch, { passive: false });
+        document.addEventListener('touchstart', handleTouch, { passive: true });
 
         // Cleanup
         return () => {
