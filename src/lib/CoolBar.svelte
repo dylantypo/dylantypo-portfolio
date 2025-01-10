@@ -2,13 +2,15 @@
     import gsap from 'gsap';
     import { onMount, onDestroy } from 'svelte';
 
-    let timeline: gsap.core.Timeline;
+    let timeline = $state<gsap.core.Timeline | undefined>();
+    let expandedCool = $state(false);
+    let isTouchDevice = $state(false);
 
-    let expandedCool = false;
-
-    let isTouchDevice = false;
-
-    export let visible: boolean = false;
+    let { 
+        visible = false 
+    } = $props<{
+        visible: boolean;
+    }>();
 
     let coolbar: HTMLElement; // Declare the variable coolbar
 
@@ -35,13 +37,15 @@
         }
     }
 
-    $: if (visible) {
-        timeline = gsap.timeline()
-            .to(
-                coolbar,
-                { x: '0', duration: 3, ease: "back" } // End
-            );
-    }
+    $effect(() => {
+        if (visible && coolbar) {
+            timeline = gsap.timeline()
+                .to(
+                    coolbar,
+                    { x: '0', duration: 3, ease: "back" }
+                );
+        }
+    });
 
     onMount(async () => {
         isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;

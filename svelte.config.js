@@ -18,6 +18,9 @@ const config = {
       $lib: path.resolve('./src/lib')
     }
   },
+  compilerOptions: {
+    runes: true
+  }
 };
 
 export default config;

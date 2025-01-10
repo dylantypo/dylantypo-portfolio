@@ -22,23 +22,23 @@
         DIFFICULTY_SELECTION,
         PLAYING
     }
-    let currentState: GameState = GameState.INIT;
-    let CELL_SIZE: number;
-    let GRID_WIDTH: number;
-    let GRID_HEIGHT: number;
-    let snakeBody: Segment[] = [];
-    let snakeDirection: { x: number, y: number };
-    let nextSnakeDirection: { x: number, y: number } | null = null;
-    let score = 0;
-    let munch = 0;
-    let total_food = 0;
-    let difficulty_value = 0;
-    let growthQueue = 0;
-    let isGameOver = false;
-    let difficultyMultiplier: number = 1;
+    let currentState = $state(GameState.INIT);
+    let CELL_SIZE = $state(0);
+    let GRID_WIDTH = $state(0);
+    let GRID_HEIGHT = $state(0);
+    let snakeBody = $state<Segment[]>([]);
+    let snakeDirection = $state({ x: 1, y: 0 });
+    let nextSnakeDirection = $state<{ x: number, y: number } | null>(null);
+    let score = $state(0);
+    let munch = $state(0);
+    let total_food = $state(0);
+    let difficulty_value = $state(0);
+    let growthQueue = $state(0);
+    let isGameOver = $state(false);
+    let difficultyMultiplier = $state(1);
     let initialIntervalSpeed: number;
     let gameInterval: number | undefined;
-    let foodPosition: { x: number, y: number } | undefined;
+    let foodPosition = $state<{ x: number, y: number } | undefined>(undefined);
     let startTouchX: number;
     let startTouchY: number;
 
@@ -71,17 +71,17 @@
                 backgroundColor: "#1F1F3D",
             }
         };
-    let currentTheme = themes.classic;
+    let currentTheme = $state(themes.classic);
     let themeKeys: ThemeKey[] = Object.keys(themes) as ThemeKey[];
     const difficulties = ["Easy", "Medium", "Hard"];
-    let selectedDifficulty: string = "";
+    let selectedDifficulty = $state("");
 
     // Audio and Other
     let clickSound: HTMLAudioElement;
     let munchSound: HTMLAudioElement;
     let backgroundMusic: HTMLAudioElement;
-    let highScore: number;
-    let isSoundOn = false;
+    let highScore = $state(0);
+    let isSoundOn = $state(false);
 
     function isLocalStorageAvailable() {
         try {
@@ -142,6 +142,7 @@
     }
 
     function manhattanDistance(p1: {x: number, y: number}, p2: {x: number, y: number}): number {
+        if (!p1 || !p2) return 0;
         return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
     }
 
@@ -333,7 +334,7 @@
             }
 
             // Check if snake ate the food
-            if (head.x === foodPosition!.x && head.y === foodPosition!.y) {
+            if (foodPosition && head.x === foodPosition.x && head.y === foodPosition.y) {
                 if (isSoundOn) {
                     munchSound.play().catch(error => console.error("Munch sound play error:", error));
                 }
@@ -438,12 +439,22 @@
             GRID_WIDTH = Math.floor(window.innerWidth / CELL_SIZE);
             GRID_HEIGHT = Math.floor(window.innerHeight / CELL_SIZE);
 
+            resetGame();
+            handleResize();
+        }
+    });
+
+    $effect(() => {
+        if (browser) {
             document.addEventListener('touchstart', handleTouchStart, false);
             document.addEventListener('touchmove', handleTouchMove, false);
             window.addEventListener('resize', handleResize);
 
-            resetGame();
-            handleResize();
+            return () => {
+                document.removeEventListener('touchstart', handleTouchStart, false);
+                document.removeEventListener('touchmove', handleTouchMove, false);
+                window.removeEventListener('resize', handleResize);
+            };
         }
     });
 
@@ -452,11 +463,6 @@
         stopGame();
         if (backgroundMusic) {
             backgroundMusic.pause();
-        }
-        if (browser) {
-            document.removeEventListener('touchstart', handleTouchStart, false);
-            document.removeEventListener('touchmove', handleTouchMove, false);
-            window.removeEventListener('resize', handleResize);
         }
     });
 </script>
@@ -469,18 +475,18 @@
     <link rel="apple-touch-icon" href="\snake-logo.ico">
 </svelte:head>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} />
 
 <!-- Game Initialization UI -->
 {#if isGameOver}
     <div id="game-over">
         <p>Game Over!</p>
         <p>Score: {score}</p>
-        <button on:click={() => { handleButtonClick(); handleRestart(); }}>Try Again</button>
+        <button onclick={() => { handleButtonClick(); handleRestart(); }}>Try Again</button>
     </div>
 {:else if currentState === GameState.INIT}
     <!-- Display logo with previous score (if any) -->
-    <div id="logo" tabindex=0 role="button" on:click={() => { handleButtonClick(); currentState = GameState.THEME_SELECTION; }} on:keypress={() => { handleButtonClick(); currentState = GameState.THEME_SELECTION; }}>
+    <div id="logo" tabindex=0 role="button" onclick={() => { handleButtonClick(); currentState = GameState.THEME_SELECTION; }} onkeypress={() => { handleButtonClick(); currentState = GameState.THEME_SELECTION; }}>
         <img src="/snake-assets/snake-logo-upscaled-5x.png" alt="Snake Game"/>
         <p>Snake.</p>
         {#if score > 0}<p id="previous-score">Previous Score: {score}</p>{/if}
@@ -491,7 +497,7 @@
         <p>Select a theme.</p>
         <div id="themes">
             {#each themeKeys as theme}
-                <button on:click={() => { handleButtonClick(); selectTheme(theme); }}>{theme}</button>
+                <button onclick={() => { handleButtonClick(); selectTheme(theme); }}>{theme}</button>
             {/each}
         </div>
     </div>
@@ -501,7 +507,7 @@
         <p>Select a difficulty.</p>
         <div id="difficulties">
             {#each difficulties as difficulty}
-                <button on:click={() => { handleButtonClick(); selectDifficulty(difficulty); }}>{difficulty}</button>
+                <button onclick={() => { handleButtonClick(); selectDifficulty(difficulty); }}>{difficulty}</button>
             {/each}
         </div>
     </div>
@@ -531,7 +537,7 @@
 <!-- Sound Button -->
 <button
     id="soundButton"
-    on:click={() => { handleButtonClick(); toggleSound(); }}
+    onclick={() => { handleButtonClick(); toggleSound(); }}
     aria-label="{isSoundOn ? 'Mute sound' : 'Unmute sound'}"
 >
     <i

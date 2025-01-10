@@ -3,13 +3,42 @@
     import * as THREE from 'three';
     import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
     import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+    import pkg from 'lodash';
+    import { writable } from 'svelte/store';
+    import { browser } from '$app/environment';
 
+    const { debounce } = pkg
+
+    // Component props and state
     let container: HTMLDivElement;
+    let scrollableContainer: HTMLDivElement;
     let { hero_text } = $props<{ hero_text: string }>();
 
-    // Add keyboard controls state
+    // State management
     let currentLocationIndex = $state(-1);
     let isControlsEnabled = $state(false);
+    let animationFrameId: number;
+    let CLOUDS_ROTATION_SPEED: number;
+
+    // Touch handling state
+    let touchStartY = 0;
+    let lastTouchY = 0;
+    let touchVelocity = 0;
+    let isScrolling = false;
+    let scrollTimeout: NodeJS.Timeout;
+
+    // Scroll progress management
+    const scrollProgress = writable(0);
+
+    // Event handler storage
+    let cleanupFn: (() => void) | undefined;
+    let keydownHandlers = new Map<HTMLElement, (e: KeyboardEvent) => void>();
+
+    // Cache values
+    let cachedIsMobile: boolean | null = null;
+    let cachedIdealDistance: number | null = null;
+    let lastWidth = browser ? window.innerWidth : 0;
+    let lastHeight = browser ? window.innerHeight : 0;
 
     type Region = {
         country: string;
@@ -46,18 +75,16 @@
             ]
         }
     ];
-    
-    let cleanupFn: (() => void) | undefined;
-    let keydownHandlers = new Map<HTMLElement, (e: KeyboardEvent) => void>();
 
     onMount(async () => {
         // Check if we are in the browser
-        if (typeof window === 'undefined') return;
+        if (!browser) return;
 
+        // Initialize accessibility attributes
         container.setAttribute('role', 'region');
         container.setAttribute('aria-label', 'Interactive 3D Globe showing places I\'ve lived');
 
-        // Add keyboard instructions for screen readers
+        // Add screen reader instructions
         const instructions = document.createElement('div');
         instructions.className = 'sr-only';
         instructions.textContent = 'Use arrow keys to navigate between locations. Press Enter to focus on a location. Press Escape to exit navigation mode.';
@@ -78,23 +105,26 @@
             import('gsap/CSSPlugin')
         ]);
 
-        gsap.registerPlugin(CSSPlugin)
+        gsap.registerPlugin(CSSPlugin);
 
-        // Initialize scene, camera, and renderer
+        // Initialize scene
         const scene = new THREE.Scene();
         scene.background = new THREE.Color('#004643');
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer();
         const labelRenderer = new CSS2DRenderer();
 
+        // Initialize renderers with optimized settings
         const renderers = [renderer, labelRenderer];
         renderers.forEach((r, idx) => {
             r.setSize(window.innerWidth, window.innerHeight);
+            if ('setPixelRatio' in r) {
+                r.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            }
             if (idx > 0) {
                 r.domElement.style.position = 'absolute';
                 r.domElement.style.top = '0px';
                 r.domElement.style.pointerEvents = 'none';
-                // Make sure the label renderer is positioned correctly
                 r.domElement.style.left = '0px';
                 r.domElement.style.width = '100%';
                 r.domElement.style.height = '100%';
@@ -103,10 +133,10 @@
         });
 
         // Setup lighting
-        const ambientLight = new THREE.AmbientLight('#ffffff', 0.15); // Slightly dimmed ambient light
+        const ambientLight = new THREE.AmbientLight('#ffffff', 0.45);
         const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.75);
-        hemiLight.color.setHSL(0.6, 0.75, 0.5); // Sky color
-        hemiLight.groundColor.setHSL(0.095, 0.5, 0.5); // Ground color
+        hemiLight.color.setHSL(0.6, 0.75, 0.5);
+        hemiLight.groundColor.setHSL(0.095, 0.5, 0.5);
         hemiLight.position.set(0, -500, 0);
 
         const dirLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -131,13 +161,7 @@
         scene.add(targetObject);
         dirLight.target = targetObject;
 
-        // Debug helpers (uncomment to use)
-        // const lightHelper = new THREE.DirectionalLightHelper(dirLight, 10);
-        // const shadowHelper = new THREE.CameraHelper(dirLight.shadow.camera);
-        // scene.add(lightHelper, shadowHelper);
-
-        // Add lights to scene
-        scene.add(ambientLight,hemiLight, dirLight);
+        scene.add(ambientLight, hemiLight, dirLight);
 
         // Add camera controls
         const controls = new TrackballControls(camera, renderer.domElement);
@@ -148,8 +172,9 @@
 
         controls.addEventListener('change', () => {
             globe.setPointOfView(camera);
-        })
+        });
 
+        // Set up data
         const labData = regionsLived.flatMap(region =>
             region.states.map(state => ({
                 lat: state.lat,
@@ -160,14 +185,8 @@
             }))
         );
 
-        document.addEventListener('keydown', handleKeyboardNavigation);
-
-        function focusOnLocation(lat: number, lng: number) {
-            const isMobile = window.innerWidth < 768;
-            adjustCamera(isMobile, { lat, lng });
-        }
-
-        function handleKeyboardNavigation(e: KeyboardEvent) {
+        // Handle keyboard navigation
+        const handleKeyboardNavigation = (e: KeyboardEvent) => {
             if (!isControlsEnabled) {
                 if (e.key === 'Tab') {
                     isControlsEnabled = true;
@@ -193,14 +212,49 @@
                     announceControlsDisabled();
                     break;
             }
-        }
+        };
 
-        function navigateLocations(direction: number) {
-            const totalLocations = labData.length;
-            currentLocationIndex = (currentLocationIndex + direction + totalLocations) % totalLocations;
-            const location = labData[currentLocationIndex];
-            announceLocation(location);
-        }
+        document.addEventListener('keydown', handleKeyboardNavigation);
+
+        // Touch handlers
+        const handleTouchStart = (e: TouchEvent) => {
+            touchStartY = e.touches[0].clientY;
+            lastTouchY = touchStartY;
+            isScrolling = true;
+            touchVelocity = 0;
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (!isScrolling) return;
+
+            const currentY = e.touches[0].clientY;
+            const deltaY = lastTouchY - currentY;
+            
+            touchVelocity = deltaY;
+            
+            const newProgress = $scrollProgress + (deltaY / window.innerHeight) * 0.5;
+            scrollProgress.set(Math.max(0, Math.min(1, newProgress)));
+            
+            lastTouchY = currentY;
+            e.preventDefault();
+        };
+
+        const handleTouchEnd = () => {
+            isScrolling = false;
+            
+            const momentum = touchVelocity * 0.2;
+            if (Math.abs(momentum) > 0.01) {
+                const targetProgress = Math.max(0, Math.min(1, $scrollProgress + momentum));
+                scrollProgress.set(targetProgress);
+            }
+            
+            if (scrollTimeout) clearTimeout(scrollTimeout);
+            
+            scrollTimeout = setTimeout(() => {
+                const targetProgress = Math.round($scrollProgress);
+                scrollProgress.set(targetProgress);
+            }, 300);
+        };
 
         // Min Point Altitude
         const MIN_ALTITUDE = 0.0125;
@@ -212,9 +266,8 @@
             .atmosphereColor('rgb(171, 209, 198)')
             .globeImageUrl('/geo/2_no_clouds_4k.jpg')
             .bumpImageUrl('/geo/elev_bump_4k.jpg')
-            // Adding Loction Markers
             .pointsData(labData)
-            .pointAltitude((d: any) => Math.max(MIN_ALTITUDE, d.years * 0.01)) // Use years to calculate altitude
+            .pointAltitude((d: any) => Math.max(MIN_ALTITUDE, d.years * 0.01))
             .pointColor(() => 'rgba(255, 255, 255, 0.55)')
             .pointRadius(() => 0.75)
             .pointsMerge(true);
@@ -223,22 +276,21 @@
 
         // Adding Labels using HTML Elements
         globe
-            .htmlElementsData(labData) // Set the label data
-            .htmlLat((d: any) => d.lat) // Use latitude from data
-            .htmlLng((d: any) => d.lng) // Use longitude from data
-            .htmlAltitude((d: any) => (window.innerWidth < 768 ? 0.03 : 0.055)) // Set altitude
+            .htmlElementsData(labData)
+            .htmlLat((d: any) => d.lat)
+            .htmlLng((d: any) => d.lng)
+            .htmlAltitude((d: any) => (window.innerWidth < 768 ? 0.03 : 0.055))
             .htmlElement((d: any) => {
                 const div = document.createElement('div');
                 const isMobile = window.innerWidth < 768;
                 
-                // Make location markers focusable and accessible
+                div.setAttribute('pointer-events', 'none');
                 div.setAttribute('user-select', 'none');
                 div.setAttribute('role', 'button');
                 div.setAttribute('tabindex', '0');
                 div.className = 'location-marker';
                 div.setAttribute('aria-label', `${d.name}: Lived here for ${d.years} ${d.years === 1 ? 'year' : 'years'}`);
                 
-                // Add keyboard interaction
                 const keydownHandler = (e: KeyboardEvent) => {
                     if (e.key === 'Enter') {
                         focusOnLocation(d.lat, d.lng);
@@ -261,15 +313,21 @@
                 return div;
             });
 
-
-        // Adding CLouds layer
-        const CLOUDS_IMG_URL = '/geo/fair_clouds_4k.png'; // from https://github.com/turban/webgl-earth
+        // Adding Clouds layer
+        const CLOUDS_IMG_URL = '/geo/fair_clouds_4k.png';
         const CLOUDS_ALT = 0.005;
         const calculateCloudsRotationSpeed = (isMobile: boolean) => {
-            const BASE_SPEED = -0.015; // Base speed for desktop
-            return isMobile ? BASE_SPEED * 1.25 : BASE_SPEED; // Faster on mobile
+            const BASE_SPEED = -0.015;
+            return isMobile ? BASE_SPEED * 1.25 : BASE_SPEED;
         };
-        const Clouds = new THREE.Mesh(new THREE.SphereGeometry(globe.getGlobeRadius() * (1 + CLOUDS_ALT), 75, 75));
+
+        // Initialize Clouds with optimized geometry for mobile
+        const cloudsGeometry = new THREE.SphereGeometry(
+            globe.getGlobeRadius() * (1 + CLOUDS_ALT),
+            window.innerWidth < 768 ? 50 : 75,
+            window.innerWidth < 768 ? 50 : 75
+        );
+        const Clouds = new THREE.Mesh(cloudsGeometry);
         new THREE.TextureLoader().load(CLOUDS_IMG_URL, cloudsTexture => {
             Clouds.material = new THREE.MeshPhongMaterial({ map: cloudsTexture, transparent: true });
         });
@@ -283,17 +341,13 @@
                 globeMaterial.specular = new THREE.Color('grey');
                 globeMaterial.shininess = 100;
             });
-        } else {
-            console.warn('globeMaterial is not a MeshPhongMaterial. Custom properties are not applied.');
         }
 
-        const tiltAxis = new THREE.Vector3(1, 0, 0); // Tilt along the X-axis
-        const tiltAngle = (Math.PI / 6) * -1; // Tilt by 30 degrees
+        const tiltAxis = new THREE.Vector3(1, 0, 0);
+        const tiltAngle = (Math.PI / 6) * -1;
         globe.setRotationFromAxisAngle(tiltAxis, tiltAngle);
 
-        let lastWidth = window.innerWidth;
-        let lastHeight = window.innerHeight;
-
+        // Utility functions
         const updateVH = () => {
             const vh = window.innerHeight * 0.01;
             document.documentElement.style.setProperty('--vh', `${vh}px`);
@@ -330,20 +384,17 @@
         };
 
         const setCameraPosition = (lat: number, lng: number, idealDistance: number) => {
-            const phi = (90 - lat) * (Math.PI / 180); // Latitude to spherical
-            const theta = (180 - lng) * (Math.PI / 180); // Longitude to spherical
+            const phi = (90 - lat) * (Math.PI / 180);
+            const theta = (180 - lng) * (Math.PI / 180);
 
             camera.position.set(
                 idealDistance * Math.sin(phi) * Math.cos(theta),
                 idealDistance * Math.cos(phi),
                 idealDistance * Math.sin(phi) * Math.sin(theta)
             );
-            camera.lookAt(globe.getGlobeRadius(), 0, 100); // Focus on the globe's center
+            camera.lookAt(globe.getGlobeRadius(), 0, 100);
         };
 
-        let cachedIsMobile: boolean | null = null;
-        let cachedIdealDistance: number | null = null;
-        
         const adjustCamera = (isMobile: boolean, focusedCity?: { lat: number; lng: number }) => {
             const idealDistance = calculateIdealDistance(isMobile);
 
@@ -361,24 +412,129 @@
             updateCameraAspect();
         };
 
-        const handleResize = () => {
+        function focusOnLocation(lat: number, lng: number) {
+            const isMobile = window.innerWidth < 768;
+            adjustCamera(isMobile, { lat, lng });
+        }
+
+        function navigateLocations(direction: number) {
+            const totalLocations = labData.length;
+            currentLocationIndex = (currentLocationIndex + direction + totalLocations) % totalLocations;
+            const location = labData[currentLocationIndex];
+            announceLocation(location);
+        }
+
+        // Resize handling
+        const handleResizeImplementation = () => {
             const newWidth = window.innerWidth;
             const newHeight = window.innerHeight;
 
             if (newWidth === lastWidth && newHeight === lastHeight) return;
 
-            lastWidth = newWidth;
-            lastHeight = newHeight;
+            setTimeout(() => {
+                lastWidth = newWidth;
+                lastHeight = newHeight;
 
-            const isMobile = newWidth < 768;
+                const isMobile = newWidth < 768;
+                CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(isMobile);
 
-            CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(isMobile);
-
-            updateVH();
-            resizeRenderers();
-            toggleLabelRenderer(isMobile);
-            adjustCamera(isMobile);
+                updateVH();
+                resizeRenderers();
+                toggleLabelRenderer(isMobile);
+                adjustCamera(isMobile);
+            }, 150);
         };
+
+        const handleResize = debounce(() => {
+            if (!window.requestAnimationFrame) {
+                handleResizeImplementation();
+                return;
+            }
+
+            window.requestAnimationFrame(handleResizeImplementation);
+        }, 250);
+
+        // Intersection Observer setup
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+
+        const handleIntersection = (entries: IntersectionObserverEntry[]) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    if (!animationFrameId) animate();
+                } else {
+                    if (animationFrameId) {
+                        cancelAnimationFrame(animationFrameId);
+                        animationFrameId = 0;
+                    }
+                }
+            });
+        };
+
+        const observer = new IntersectionObserver(handleIntersection, observerOptions);
+        observer.observe(container);
+
+        // Animation
+        const animate = () => {
+            animationFrameId = requestAnimationFrame(animate);
+
+            if (controls.enabled) {
+                controls.update();
+                globe.setPointOfView(camera);
+            }
+            
+            globe.rotation.y -= 0.00055;
+            Clouds.rotation.y += CLOUDS_ROTATION_SPEED * Math.PI / 180;
+
+            renderers.forEach(r => r.render(scene, camera));
+        };
+
+        // Accessibility announcements
+        function announceLocation(location: any) {
+            const announcement = document.createElement('div');
+            announcement.setAttribute('role', 'alert');
+            announcement.setAttribute('aria-live', 'polite');
+            announcement.className = 'sr-only';
+            announcement.textContent = `${location.name}: Lived here for ${location.years} ${location.years === 1 ? 'year' : 'years'}`;
+            container.appendChild(announcement);
+            setTimeout(() => announcement.remove(), 1000);
+        }
+
+        function announceControlsEnabled() {
+            const announcement = document.createElement('div');
+            announcement.setAttribute('role', 'alert');
+            announcement.className = 'sr-only';
+            announcement.textContent = 'Globe navigation enabled. Use arrow keys to explore locations.';
+            container.appendChild(announcement);
+            
+            const firstMarker = container.querySelector('.location-marker');
+            if (firstMarker instanceof HTMLElement) {
+                firstMarker.focus();
+            }
+            
+            setTimeout(() => announcement.remove(), 1000);
+        }
+
+        function announceControlsDisabled() {
+            const announcement = document.createElement('div');
+            announcement.setAttribute('role', 'alert');
+            announcement.className = 'sr-only';
+            announcement.textContent = 'Globe navigation disabled.';
+            container.appendChild(announcement);
+            setTimeout(() => announcement.remove(), 1000);
+        }
+
+        function announceLocationFocus(locationName: string) {
+            const announcement = document.createElement('div');
+            announcement.setAttribute('role', 'alert');
+            announcement.className = 'sr-only';
+            announcement.textContent = `Focusing on ${locationName}`;
+            container.appendChild(announcement);
+            setTimeout(() => announcement.remove(), 1000);
+        }
 
         // Initialize
         const focusedCity = regionsLived.flatMap(region => region.states).find(state => state.name === "Arlington");
@@ -388,15 +544,21 @@
         resizeRenderers();
         toggleLabelRenderer(isMobile);
         adjustCamera(isMobile, focusedCity);
-        let CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(isMobile);
+        CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(isMobile);
 
+        // Add event listeners
+        if (window.innerWidth < 768) {
+            container.addEventListener('touchstart', handleTouchStart, { passive: false });
+            container.addEventListener('touchmove', handleTouchMove, { passive: false });
+            container.addEventListener('touchend', handleTouchEnd);
+        }
         window.addEventListener('resize', handleResize);
 
-        // Add hero text
+        // Font loading and hero text
         const fontLoader = new FontLoader();
         fontLoader.load('/Kenney Future_Regular.json', function (font: any) {
-            const group = new THREE.Group(); // Group for the text
-            const radiusOffset = globe.getGlobeRadius() * 0.6; // Base radius offset
+            const group = new THREE.Group();
+            const radiusOffset = globe.getGlobeRadius() * 0.6;
 
             for (let i = 0; i < hero_text.length; i++) {
                 const char = hero_text[i];
@@ -416,54 +578,45 @@
                     color: 0xffffff,
                     specular: 0xffffff,
                     shininess: 10,
-                    transparent: true, // Enable transparency
-                    opacity: 0 // Start fully transparent
+                    transparent: true,
+                    opacity: 0
                 });
 
-                charMaterial.side = THREE.DoubleSide; // Render both sides
-                // Enable high quality shadows if you're using them
+                charMaterial.side = THREE.DoubleSide;
                 charMaterial.shadowSide = THREE.DoubleSide;
 
                 const charMesh = new THREE.Mesh(charGeometry, charMaterial);
-
-                // Enable shadow casting/receiving if you're using shadows
                 charMesh.castShadow = true;
                 charMesh.receiveShadow = true;
 
                 charGeometry.computeBoundingBox();
                 if (charGeometry.boundingBox) {
                     const angle = ((i - hero_text.length / 2) / hero_text.length) * Math.PI;
-
                     const centralIndex = Math.floor(hero_text.length / 2);
                     const centralAngle = ((centralIndex - hero_text.length / 2) / hero_text.length) * Math.PI;
 
                     charMesh.position.set(
-                        Math.sin(angle - centralAngle) * (radiusOffset + 50), // Position along X-axis
-                        0, // Keep Y-axis constant
-                        Math.cos(angle - centralAngle) * (radiusOffset + 50) // Position in depth
+                        Math.sin(angle - centralAngle) * (radiusOffset + 50),
+                        0,
+                        Math.cos(angle - centralAngle) * (radiusOffset + 50)
                     );
 
-                    // Calculate the outward direction based on position
                     const outwardDirection = charMesh.position.clone().normalize();
                     const outwardPoint = outwardDirection.multiplyScalar(radiusOffset + 100);
-
-                    // Make the mesh look at the outward point
                     charMesh.lookAt(outwardPoint);
 
-                    // Ensure text is properly oriented if necessary
                     if (Math.cos(angle - centralAngle) < 0) {
                         charMesh.rotation.y += Math.PI;
-                    }  
+                    }
                 }
 
                 group.add(charMesh);
             }
         
             group.position.set(0, 0, 0);
-            group.visible = false; // Initially hide the text
+            group.visible = false;
             scene.add(group);
 
-            // Animate text opacity
             gsap.to({}, {
                 delay: 0.75,
                 duration: 2.25,
@@ -491,13 +644,12 @@
                     group.children.forEach((obj: THREE.Object3D) => {
                         const mesh = obj as THREE.Mesh;
                         if (mesh.material instanceof THREE.MeshPhongMaterial) {
-                            mesh.material.opacity = 0.5; // Ensure opacity is exactly 0.85 at the end
+                            mesh.material.opacity = 0.5;
                         }
                     });
                 }
             });
 
-            // Animate the text orbiting around the globe into the camera's frame
             gsap.to(group.rotation, {
                 x: Math.PI * 0.12,
                 y: Math.PI * 1.25,
@@ -506,81 +658,17 @@
             });
         });
 
-        let animationFrameId: number;
-        const animate = () => {
-            animationFrameId = requestAnimationFrame(animate);
-
-            // Update only what's necessary
-            if (controls.enabled) {
-                controls.update();
-                globe.setPointOfView(camera);
-            }
-            
-            globe.rotation.y -= 0.00055;
-            Clouds.rotation.y += CLOUDS_ROTATION_SPEED * Math.PI / 180;
-
-            renderers.forEach(r => r.render(scene, camera));
-        };
-        
-        animate();
-
-        function announceLocation(location: any) {
-            const announcement = document.createElement('div');
-            announcement.setAttribute('role', 'alert');
-            announcement.setAttribute('aria-live', 'polite');
-            announcement.className = 'sr-only';
-            announcement.textContent = `${location.name}: Lived here for ${location.years} ${location.years === 1 ? 'year' : 'years'}`;
-            container.appendChild(announcement);
-            setTimeout(() => announcement.remove(), 1000);
-        }
-
-        function announceControlsEnabled() {
-            const announcement = document.createElement('div');
-            announcement.setAttribute('role', 'alert');
-            announcement.className = 'sr-only';
-            announcement.textContent = 'Globe navigation enabled. Use arrow keys to explore locations.';
-            container.appendChild(announcement);
-            
-            // Focus first location marker
-            const firstMarker = container.querySelector('.location-marker');
-            if (firstMarker instanceof HTMLElement) {
-                firstMarker.focus();
-            }
-            
-            setTimeout(() => announcement.remove(), 1000);
-        }
-
-        function announceControlsDisabled() {
-            const announcement = document.createElement('div');
-            announcement.setAttribute('role', 'alert');
-            announcement.className = 'sr-only';
-            announcement.textContent = 'Globe navigation disabled.';
-            container.appendChild(announcement);
-            setTimeout(() => announcement.remove(), 1000);
-        }
-
-        function announceLocationFocus(locationName: string) {
-            const announcement = document.createElement('div');
-            announcement.setAttribute('role', 'alert');
-            announcement.className = 'sr-only';
-            announcement.textContent = `Focusing on ${locationName}`;
-            container.appendChild(announcement);
-            setTimeout(() => announcement.remove(), 1000);
-        }
-
-        // Set up the cleanup function
+        // Cleanup
         cleanupFn = () => {
             cancelAnimationFrame(animationFrameId);
             window.removeEventListener('resize', handleResize);
             document.removeEventListener('keydown', handleKeyboardNavigation);
             
-            // Clean up any remaining event listeners
             keydownHandlers.forEach((handler, element) => {
                 element.removeEventListener('keydown', handler);
             });
             keydownHandlers.clear();
 
-            // Dispose of materials and geometries
             scene.traverse((object) => {
                 if (object instanceof THREE.Mesh) {
                     object.geometry.dispose();
@@ -598,6 +686,14 @@
             controls.dispose();
             scene.clear();
             if (container) container.innerHTML = "";
+
+            observer.disconnect();
+            if (window.innerWidth < 768) {
+                container.removeEventListener('touchstart', handleTouchStart);
+                container.removeEventListener('touchmove', handleTouchMove);
+                container.removeEventListener('touchend', handleTouchEnd);
+            }
+            if (scrollTimeout) clearTimeout(scrollTimeout);
         };
     });
     
@@ -606,26 +702,54 @@
     });
 </script>
 
-<div 
-    bind:this={container}
-    aria-describedby="globe-description"
->
-    <span id="globe-description" class="sr-only">
-        Interactive 3D globe showing locations I've lived in around the world. Use Tab to enable navigation, arrow keys to explore locations, Enter to focus on a location, and Escape to exit navigation mode.
-    </span>
+<div class="globe-container" bind:this={scrollableContainer}>
+    <div 
+        bind:this={container}
+        aria-describedby="globe-description"
+        class="globe-viewer"
+    >
+        <span id="globe-description" class="sr-only">
+            Interactive 3D globe showing locations I've lived in around the world. Use Tab to enable navigation, arrow keys to explore locations, Enter to focus on a location, and Escape to exit navigation mode.
+        </span>
+    </div>
+    
+    <!-- Mobile scroll indicator -->
+    <div class="scroll-indicator" class:hidden={$scrollProgress > 0}>
+        <div class="scroll-icon">
+            <span class="sr-only">Scroll down to continue</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 5v14M19 12l-7 7-7-7"/>
+            </svg>
+        </div>
+    </div>
 </div>
 
 <style>
-    /* Base container */
-    div {
+    /* Base containers */
+    .globe-container {
         position: relative;
         width: 100vw;
-        height: calc(var(--vh, 1vh) * 100);
+        min-height: calc(var(--vh, 1vh) * 100);
         overflow: hidden;
         background-color: var(--color-background);
+        transform: translate3d(0, 0, 0);
+        will-change: transform;
+        touch-action: pan-y;
+        -webkit-overflow-scrolling: touch;
     }
 
-    /* Canvas layering */
+    .globe-viewer {
+        position: relative;
+        width: 100%;
+        height: 100vh;
+        height: calc(var(--vh, 1vh) * 100);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: transform;
+        transform: translateZ(0);
+        backface-visibility: hidden;
+    }
+
+    /* Canvas layering with performance optimizations */
     :global(canvas),
     :global(.css2d-renderer) {
         position: absolute;
@@ -634,13 +758,15 @@
         width: 100%;
         height: 100%;
         pointer-events: none;
+        transform: translateZ(0);
+        backface-visibility: hidden;
     }
 
     :global(canvas) {
         pointer-events: auto;
     }
 
-    /* Location markers */
+    /* Location markers with touch optimizations */
     :global(.location-marker) {
         color: var(--color-text-primary);
         font-family: var(--font-family-base);
@@ -651,6 +777,11 @@
         padding: var(--spacing-base);
         border-radius: 4px;
         background-color: transparent;
+        transform: translateZ(0);
+        transition: opacity 0.2s ease, background-color 0.2s ease;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
     }
 
     :global(.location-marker:focus-visible) {
@@ -658,6 +789,14 @@
         background-color: rgba(0, 0, 0, 0.3);
         outline: 2px solid var(--color-focus);
         outline-offset: 2px;
+    }
+
+    /* Touch feedback for mobile */
+    @media (hover: none) {
+        :global(.location-marker:active) {
+            opacity: 1;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
     }
 
     /* Loading overlay */
@@ -691,6 +830,48 @@
         z-index: var(--z-index-modal);
     }
 
+    /* Scroll indicators */
+    .scroll-indicator {
+        position: absolute;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        color: var(--color-text-primary);
+        opacity: 0.7;
+        transition: opacity 0.3s ease;
+        animation: bounce 2s infinite;
+        pointer-events: none;
+        z-index: var(--z-index-overlay);
+    }
+
+    .scroll-icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0, 0, 0, 0.3);
+        border-radius: 50%;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+    }
+
+    .scroll-indicator.hidden {
+        opacity: 0;
+    }
+
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% {
+            transform: translateX(-50%) translateY(0);
+        }
+        40% {
+            transform: translateX(-50%) translateY(-10px);
+        }
+        60% {
+            transform: translateX(-50%) translateY(-5px);
+        }
+    }
+
     /* Navigation hints */
     :global(.navigation-hint) {
         position: absolute;
@@ -704,6 +885,8 @@
         background-color: rgba(0, 0, 0, 0.3);
         border-radius: 4px;
         transition: opacity var(--transition-speed) ease;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
     }
 
     :global(.navigation-hint:hover) {
@@ -722,7 +905,7 @@
         z-index: var(--z-index-modal);
     }
 
-    /* Tooltip */
+    /* Tooltip with backdrop blur */
     :global(.location-tooltip) {
         position: absolute;
         background-color: rgba(0, 0, 0, 0.8);
@@ -734,25 +917,84 @@
         z-index: var(--z-index-modal);
         transform: translate(-50%, -100%);
         margin-top: -8px;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+    }
+
+    /* Progress indicator for mobile */
+    :global(.scroll-progress) {
+        position: fixed;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 4px;
+        height: 100px;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        z-index: var(--z-index-overlay);
+        pointer-events: none;
+    }
+
+    :global(.scroll-progress::after) {
+        content: '';
+        position: absolute;
+        width: 100%;
+        background-color: var(--color-text-primary);
+        border-radius: 2px;
+        transition: height 0.1s ease, top 0.1s ease;
     }
 
     /* Mobile adjustments */
     @media (max-width: 768px) {
+        .globe-container {
+            overflow-y: auto;
+            overscroll-behavior-y: contain;
+        }
+
+        .globe-viewer {
+            height: 100vh; /* Full viewport height for mobile */
+            height: calc(var(--vh, 1vh) * 100);
+        }
+
         :global(.navigation-hint) {
             bottom: var(--spacing-base);
             left: var(--spacing-base);
+            font-size: 0.7rem;
+            padding: var(--spacing-sm);
         }
 
         :global(.location-marker) {
             font-size: 0.7rem;
+            padding: var(--spacing-sm);
+        }
+
+        .scroll-indicator {
+            bottom: 1rem;
+        }
+
+        /* Hide scroll progress on very small screens */
+        @media (max-height: 500px) {
+            :global(.scroll-progress) {
+                display: none;
+            }
         }
     }
 
     /* Reduced motion */
     @media (prefers-reduced-motion: reduce) {
+        .globe-viewer,
         :global(.location-marker),
-        :global(.navigation-hint) {
+        :global(.navigation-hint),
+        .scroll-indicator {
             transition: none;
+            animation: none;
+        }
+    }
+
+    /* High contrast mode support */
+    @media (forced-colors: active) {
+        :global(.location-marker:focus-visible) {
+            outline: 2px solid CanvasText;
         }
     }
 </style>

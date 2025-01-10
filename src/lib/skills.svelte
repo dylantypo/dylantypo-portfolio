@@ -11,7 +11,7 @@
         showDescription: boolean;
     };
 
-    let skills: Skill[] = [
+    let skills: Skill[] = $state([
         {
             name: "Data Science & ML",
             description: "Core data science tools and machine learning implementations",
@@ -66,7 +66,7 @@
             ],
             showDescription: false
         }
-    ];
+    ]);
 
     const toggleSkill = (index: number) => {
         skills[index].showDescription = !skills[index].showDescription;

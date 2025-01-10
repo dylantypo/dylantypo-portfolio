@@ -9,18 +9,18 @@
     let balls: any[] = [];
 
     // User Inputs
-    let gravity: number = 0.2;
-    $: gravityLabel = `Gravity: ${formatNumber(gravity)}`;
+    let gravity = $state(0.2);
+    let gravityLabel = $derived(`Gravity: ${formatNumber(gravity)}`);
 
-    let bounce: number = 0.5;
-    $: bounceLabel = `Bounce: ${formatNumber(bounce)}`;
+    let bounce = $state(0.5);
+    let bounceLabel = $derived(`Bounce: ${formatNumber(bounce)}`);
 
-    let friction: number = 0.1; // friction coefficient
-    let drag: number = friction; // drag coefficient
-    $: frictionLabel = `Friction: ${formatNumber(friction)}`
+    let friction = $state(0.1);
+    let drag = $state(0.1);
+    let frictionLabel = $derived(`Friction: ${formatNumber(friction)}`);
 
-    let radius: number = 35; // ball size (radius)
-    $: sizeLabel = `Radius: ${formatNumber(radius)}`
+    let radius = $state(35);
+    let sizeLabel = $derived(`Radius: ${formatNumber(radius)}`);
 
     const correctionFactor = 0.45;  // Factor to correct the positions of the balls after collision
 
@@ -36,21 +36,20 @@
     let lastMouseY = 0;
 
     let floorY: number;
-    let floorDrop: boolean = false;
+    let floorDrop = $state(false);
 
-    let isMobileDevice: boolean = false;
-    let permissionGranted: boolean = false; // Whether orientation permissions are granted
+    let isMobileDevice = $state(false);
+    let permissionGranted = $state(false); // Whether orientation permissions are granted
 
-    $: numBalls = balls.length;
-    $: modeBallSize = calculateModeBallSize(balls);
-    $: avgBallSize = calculateAvgBallSize(balls);
-    // Reactive statements to update the display labels
-    $: numBallsLabel = `Number of Balls: ${numBalls}`;
-    $: modeBallSizeLabel = `Mode Ball Radius: ${formatNumber(modeBallSize)}`;
-    $: avgBallSizeLabel = `Average Ball Radius: ${formatNumber(avgBallSize)}`;
+    let numBalls = $derived(balls.length);
+    let modeBallSize = $derived(calculateModeBallSize(balls));
+    let avgBallSize = $derived(calculateAvgBallSize(balls));
+    let numBallsLabel = $derived(`Number of Balls: ${numBalls}`);
+    let modeBallSizeLabel = $derived(`Mode Ball Radius: ${formatNumber(modeBallSize)}`);
+    let avgBallSizeLabel = $derived(`Average Ball Radius: ${formatNumber(avgBallSize)}`);
 
     // FPS Variables
-    let fps = 0;
+    let fps = $state(0);
     let framesRendered = 0;
     let lastTime = 0;
 
@@ -534,7 +533,7 @@
         <div id="slider-placeholder"> Settings </div>
         <div id="slider-container">
             {#if isMobileDevice}
-                <button on:click={requestOrientationPermission} style="opacity: {permissionGranted? 1 : 0.5};">Mobile <i class="fa-solid fa-cube"></i> Motion</button>
+                <button onclick={requestOrientationPermission} style="opacity: {permissionGranted? 1 : 0.5};">Mobile <i class="fa-solid fa-cube"></i> Motion</button>
             {/if}
 
             <label for="gravity-slider">{gravityLabel}</label>
@@ -549,7 +548,7 @@
             <label for="size-slider">{sizeLabel}</label>
             <input id="size-slider" type="range" min="10" max="250" step="0.1" bind:value={radius} />
 
-            <button on:click={dropFloor} style="opacity: {floorDrop? 1 : 0.5};">Floor <i class="fa-solid fa-person-falling"></i> Toggle</button>
+            <button onclick={dropFloor} style="opacity: {floorDrop? 1 : 0.5};">Floor <i class="fa-solid fa-person-falling"></i> Toggle</button>
         </div>
     </div>
 </div>

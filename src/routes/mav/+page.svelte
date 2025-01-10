@@ -10,13 +10,13 @@
     let isMusicPlaying = false;
     const silenceThreshold = 25; // adjust this value based on your needs
 
-    let isFlashingEnabled = false;
+    let isFlashingEnabled = $state(false);
 
     function toggleFlashing() {
         isFlashingEnabled = !isFlashingEnabled;
     }
 
-    let isFrozen = false;
+    let isFrozen = $state(false);
 
     function toggleMovement() {
         isFrozen = !isFrozen;
@@ -152,8 +152,8 @@
 
 <main>
     <h1>Microphone Audio Visualizer</h1>
-    <button on:click={toggleFlashing} style="opacity: {isFlashingEnabled ? 1 : 0.5};">Intensify</button>
-    <button on:click={toggleMovement} style="opacity: {isFrozen? 1 : 0.5};">Freeze</button>
+    <button onclick={toggleFlashing} style="opacity: {isFlashingEnabled ? 1 : 0.5};">Intensify</button>
+    <button onclick={toggleMovement} style="opacity: {isFrozen? 1 : 0.5};">Freeze</button>
 </main>
 
 <canvas bind:this={canvas}></canvas>

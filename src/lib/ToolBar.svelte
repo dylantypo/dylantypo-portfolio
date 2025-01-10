@@ -2,9 +2,9 @@
     import gsap from 'gsap';
     import { onMount, onDestroy } from 'svelte';
 
-    let expandedTool = false;
+    let expandedTool = $state(false);
 
-    let isTouchDevice = false;
+    let isTouchDevice = $state(false);
 
     let toolbar: HTMLElement // Declare the variable toolbar
 
