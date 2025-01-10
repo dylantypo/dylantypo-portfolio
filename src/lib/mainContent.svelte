@@ -67,7 +67,7 @@
                             trigger: el,
                             start: 'top 75%',
                             end: () => `+=${el.offsetHeight}`,
-                            scrub: 1.5,
+                            scrub: 1.75,
                             // markers: true // debugging
                         },
                     });
@@ -79,7 +79,7 @@
                             y: "20%",
                             rotateX: "45deg",
                             transformOrigin: "bottom", 
-                            scale: 0.9
+                            scale: 0.5
                         },
                         {
                             opacity: 1,
@@ -87,7 +87,7 @@
                             rotateX: "0deg",
                             scale: 1,
                             stagger: {
-                                amount: 1.5,
+                                amount: 1.75,
                                 from: "random"
                             },
                             ease: "waterRipple",

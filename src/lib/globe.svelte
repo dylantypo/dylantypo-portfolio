@@ -77,6 +77,32 @@
         }
     ];
 
+    function smoothScrollTo(element: HTMLElement, duration = 2000) {
+        const start = window.scrollY;
+        const end = element.getBoundingClientRect().top + window.scrollY;
+        const startTime = performance.now();
+
+        function easeInOutQuad(t: number) {
+            return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        }
+
+        function scrollAnimation(currentTime: number) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            window.scrollTo({
+                top: start + (end - start) * easeInOutQuad(progress),
+                behavior: 'auto' // Use auto to prevent conflicts with native smooth scroll
+            });
+
+            if (progress < 1) {
+                requestAnimationFrame(scrollAnimation);
+            }
+        }
+
+        requestAnimationFrame(scrollAnimation);
+    }
+
     onMount(async () => {
         // Check if we are in the browser
         if (!browser) return;
@@ -160,7 +186,7 @@
         });
 
         // Setup lighting
-        const ambientLight = new THREE.AmbientLight('#ffffff', 0.45);
+        const ambientLight = new THREE.AmbientLight('#ffffff', 0.35);
         const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.75);
         hemiLight.color.setHSL(0.6, 0.75, 0.5);
         hemiLight.groundColor.setHSL(0.095, 0.5, 0.5);
@@ -195,8 +221,8 @@
         // Better controls configuration
         controls.noZoom = true;
         controls.noPan = true;
-        controls.rotateSpeed = 1.5; // Reduced for smoother rotation
-        controls.dynamicDampingFactor = 0.15; // Increased for less "stickiness"
+        controls.rotateSpeed = 1.65; // Reduced for smoother rotation
+        controls.dynamicDampingFactor = 0.1; // Increased for less "stickiness"
 
         controls.addEventListener('change', () => {
             globe.setPointOfView(camera);
@@ -496,7 +522,7 @@
             }
 
             window.requestAnimationFrame(handleResizeImplementation);
-        }, 250);
+        }, 500);
 
         // Intersection Observer setup
         const observerOptions = {
@@ -766,10 +792,7 @@
             onclick={() => {
                 const aboutSection = document.getElementById('aboutMe');
                 if (aboutSection) {
-                    aboutSection.scrollIntoView({ 
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
+                    smoothScrollTo(aboutSection, 2000); // 2000ms = 2 seconds
                 }
             }}
             aria-label="Scroll to About Me section"
