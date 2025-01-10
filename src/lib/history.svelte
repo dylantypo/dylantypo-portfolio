@@ -39,13 +39,18 @@
         
         const wasOpen = jobs[index].showDescription;
         
-        // First close all
-        jobs.forEach(job => job.showDescription = false);
-        
-        // Then open the clicked one if it wasn't open
+        // Only close other jobs if opening a new one
         if (!wasOpen) {
-            jobs[index].showDescription = true;
+            jobs.forEach((job, i) => {
+                // Only close other jobs, not the clicked one
+                if (i !== index) {
+                    job.showDescription = false;
+                }
+            });
         }
+        
+        // Toggle the clicked job
+        jobs[index].showDescription = !wasOpen;
         
         // Trigger reactivity
         jobs = [...jobs];
@@ -133,7 +138,10 @@
             data-index={i}
             onfocus={() => handleFocus(i)}
             onblur={() => handleBlur(i)}
-            onclick={(e) => toggleDescription(i, e)}
+            onclick={(e) => {
+                e.stopPropagation();  // Stop event from bubbling up
+                toggleDescription(i, e);
+            }}
             onmouseleave={() => handleMouseLeave()}
             onkeydown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
