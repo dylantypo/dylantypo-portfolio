@@ -31,6 +31,7 @@
         jobs.forEach((job) => {
             job.showDescription = false;
         });
+        jobs = [...jobs]; // Trigger reactivity
     }
 
     function toggleDescription(index: number, event?: Event) {
@@ -40,19 +41,27 @@
         }
         
         const wasOpen = jobs[index].showDescription;
-        closeAllDescriptions();
         
+        // First close all
+        jobs.forEach(job => job.showDescription = false);
+        
+        // Then open the clicked one if it wasn't open
         if (!wasOpen) {
             jobs[index].showDescription = true;
         }
+        
+        // Trigger reactivity
+        jobs = [...jobs];
     }
 
     function handleFocus(index: number) {
         jobs[index].isKeyboardControl = true;
+        jobs = [...jobs]; // Trigger reactivity
     }
 
     function handleBlur(index: number) {
         jobs[index].isKeyboardControl = false;
+        jobs = [...jobs]; // Trigger reactivity
     }
 
     // Handle mouse leave for desktop
@@ -68,28 +77,45 @@
         function handleDocumentClick(e: MouseEvent) {
             const target = e.target as HTMLElement;
             if (!target.closest('.job')) {
-                closeAllDescriptions();
+                jobs.forEach(job => job.showDescription = false);
+                jobs = [...jobs]; // Trigger reactivity
             }
         }
+
+        document.addEventListener('click', handleDocumentClick);
 
         // Touch handler with scroll detection
         let touchStartY = 0;
         let isScrolling = false;
+        let touchStartTime = 0;
 
         function handleTouchStart(e: TouchEvent) {
             touchStartY = e.touches[0].clientY;
+            touchStartTime = Date.now();
             isScrolling = false;
         }
 
         function handleTouchMove(e: TouchEvent) {
+            if (isScrolling) return;
+            
             const touchCurrentY = e.touches[0].clientY;
-            if (Math.abs(touchCurrentY - touchStartY) > 10) {
+            const deltaY = Math.abs(touchCurrentY - touchStartY);
+            
+            // If moved more than 10px vertically, consider it scrolling
+            if (deltaY > 10) {
                 isScrolling = true;
             }
         }
 
         function handleTouchEnd(e: TouchEvent) {
+            // If we were scrolling, don't process as a tap
             if (isScrolling) return;
+
+            // Check if this was a quick tap (less than 300ms)
+            const touchEndTime = Date.now();
+            const touchDuration = touchEndTime - touchStartTime;
+            
+            if (touchDuration > 300) return;
 
             const target = e.target as HTMLElement;
             const jobButton = target.closest('.job') as HTMLButtonElement;
@@ -107,7 +133,6 @@
             }
         }
 
-        document.addEventListener('click', handleDocumentClick);
         document.addEventListener('touchstart', handleTouchStart, { passive: true });
         document.addEventListener('touchmove', handleTouchMove, { passive: true });
         document.addEventListener('touchend', handleTouchEnd, { passive: true });
@@ -275,7 +300,8 @@
         background: rgba(249, 188, 96, 0.1);
         transform-origin: center; 
         transform: scaleY(0);
-        transition: transform var(--transition-speed) ease-in-out;
+        transition: transform var(--transition-speed) ease-in-out, 
+                    background-color var(--transition-speed) ease-in-out;
         z-index: 1;
     }
 
