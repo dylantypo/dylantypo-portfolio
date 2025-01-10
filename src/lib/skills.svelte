@@ -213,7 +213,7 @@
 
     .description {
         color: var(--color-text-secondary);
-        font-size: 2vmin;
+        font-size: 2.5vmin;
         margin-bottom: var(--spacing-base);
     }
 
