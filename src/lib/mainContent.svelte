@@ -28,7 +28,6 @@
             .join('');
     }
 
-    // Initialize animations when the component is mounted
     onMount(() => {
         console.log("Component mounted. Initializing animations.");
 
@@ -39,19 +38,19 @@
             const { CustomEase } = await import('gsap/CustomEase');
             gsap.registerPlugin(CustomEase);
 
-            // Create a custom ease that mimics water movement
-            CustomEase.create("waterEase", "M0,0 C0.42,0 0.58,1 1,1");
+            // Create more fluid custom ease
+            CustomEase.create("waterRipple", "M0,0 C0.2,0.4 0.4,0.8 1,1");
 
-            // Wrap animations in GSAP context for cleanup and initialization
             const ctx = gsap.context(() => {
                 elements = gsap.utils.toArray(".fade-in") as HTMLElement[];
 
                 elements.forEach((el, index) => {
-                    // Split text into letters
                     const nodes = Array.from(el.childNodes);
                     el.innerHTML = '';
                     const originalContent = el.textContent;
                     el.setAttribute('aria-label', originalContent || '');
+
+                    console.log(`Processing element ${index}, nodes:`, nodes.length); // debugging
 
                     nodes.forEach((node) => {
                         if (node.nodeType === Node.TEXT_NODE) {
@@ -66,46 +65,56 @@
                         }
                     });
 
-                    // Animation timeline
                     const letters = el.querySelectorAll('.letter');
                     const timeline = gsap.timeline({
                         scrollTrigger: {
                             trigger: el,
                             start: 'top 75%',
-                            end: () => `+=${el.offsetHeight * 0.9}`, // Dynamic end value
-                            scrub: 1.65,
-                            // markers: true,
+                            end: () => `+=${el.offsetHeight}`,
+                            scrub: 1.5,
+                            // markers: true // debugging
                         },
                     });
 
                     timeline.fromTo(
                         letters,
-                        { opacity: 0.05 },
+                        { 
+                            opacity: 0,
+                            y: "20%",
+                            rotateX: "45deg",
+                            transformOrigin: "bottom", 
+                            scale: 0.9
+                        },
                         {
                             opacity: 1,
-                            stagger: 0.05,
-                            ease: "waterEase",
+                            y: "0%",
+                            rotateX: "0deg",
+                            scale: 1,
+                            stagger: {
+                                amount: 1.5,
+                                from: "random"
+                            },
+                            ease: "waterRipple",
+                            duration: 1.5
                         }
                     );
                 });
                 ScrollTrigger.refresh();
             });
 
-            // Cleanup animations when the component is destroyed
             return () => {
                 ctx.revert();
-                // console.log("Component destroyed. Animations cleaned up.");
             };
         };
 
         initializeAnimations();
     });
 
-    // Reactively log element updates if `elements` changes
     $effect(() => {
-        // console.log("Elements updated:", elements);
+        // Effect for tracking elements if needed
     });
 </script>
+
 
 <main id="content">
     <article class="section" id="aboutMe" role="region" aria-labelledby="aboutMe-header">
@@ -214,6 +223,22 @@
         padding: 0 max(20vw, 2rem);
         color: var(--color-text-secondary);
         max-width: 100%;
+        transform-style: preserve-3d;
+        perspective: 2000px;
+        position: relative;
+        overflow: visible;
+    }
+
+    :global(.letter) {
+        display: inline-block;
+        transform-style: preserve-3d;
+        backface-visibility: hidden;
+        perspective: 1000px;
+        will-change: transform, opacity;
+        transition: color 0.3s ease;
+        &.highlight {
+            color: var(--color-secondary);
+        }
     }
 
     :global(.word-container) {
@@ -221,10 +246,8 @@
         margin-right: 0.25em;
         min-height: 1.3em;
         vertical-align: middle; 
-    }
-
-    :global(.letter.highlight) {
-        color: var(--color-secondary);
+        perspective: 1000px;
+        overflow: visible;
     }
 
     @media (max-width: 925px) {
@@ -252,7 +275,6 @@
         }
 
         .long-text {
-            font-size: clamp(1.5rem, 4vw, 3rem);
             padding: 0 max(8vw, 1rem);
         }
     }
