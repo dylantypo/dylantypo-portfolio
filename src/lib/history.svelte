@@ -6,7 +6,6 @@
             role: "Data Scientist (Senior Consultant)  ",
             description: "Developed Python-based tools and automated workflows, integrating AWS and Tableau to improve data analysis and visualization  ",
             showDescription: false,
-            isKeyboardControl: false,
         },
         {
             year: "2019",
@@ -14,7 +13,6 @@
             role: "Data Analytics Intern  ",
             description: "Used Snowflake and SQL to organize data and developed efficient pipelines for supply chain analysis  ",
             showDescription: false,
-            isKeyboardControl: false,
         },
         {
             year: "2018",
@@ -22,7 +20,6 @@
             role: "Product Development Intern  ",
             description: "Leveraged agile practices to support product design and coordinated efforts to deliver a client-focused white paper  ",
             showDescription: false,
-            isKeyboardControl: false,
         },
     ]);
 
@@ -55,13 +52,9 @@
     }
 
     function handleFocus(index: number) {
-        jobs[index].isKeyboardControl = true;
-        jobs = [...jobs]; // Trigger reactivity
     }
 
     function handleBlur(index: number) {
-        jobs[index].isKeyboardControl = false;
-        jobs = [...jobs]; // Trigger reactivity
     }
 
     // Handle mouse leave for desktop
