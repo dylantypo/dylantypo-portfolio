@@ -78,27 +78,11 @@
             const jobButton = target.closest('.job') as HTMLButtonElement;
 
             if (jobButton) {
-                // Only prevent default if this is a tap interaction
-                // You can check if it's a tap by looking at movement
-                const touch = e.touches[0];
-                const startY = touch.clientY;
-
-                // Add a small threshold for tap vs scroll
-                const handleTouchEnd = (endEvent: TouchEvent) => {
-                    const endY = endEvent.changedTouches[0].clientY;
-                    const deltaY = Math.abs(endY - startY);
-                    
-                    if (deltaY < 10) { // Small threshold for tap
-                        const index = parseInt(jobButton.dataset.index || '-1');
-                        if (index >= 0) {
-                            toggleDescription(index, endEvent);
-                        }
-                    }
-                    
-                    document.removeEventListener('touchend', handleTouchEnd);
-                };
-
-                document.addEventListener('touchend', handleTouchEnd, { once: true });
+                e.preventDefault();
+                const index = parseInt(jobButton.dataset.index || '-1');
+                if (index >= 0) {
+                    toggleDescription(index, e);
+                }
                 return;
             }
 
@@ -290,24 +274,13 @@
 
     /* Touch device animations and states */
     @media (hover: none) {
-        button.job:active .background {
-            transform: scaleY(1);
-        }
-        
-        button.job:active {
+        button.job[aria-expanded="true"] {
             color: var(--color-text-primary);
-        }
-
-        button.job:active .description {
-            color: var(--color-text-secondary);
         }
 
         button.job[aria-expanded="true"] .background {
             transform: scaleY(1);
-        }
-
-        button.job[aria-expanded="true"] {
-            color: var(--color-text-primary);
+            background: rgba(249, 188, 96, 0.1); /* Explicit background */
         }
 
         button.job[aria-expanded="true"] .description {
