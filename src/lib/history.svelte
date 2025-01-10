@@ -32,11 +32,6 @@
     }
 
     function toggleDescription(index: number, event?: Event) {
-        if (event) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-        
         const wasOpen = jobs[index].showDescription;
         
         // Only close other jobs if opening a new one
@@ -108,12 +103,14 @@
             const target = e.target as HTMLElement;
             const jobButton = target.closest('.job') as HTMLButtonElement;
 
-            if (jobButton) {
+            // Only handle touch end if it's directly on a job button
+            if (jobButton && target.closest('.section')) {  // Add check for within section
                 const index = parseInt(jobButton.dataset.index || '-1');
                 if (index >= 0) {
+                    e.preventDefault();  // Prevent any default behavior
+                    e.stopPropagation(); // Stop event from bubbling
                     toggleDescription(index, e);
                 }
-                return;
             }
         }
 
