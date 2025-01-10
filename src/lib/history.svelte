@@ -72,13 +72,29 @@
             }
         }
 
-        // Touch handler
-        function handleTouch(e: TouchEvent) {
+        // Touch handler with scroll detection
+        let touchStartY = 0;
+        let isScrolling = false;
+
+        function handleTouchStart(e: TouchEvent) {
+            touchStartY = e.touches[0].clientY;
+            isScrolling = false;
+        }
+
+        function handleTouchMove(e: TouchEvent) {
+            const touchCurrentY = e.touches[0].clientY;
+            if (Math.abs(touchCurrentY - touchStartY) > 10) {
+                isScrolling = true;
+            }
+        }
+
+        function handleTouchEnd(e: TouchEvent) {
+            if (isScrolling) return;
+
             const target = e.target as HTMLElement;
             const jobButton = target.closest('.job') as HTMLButtonElement;
 
             if (jobButton) {
-                e.preventDefault();
                 const index = parseInt(jobButton.dataset.index || '-1');
                 if (index >= 0) {
                     toggleDescription(index, e);
@@ -86,16 +102,22 @@
                 return;
             }
 
-            closeAllDescriptions();
+            if (!target.closest('.job')) {
+                closeAllDescriptions();
+            }
         }
 
         document.addEventListener('click', handleDocumentClick);
-        document.addEventListener('touchstart', handleTouch, { passive: true });
+        document.addEventListener('touchstart', handleTouchStart, { passive: true });
+        document.addEventListener('touchmove', handleTouchMove, { passive: true });
+        document.addEventListener('touchend', handleTouchEnd, { passive: true });
 
         // Cleanup
         return () => {
             document.removeEventListener('click', handleDocumentClick);
-            document.removeEventListener('touchstart', handleTouch);
+            document.removeEventListener('touchstart', handleTouchStart);
+            document.removeEventListener('touchmove', handleTouchMove);
+            document.removeEventListener('touchend', handleTouchEnd);
         };
     });
 </script>
