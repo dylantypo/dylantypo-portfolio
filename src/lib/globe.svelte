@@ -821,24 +821,24 @@
     /* Base containers */
     .globe-container {
         position: relative;
-        width: 100vw;
-        min-height: calc(var(--vh, 1vh) * 100);
+        width: 100%;
+        height: 100dvh;     /* Dynamic viewport height */
+        height: calc(var(--vh, 1vh) * 100); /* Fallback */
         overflow: hidden;
         background-color: var(--color-background);
-        transform: translate3d(0, 0, 0);
         will-change: transform;
         touch-action: pan-y;
         -webkit-overflow-scrolling: touch;
+        transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        contain: paint layout;
     }
 
     .globe-viewer {
-        position: relative;
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
-        height: 100vh;
-        height: calc(var(--vh, 1vh) * 100);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        will-change: transform;
-        transform: translateZ(0);
+        height: 100%;
         backface-visibility: hidden;
         touch-action: none;
         -webkit-user-select: none;
@@ -857,10 +857,13 @@
         pointer-events: none;
         transform: translateZ(0);
         backface-visibility: hidden;
+        contain: paint layout;
+        will-change: transform;
     }
 
     :global(canvas) {
         pointer-events: auto;
+        touch-action: none;
     }
 
     /* Location markers with touch optimizations */
@@ -874,8 +877,6 @@
         padding: var(--spacing-base);
         border-radius: 4px;
         background-color: transparent;
-        transform: translateZ(0);
-        transition: opacity 0.2s ease, background-color 0.2s ease;
         touch-action: manipulation;
         user-select: none;
         -webkit-tap-highlight-color: transparent;
@@ -936,7 +937,6 @@
         color: var(--color-text-primary);
         opacity: 0.7;
         transition: opacity 0.3s ease;
-        animation: bounce 2s infinite;
         pointer-events: none;
         z-index: var(--z-index-overlay);
         background: none;
@@ -1077,13 +1077,11 @@
     /* Mobile adjustments */
     @media (max-width: 768px) {
         .globe-container {
-            overflow-y: auto;
-            overscroll-behavior-y: contain;
+            overscroll-behavior-y: none;
         }
 
         .globe-viewer {
-            height: 100vh; /* Full viewport height for mobile */
-            height: calc(var(--vh, 1vh) * 100);
+            height: 100%; /* Full viewport height for mobile */
         }
 
         :global(.navigation-hint) {

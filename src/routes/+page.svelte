@@ -29,9 +29,10 @@
 
 <style>
     main {
-        width: 100%;
-        height: 100%;
-        min-height: 100vh;
         position: relative;
+        width: 100%;
+        min-height: 100dvh;
+        min-height: calc(var(--vh, 1vh) * 100);
+        background-color: var(--color-background);
     }
 </style>
