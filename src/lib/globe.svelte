@@ -19,6 +19,7 @@
     let isControlsEnabled = $state(false);
     let animationFrameId: number;
     let CLOUDS_ROTATION_SPEED: number;
+    let lastFrameTime = Date.now();
 
     // Touch handling state
     let isTouchDevice = $state(false);
@@ -40,6 +41,7 @@
     let cachedIdealDistance: number | null = null;
     let lastWidth = browser ? window.innerWidth : 0;
     let lastHeight = browser ? window.innerHeight : 0;
+    const SCROLL_DEBOUNCE_DELAY = browser ? ('ontouchstart' in window || navigator.maxTouchPoints > 0 ? 16 : 8) : 16;
 
     type Region = {
         country: string;
@@ -288,7 +290,7 @@
             touchVelocity = 0;
         };
 
-        const handleTouchMove = (e: TouchEvent) => {
+        const handleTouchMove = debounce((e: TouchEvent) => {
             if (!isScrolling) return;
 
             const currentY = e.touches[0].clientY;
@@ -301,7 +303,7 @@
             
             lastTouchY = currentY;
             e.preventDefault();
-        };
+        }, SCROLL_DEBOUNCE_DELAY, { maxWait: 33 }); // Ensure we update at least every 2 frames
 
         const handleTouchEnd = () => {
             isScrolling = false;
@@ -501,6 +503,11 @@
 
             if (newWidth === lastWidth && newHeight === lastHeight) return;
 
+            // Change setTimeout delay based on device
+            const resizeDelay = isMobile ? 
+                (window.devicePixelRatio > 2 ? 150 : 100) : // Higher delay for high DPI mobile devices
+                50;
+
             setTimeout(() => {
                 lastWidth = newWidth;
                 lastHeight = newHeight;
@@ -508,11 +515,14 @@
                 const isMobile = newWidth < 768;
                 CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(isMobile);
 
-                updateVH();
-                resizeRenderers();
-                toggleLabelRenderer(isMobile);
-                adjustCamera(isMobile);
-            }, 150);
+                // Batch these operations together
+                requestAnimationFrame(() => {
+                    updateVH();
+                    resizeRenderers();
+                    toggleLabelRenderer(isMobile);
+                    adjustCamera(isMobile);
+                });
+            }, resizeDelay);
         };
 
         const handleResize = debounce(() => {
@@ -522,7 +532,7 @@
             }
 
             window.requestAnimationFrame(handleResizeImplementation);
-        }, 500);
+        }, isMobile ? 250 : 100);
 
         // Intersection Observer setup
         const observerOptions = {
@@ -551,6 +561,11 @@
         const animate = () => {
             animationFrameId = requestAnimationFrame(animate);
 
+            // Skip frame if device is under heavy load
+            if (isMobile && Date.now() - lastFrameTime < 16) {
+                return;
+            }
+
             if (controls.enabled) {
                 controls.update();
                 globe.setPointOfView(camera);
@@ -563,6 +578,7 @@
             }
 
             renderers.forEach(r => r.render(scene, camera));
+            lastFrameTime = Date.now();
         };
 
         // Accessibility announcements
