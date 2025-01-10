@@ -87,6 +87,27 @@
         container.setAttribute('role', 'region');
         container.setAttribute('aria-label', 'Interactive 3D Globe showing places I\'ve lived');
 
+        // Add pointer event handling
+        container.style.touchAction = 'none';
+        container.style.userSelect = 'none';
+
+        let pointerDown = false;
+
+        container.addEventListener('pointerdown', () => {
+            pointerDown = true;
+            (container as HTMLElement).style.cursor = 'grabbing';
+        });
+
+        container.addEventListener('pointerup', () => {
+            pointerDown = false;
+            (container as HTMLElement).style.cursor = 'grab';
+        });
+
+        container.addEventListener('pointerout', () => {
+            pointerDown = false;
+            (container as HTMLElement).style.cursor = 'grab';
+        });
+
         // Add screen reader instructions
         const instructions = document.createElement('div');
         instructions.className = 'sr-only';
@@ -123,6 +144,9 @@
             r.setSize(window.innerWidth, window.innerHeight);
             if ('setPixelRatio' in r) {
                 r.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            }
+            if (r instanceof THREE.WebGLRenderer) {
+                r.sortObjects = false;
             }
             if (idx > 0) {
                 r.domElement.style.position = 'absolute';
@@ -168,13 +192,24 @@
 
         // Add camera controls
         const controls = new TrackballControls(camera, renderer.domElement);
+        // Better controls configuration
         controls.noZoom = true;
         controls.noPan = true;
-        controls.rotateSpeed = 2;
-        controls.dynamicDampingFactor = 0.05;
+        controls.rotateSpeed = 1.5; // Reduced for smoother rotation
+        controls.dynamicDampingFactor = 0.15; // Increased for less "stickiness"
 
         controls.addEventListener('change', () => {
             globe.setPointOfView(camera);
+        });
+
+        let isUserInteracting = false;
+
+        controls.addEventListener('start', () => {
+            isUserInteracting = true;
+        });
+
+        controls.addEventListener('end', () => {
+            isUserInteracting = false;
         });
 
         // Set up data
@@ -350,6 +385,19 @@
         const tiltAngle = (Math.PI / 6) * -1;
         globe.setRotationFromAxisAngle(tiltAxis, tiltAngle);
 
+        
+        const calculateIdealDistance = (isMobile: boolean) => {
+            const baseFactor = 1.95;
+            const mobileAdjustment = isMobile ? 3 : 1.5;
+            return globe.getGlobeRadius() /
+                Math.tan(THREE.MathUtils.degToRad(camera.fov / (baseFactor + mobileAdjustment)));
+        };
+
+        const isMobile = window.innerWidth < 768;
+
+        controls.maxDistance = calculateIdealDistance(isMobile) * 1.1; // Limit max distance
+        controls.minDistance = calculateIdealDistance(isMobile) * 0.9; // Limit min distance
+
         // Utility functions
         const updateVH = () => {
             const vh = window.innerHeight * 0.01;
@@ -377,13 +425,6 @@
                 const years = parseFloat(label.dataset.years || '0');
                 label.style.opacity = (isMobile && years < 2) ? '0' : '1';
             });
-        };
-
-        const calculateIdealDistance = (isMobile: boolean) => {
-            const baseFactor = 1.95;
-            const mobileAdjustment = isMobile ? 3 : 1.5;
-            return globe.getGlobeRadius() /
-                Math.tan(THREE.MathUtils.degToRad(camera.fov / (baseFactor + mobileAdjustment)));
         };
 
         const setCameraPosition = (lat: number, lng: number, idealDistance: number) => {
@@ -489,8 +530,11 @@
                 globe.setPointOfView(camera);
             }
             
-            globe.rotation.y -= 0.00055;
-            Clouds.rotation.y += CLOUDS_ROTATION_SPEED * Math.PI / 180;
+            // Only auto-rotate when user isn't interacting
+            if (!isUserInteracting) {
+                globe.rotation.y -= 0.00055;
+                Clouds.rotation.y += CLOUDS_ROTATION_SPEED * Math.PI / 180;
+            }
 
             renderers.forEach(r => r.render(scene, camera));
         };
@@ -541,8 +585,6 @@
 
         // Initialize
         const focusedCity = regionsLived.flatMap(region => region.states).find(state => state.name === "Arlington");
-        const isMobile = window.innerWidth < 768;
-
         updateVH();
         resizeRenderers();
         toggleLabelRenderer(isMobile);
@@ -764,6 +806,10 @@
         will-change: transform;
         transform: translateZ(0);
         backface-visibility: hidden;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
     }
 
     /* Canvas layering with performance optimizations */
