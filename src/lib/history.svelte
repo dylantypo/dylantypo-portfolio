@@ -74,16 +74,6 @@
 
     // Document click handler
     $effect(() => {
-        function handleDocumentClick(e: MouseEvent) {
-            const target = e.target as HTMLElement;
-            if (!target.closest('.job')) {
-                jobs.forEach(job => job.showDescription = false);
-                jobs = [...jobs]; // Trigger reactivity
-            }
-        }
-
-        document.addEventListener('click', handleDocumentClick);
-
         // Touch handler with scroll detection
         let touchStartY = 0;
         let isScrolling = false;
@@ -127,10 +117,6 @@
                 }
                 return;
             }
-
-            if (!target.closest('.job')) {
-                closeAllDescriptions();
-            }
         }
 
         document.addEventListener('touchstart', handleTouchStart, { passive: true });
@@ -139,7 +125,6 @@
 
         // Cleanup
         return () => {
-            document.removeEventListener('click', handleDocumentClick);
             document.removeEventListener('touchstart', handleTouchStart);
             document.removeEventListener('touchmove', handleTouchMove);
             document.removeEventListener('touchend', handleTouchEnd);
