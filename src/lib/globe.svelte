@@ -561,11 +561,6 @@
         const animate = () => {
             animationFrameId = requestAnimationFrame(animate);
 
-            // Skip frame if device is under heavy load
-            if (isMobile && Date.now() - lastFrameTime < 16) {
-                return;
-            }
-
             if (controls.enabled) {
                 controls.update();
                 globe.setPointOfView(camera);
