@@ -29,8 +29,6 @@
     }
 
     onMount(() => {
-        console.log("Component mounted. Initializing animations.");
-
         const initializeAnimations = async () => {
             const { ScrollTrigger } = await import('gsap/ScrollTrigger');
             gsap.registerPlugin(ScrollTrigger);
@@ -49,8 +47,6 @@
                     el.innerHTML = '';
                     const originalContent = el.textContent;
                     el.setAttribute('aria-label', originalContent || '');
-
-                    console.log(`Processing element ${index}, nodes:`, nodes.length); // debugging
 
                     nodes.forEach((node) => {
                         if (node.nodeType === Node.TEXT_NODE) {

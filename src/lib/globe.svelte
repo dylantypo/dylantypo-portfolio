@@ -21,6 +21,7 @@
     let CLOUDS_ROTATION_SPEED: number;
 
     // Touch handling state
+    let isTouchDevice = $state(false);
     let touchStartY = 0;
     let lastTouchY = 0;
     let touchVelocity = 0;
@@ -79,6 +80,8 @@
     onMount(async () => {
         // Check if we are in the browser
         if (!browser) return;
+
+        isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
         // Initialize accessibility attributes
         container.setAttribute('role', 'region');
@@ -714,14 +717,28 @@
     </div>
     
     <!-- Mobile scroll indicator -->
-    <div class="scroll-indicator" class:hidden={$scrollProgress > 0}>
-        <div class="scroll-icon">
-            <span class="sr-only">Scroll down to continue</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 5v14M19 12l-7 7-7-7"/>
-            </svg>
-        </div>
-    </div>
+    {#if isTouchDevice}
+        <button
+            class="scroll-indicator"
+            class:hidden={$scrollProgress > 0}
+            onclick={() => {
+                const aboutSection = document.getElementById('aboutMe');
+                if (aboutSection) {
+                    aboutSection.scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            }}
+            aria-label="Scroll to About Me section"
+        >
+            <div class="scroll-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M19 12l-7 7-7-7"/>
+                </svg>
+            </div>
+        </button>
+    {/if}
 </div>
 
 <style>
@@ -842,22 +859,55 @@
         animation: bounce 2s infinite;
         pointer-events: none;
         z-index: var(--z-index-overlay);
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        animation: float 3s ease-in-out infinite;
+        pointer-events: auto; /* Enable interactions */
     }
 
     .scroll-icon {
-        width: 32px;
-        height: 32px;
         display: flex;
+        flex-direction: column;
         align-items: center;
-        justify-content: center;
-        background-color: rgba(0, 0, 0, 0.3);
-        border-radius: 50%;
+        gap: 0.5rem;
+        background-color: rgba(249, 188, 96, 0.1);
+        padding: 0.75rem 1.5rem;
+        border-radius: 2rem;
         backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
     }
 
+    .scroll-indicator:hover,
+    .scroll-indicator:focus-visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-2px);
+    }
+
+    .scroll-indicator:active {
+        transform: translateX(-50%) translateY(0);
+    }
+
     .scroll-indicator.hidden {
         opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+        pointer-events: none;
+    }
+
+    @keyframes float {
+        0%, 100% {
+            transform: translateX(-50%) translateY(0);
+        }
+        50% {
+            transform: translateX(-50%) translateY(-10px);
+        }
+    }
+
+    /* Focus style for the button */
+    .scroll-indicator:focus-visible {
+        outline: 2px solid var(--color-focus);
+        outline-offset: 2px;
     }
 
     @keyframes bounce {
@@ -969,7 +1019,7 @@
         }
 
         .scroll-indicator {
-            bottom: 1rem;
+            bottom: 1.5rem;
         }
 
         /* Hide scroll progress on very small screens */
