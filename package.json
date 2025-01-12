@@ -45,7 +45,7 @@
 		"open-simplex-noise": "^2.5.0",
 		"protobufjs": "^7.4.0",
 		"three": "^0.172.0",
-		"three-globe": "^2.40.1",
+		"three-globe": "^2.40.2",
 		"three-obj-mtl-loader": "^1.0.3"
 	}
 }
