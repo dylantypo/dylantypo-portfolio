@@ -31,9 +31,10 @@
     let time = $state(0);
     let isInitialized = $state(false);
 
-    const FLUID_COLOR = new THREE.Color(0x3498db);  // Nice bright blue
+    const FLUID_COLOR = new THREE.Color(0x006994);  // Deeper blue
+    const LIGHT_COLOR = new THREE.Color(0x89CFF0);  // Light blue for foam/surface
     const CRYSTAL_COLOR = new THREE.Color(0xffffff); // Pure white for crystal
-    const CRYSTAL_OPACITY = 0.25;                    // Base opacity for crystal
+    const CRYSTAL_OPACITY = 0.08;  // Much more transparent 
 
     // Simulation setup
     const {
@@ -101,25 +102,34 @@
                 vec3 normal = normalize(vNormal);
                 vec3 normalized = normalize(vPosition);
                 
+                // More subtle Fresnel effect
                 float fresnel = pow(1.0 - abs(dot(normal, vViewDirection)), 2.0);
-                float rim = pow(1.0 - abs(dot(normal, normalized)), 3.0);
+                float rim = pow(1.0 - abs(dot(normal, normalized)), 5.0);
                 
-                vec3 refraction = normalize(refract(-vViewDirection, normal, 0.85));
-                float aberration = pow(1.0 - abs(dot(refraction, vec3(0.0, 1.0, 0.0))), 2.0);
+                // Softer refraction
+                vec3 refraction = normalize(refract(-vViewDirection, normal, 0.94));
+                float dispersion = pow(1.0 - abs(dot(refraction, vec3(0.0, 1.0, 0.0))), 4.0);
                 
-                float sparkle = pow(sin(vWorldPosition.x * 5.0 + time) * 
-                                cos(vWorldPosition.y * 5.0 + time) * 
-                                sin(vWorldPosition.z * 5.0 + time), 8.0);
+                // Very subtle surface detail
+                float microDetail = sin(vWorldPosition.x * 30.0 + time * 0.2) * 
+                                  cos(vWorldPosition.y * 30.0 + time * 0.15) * 
+                                  sin(vWorldPosition.z * 30.0 + time * 0.25);
+                float sparkle = pow(microDetail, 32.0) * 0.15;
                 
-                vec3 finalCrystal = crystalColor * (1.0 + sparkle * 0.5) * (1.0 + aberration * 0.3);
-                float alpha = mix(0.5, 1.0, fresnel + rim);
+                // Subtle chromatic aberration
+                float blueShift = pow(fresnel, 3.0) * 0.02;
+                vec3 glassColor = crystalColor + vec3(-blueShift, 0.0, blueShift);
                 
-                gl_FragColor = vec4(finalCrystal, alpha);
+                // Final glass effect
+                vec3 finalColor = glassColor * (1.0 + sparkle) * (1.0 + dispersion * 0.2);
+                float alpha = mix(baseOpacity, 0.2, fresnel + rim);
+                
+                gl_FragColor = vec4(finalColor, alpha);
             }
         `,
         transparent: true,
         side: THREE.DoubleSide,
-        depthWrite: true,
+        depthWrite: false,
         blending: THREE.AdditiveBlending
     });
 
@@ -128,15 +138,18 @@
         uniforms: {
             fluidTexture: { value: fluidTexture },
             time: { value: 0 },
-            fluidColor: { value: FLUID_COLOR }
+            fluidColor: { value: FLUID_COLOR },
+            lightColor: { value: LIGHT_COLOR }
         },
         vertexShader: `
             varying vec3 vPosition;
             varying vec3 vNormal;
+            varying vec2 vUv;
             
             void main() {
                 vPosition = position;
                 vNormal = normalize(normalMatrix * normal);
+                vUv = uv;
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
         `,
@@ -144,8 +157,26 @@
             uniform sampler2D fluidTexture;
             uniform float time;
             uniform vec3 fluidColor;
+            uniform vec3 lightColor;
             varying vec3 vPosition;
             varying vec3 vNormal;
+            varying vec2 vUv;
+            
+            // Noise functions for water texture
+            float hash(float n) {
+                return fract(sin(n) * 43758.5453);
+            }
+            
+            float noise(vec3 x) {
+                vec3 p = floor(x);
+                vec3 f = fract(x);
+                f = f * f * (3.0 - 2.0 * f);
+                float n = p.x + p.y * 57.0 + p.z * 113.0;
+                return mix(mix(mix(hash(n), hash(n + 1.0), f.x),
+                             mix(hash(n + 57.0), hash(n + 58.0), f.x), f.y),
+                         mix(mix(hash(n + 113.0), hash(n + 114.0), f.x),
+                             mix(hash(n + 170.0), hash(n + 171.0), f.x), f.y), f.z);
+            }
             
             void main() {
                 vec3 normalized = normalize(vPosition);
@@ -156,22 +187,30 @@
                     vec2(texCoord.x + texCoord.z * ${N}.0,
                         texCoord.y + texCoord.z * ${N}.0) / ${N}.0).r;
                 
-                // Create fluid gradient
-                float depth = (1.0 - texCoord.y) * 0.5;
-                vec3 deepColor = fluidColor * 0.5;  // Darker version of fluid color
-                vec3 lightColor = fluidColor * 1.5; // Lighter version of fluid color
+                // Ocean depth gradient
+                float depth = (1.0 - texCoord.y) * 0.6;
+                vec3 deepColor = fluidColor * 0.3;  // Darker deep water
+                vec3 surfaceColor = mix(fluidColor, lightColor, 0.7); // Brighter surface
                 
-                // Mix colors based on density and depth
-                vec3 finalColor = mix(deepColor, lightColor, density * (1.0 - depth));
+                // Generate foam pattern
+                float foam = noise(vec3(vUv * 10.0 + time * 0.2, time * 0.1));
+                foam = pow(foam, 3.0) * density;
                 
-                // Add subtle movement
-                float wave = sin(texCoord.y * 10.0 + time * 0.5) * 0.05;
-                finalColor += wave * lightColor;
+                // Add wave motion
+                float wave = sin(texCoord.y * 20.0 + time + noise(vec3(vUv * 5.0, time * 0.1))) * 0.1;
                 
-                // Adjust opacity based on density
-                float alpha = density * mix(0.4, 0.8, depth);
+                // Mix colors based on density, depth, and foam
+                vec3 waterColor = mix(deepColor, surfaceColor, density * (1.0 - depth) + wave);
+                waterColor = mix(waterColor, lightColor, foam * 0.6);
                 
-                gl_FragColor = vec4(finalColor, alpha);
+                // Add caustics effect
+                float caustics = pow(noise(vec3(vUv * 15.0 - time * 0.1, time * 0.2)), 4.0) * (1.0 - depth);
+                waterColor += lightColor * caustics * 0.2;
+                
+                // Final opacity
+                float alpha = mix(0.4, 0.9, density * (1.0 - depth * 0.5) + foam * 0.3);
+                
+                gl_FragColor = vec4(waterColor, alpha);
             }
         `,
         transparent: true,
@@ -243,8 +282,8 @@
             controls.autoRotateSpeed = 0.5;
 
             // Create optimized geometries
-            const geometry = new THREE.IcosahedronGeometry(2, isMobile ? 3 : 4);
-            const innerGeometry = new THREE.IcosahedronGeometry(1.98, isMobile ? 2 : 3);
+            const geometry = new THREE.IcosahedronGeometry(2, isMobile ? 2 : 3);  // Reduced tessellation
+            const innerGeometry = new THREE.IcosahedronGeometry(1.95, isMobile ? 2 : 3);  // Slightly smaller radius
 
             // Create meshes
             globe = new THREE.Mesh(geometry, outerMaterial);
@@ -254,12 +293,17 @@
             scene.add(innerGlobe);
 
             // Optimized lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.15);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.75);
             directionalLight.position.set(1, 1, 2);
+            
+            // Add rim light for better glass edge definition
+            const rimLight = new THREE.DirectionalLight(0x89CFF0, 0.3);
+            rimLight.position.set(-1, 0, -1);
             
             scene.add(ambientLight);
             scene.add(directionalLight);
+            scene.add(rimLight);
 
             // Event listeners
             window.addEventListener('resize', handleResize, { passive: true });
@@ -370,7 +414,7 @@
             }
             
             const average = sum / binSize / 255;
-            if (average <= 0.1) continue; // Skip low amplitudes
+            if (average <= 0.01) continue; // Skip low amplitudes
 
             const angle = (band / 4) * Math.PI * 2;
             const cos = Math.cos(angle);

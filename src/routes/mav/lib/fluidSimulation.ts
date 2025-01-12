@@ -3,10 +3,10 @@ import type { FluidState, SimulationConfig, FluidStore, BufferPair } from './typ
 
 const DEFAULT_CONFIG: SimulationConfig = {
     gridSize: 64,        // N
-    iterations: 128,       // Solver iterations
-    viscosity: 0.00001,    // Fluid viscosity
-    diffusion: 0.0001,   // Diffusion rate
-    timeStep: 0.016,     // dt
+    iterations: 16,      // Reduced iterations for bouncier behavior
+    viscosity: 0.00005,  // Lower viscosity for more dynamic movement
+    diffusion: 0.00015,  // Slightly higher diffusion for better spread
+    timeStep: 0.0125,    // Smaller timestep for more stable bouncy behavior
     useWebGL: true,      // Enable WebGL acceleration when available
     useSpatialIndex: true // Enable spatial indexing for optimization
 };
@@ -511,33 +511,101 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 
     // Optimized force addition with spatial indexing
     function addForce(x: number, y: number, z: number, amount: number): void {
-        const index = idx(x, y, z);
-        buffers.current.density[index] += amount;
+        // Apply force with radial falloff for more natural spread
+        const radius = 2; // Influence radius
+        const falloffFactor = 2.5; // Controls how quickly force diminishes
         
-        // Update spatial index
+        for (let i = -radius; i <= radius; i++) {
+            for (let j = -radius; j <= radius; j++) {
+                for (let k = -radius; k <= radius; k++) {
+                    const dist = Math.sqrt(i*i + j*j + k*k);
+                    if (dist > radius) continue;
+                    
+                    // Calculate falloff based on distance
+                    const falloff = Math.exp(-falloffFactor * (dist / radius));
+                    const forceAmount = amount * falloff;
+                    
+                    const index = idx(x + i, y + j, z + k);
+                    buffers.current.density[index] += forceAmount;
+
+                    // Add slight upward bias for buoyancy
+                    const buoyancyFactor = 0.15;
+                    buffers.current.velocityY[index] += forceAmount * buoyancyFactor;
+                }
+            }
+        }
+        
+        // Update spatial index with expanded region
         const cellX = Math.floor(x / cellSize);
         const cellY = Math.floor(y / cellSize);
         const cellZ = Math.floor(z / cellSize);
-        const cellIndex = cellX + cellY * Math.floor(N / cellSize) + 
-                         cellZ * Math.floor(N / cellSize) * Math.floor(N / cellSize);
-        spatialIndex.add(cellIndex);
+        
+        // Index larger area for bouncy interaction
+        for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
+                for (let k = -1; k <= 1; k++) {
+                    const cellIndex = (cellX + i) + 
+                                    (cellY + j) * Math.floor(N / cellSize) + 
+                                    (cellZ + k) * Math.floor(N / cellSize) * Math.floor(N / cellSize);
+                    spatialIndex.add(cellIndex);
+                }
+            }
+        }
 
         stores.density.set(buffers.current.density);
     }
 
     // Optimized velocity addition
     function addVelocity(x: number, y: number, z: number, vx: number, vy: number, vz: number): void {
-        const index = idx(x, y, z);
+        // Add turbulence and bounce behavior
+        const radius = 2.5;
+        const turbulenceFactor = 0.2;
+        const bounceFactor = 1.15;
         
-        buffers.current.velocityX[index] += vx;
-        buffers.current.velocityY[index] += vy;
-        buffers.current.velocityZ[index] += vz;
+        for (let i = -Math.floor(radius); i <= Math.floor(radius); i++) {
+            for (let j = -Math.floor(radius); j <= Math.floor(radius); j++) {
+                for (let k = -Math.floor(radius); k <= Math.floor(radius); k++) {
+                    const dist = Math.sqrt(i*i + j*j + k*k);
+                    if (dist > radius) continue;
+                    
+                    // Calculate position-dependent turbulence
+                    const angle = Math.atan2(j, i) + dist * turbulenceFactor;
+                    const turbulenceX = Math.cos(angle) * turbulenceFactor;
+                    const turbulenceZ = Math.sin(angle) * turbulenceFactor;
+                    
+                    // Calculate bounce effect
+                    const bounce = Math.sin(dist * Math.PI / radius) * bounceFactor;
+                    
+                    const index = idx(x + i, y + j, z + k);
+                    
+                    // Apply velocities with turbulence and bounce
+                    buffers.current.velocityX[index] += vx * bounce + turbulenceX;
+                    buffers.current.velocityY[index] += vy * bounce + Math.abs(bounce) * 0.5; // Extra upward bias
+                    buffers.current.velocityZ[index] += vz * bounce + turbulenceZ;
+                    
+                    // Add slight rotational component for swirling
+                    const swirl = 0.1;
+                    buffers.current.velocityX[index] += -j * swirl;
+                    buffers.current.velocityZ[index] += i * swirl;
+                }
+            }
+        }
+
+        // Update spatial index with expanded region
+        const cellX = Math.floor(x / cellSize);
+        const cellY = Math.floor(y / cellSize);
+        const cellZ = Math.floor(z / cellSize);
         
-        // Update spatial index
-        const cellIndex = Math.floor(x / cellSize) + 
-                         Math.floor(y / cellSize) * Math.floor(N / cellSize) +
-                         Math.floor(z / cellSize) * Math.floor(N / cellSize) * Math.floor(N / cellSize);
-        spatialIndex.add(cellIndex);
+        for (let i = -2; i <= 2; i++) {
+            for (let j = -2; j <= 2; j++) {
+                for (let k = -2; k <= 2; k++) {
+                    const cellIndex = (cellX + i) + 
+                                    (cellY + j) * Math.floor(N / cellSize) + 
+                                    (cellZ + k) * Math.floor(N / cellSize) * Math.floor(N / cellSize);
+                    spatialIndex.add(cellIndex);
+                }
+            }
+        }
 
         stores.velocityX.set(buffers.current.velocityX);
         stores.velocityY.set(buffers.current.velocityY);
