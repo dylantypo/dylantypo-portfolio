@@ -145,11 +145,18 @@
             varying vec3 vPosition;
             varying vec3 vNormal;
             varying vec2 vUv;
+            varying vec3 vRefract;
             
             void main() {
                 vPosition = position;
                 vNormal = normalize(normalMatrix * normal);
                 vUv = uv;
+                
+                // Calculate refraction vector for caustics
+                vec3 worldNormal = normalize(mat3(modelMatrix) * normal);
+                vec3 lightDir = normalize(vec3(1.0, 1.0, 2.0));
+                vRefract = refract(lightDir, worldNormal, 0.75);
+                
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
         `,
@@ -161,21 +168,26 @@
             varying vec3 vPosition;
             varying vec3 vNormal;
             varying vec2 vUv;
+            varying vec3 vRefract;
             
-            // Noise functions for water texture
-            float hash(float n) {
-                return fract(sin(n) * 43758.5453);
+            // Improved noise function for caustics
+            float hash(vec3 p) {
+                p = fract(p * vec3(443.897, 441.423, 437.195));
+                p += dot(p, p.yzx + 19.19);
+                return fract((p.x + p.y) * p.z);
             }
             
-            float noise(vec3 x) {
-                vec3 p = floor(x);
-                vec3 f = fract(x);
-                f = f * f * (3.0 - 2.0 * f);
-                float n = p.x + p.y * 57.0 + p.z * 113.0;
-                return mix(mix(mix(hash(n), hash(n + 1.0), f.x),
-                             mix(hash(n + 57.0), hash(n + 58.0), f.x), f.y),
-                         mix(mix(hash(n + 113.0), hash(n + 114.0), f.x),
-                             mix(hash(n + 170.0), hash(n + 171.0), f.x), f.y), f.z);
+            float causticPattern(vec3 pos, float time) {
+                vec3 shadowPos = pos + vRefract * (0.5 + sin(time * 0.5) * 0.1);
+                float pattern = 0.0;
+                
+                // Multi-layered caustic effect
+                for(float i = 1.0; i < 4.0; i++) {
+                    float scale = pow(2.0, i);
+                    pattern += hash(shadowPos * scale + time) / scale;
+                }
+                
+                return pattern;
             }
             
             void main() {
@@ -187,35 +199,36 @@
                     vec2(texCoord.x + texCoord.z * ${N}.0,
                         texCoord.y + texCoord.z * ${N}.0) / ${N}.0).r;
                 
-                // Ocean depth gradient
+                // Calculate caustics
+                float caustics = causticPattern(vPosition * 2.0, time);
+                caustics = pow(caustics, 3.0) * 2.0;
+                
+                // Ocean depth with caustics
                 float depth = (1.0 - texCoord.y) * 0.6;
-                vec3 deepColor = fluidColor * 0.3;  // Darker deep water
-                vec3 surfaceColor = mix(fluidColor, lightColor, 0.7); // Brighter surface
+                vec3 deepColor = fluidColor * 0.3;
+                vec3 surfaceColor = mix(fluidColor, lightColor, 0.7);
                 
-                // Generate foam pattern
-                float foam = noise(vec3(vUv * 10.0 + time * 0.2, time * 0.1));
-                foam = pow(foam, 3.0) * density;
+                // Add caustics to the color mix
+                vec3 waterColor = mix(deepColor, surfaceColor, density * (1.0 - depth));
+                waterColor += lightColor * caustics * (1.0 - depth) * 0.3;
                 
-                // Add wave motion
-                float wave = sin(texCoord.y * 20.0 + time + noise(vec3(vUv * 5.0, time * 0.1))) * 0.1;
+                // Dynamic waves
+                float wave = sin(texCoord.y * 20.0 + time + 
+                    sin(texCoord.x * 10.0 + time * 0.5) * 
+                    cos(texCoord.z * 15.0 + time * 0.7)) * 0.1;
                 
-                // Mix colors based on density, depth, and foam
-                vec3 waterColor = mix(deepColor, surfaceColor, density * (1.0 - depth) + wave);
-                waterColor = mix(waterColor, lightColor, foam * 0.6);
+                waterColor += wave * lightColor * 0.1;
                 
-                // Add caustics effect
-                float caustics = pow(noise(vec3(vUv * 15.0 - time * 0.1, time * 0.2)), 4.0) * (1.0 - depth);
-                waterColor += lightColor * caustics * 0.2;
-                
-                // Final opacity
-                float alpha = mix(0.4, 0.9, density * (1.0 - depth * 0.5) + foam * 0.3);
+                // Calculate final opacity with fresnel
+                float fresnel = pow(1.0 - abs(dot(normalize(vNormal), normalize(cameraPosition - vPosition))), 3.0);
+                float alpha = mix(0.6, 0.9, density * (1.0 - depth * 0.5) + fresnel);
                 
                 gl_FragColor = vec4(waterColor, alpha);
             }
         `,
         transparent: true,
         side: THREE.BackSide,
-        depthWrite: true,
+        depthWrite: false,
         blending: THREE.AdditiveBlending
     });
 
@@ -293,16 +306,24 @@
             scene.add(innerGlobe);
 
             // Optimized lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.75);
-            directionalLight.position.set(1, 1, 2);
+            // Enhanced lighting for caustics
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+            const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            mainLight.position.set(1, 1, 2);
             
-            // Add rim light for better glass edge definition
-            const rimLight = new THREE.DirectionalLight(0x89CFF0, 0.3);
-            rimLight.position.set(-1, 0, -1);
+            // Add focused light for caustics
+            const causticLight = new THREE.SpotLight(0x89CFF0, 0.5);
+            causticLight.position.set(2, 3, 2);
+            causticLight.angle = Math.PI / 4;
+            causticLight.penumbra = 0.3;
+            
+            // Add subtle rim light
+            const rimLight = new THREE.DirectionalLight(0x89CFF0, 0.2);
+            rimLight.position.set(-1, 0.5, -1);
             
             scene.add(ambientLight);
-            scene.add(directionalLight);
+            scene.add(mainLight);
+            scene.add(causticLight);
             scene.add(rimLight);
 
             // Event listeners
