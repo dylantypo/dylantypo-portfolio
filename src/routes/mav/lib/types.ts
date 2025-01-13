@@ -15,6 +15,8 @@ export interface FluidState {
     velocityY: Float32Array;
     velocityZ: Float32Array;
     temp: Float32Array;
+    pressure: Float32Array;
+    temperature: Float32Array;
 }
 
 export interface SimulationConfig {
@@ -25,6 +27,10 @@ export interface SimulationConfig {
     timeStep: number;
     useWebGL?: boolean;
     useSpatialIndex?: boolean;
+    temperature: number;
+    density: number;
+    gravity: number;
+    vorticityStrength: number;
 }
 
 export interface ThreeContext {
@@ -40,6 +46,8 @@ export interface FluidStore {
     velocityY: Writable<Float32Array>;
     velocityZ: Writable<Float32Array>;
     temp: Writable<Float32Array>;
+    pressure: Writable<Float32Array>;
+    temperature: Writable<Float32Array>;
 }
 
 export interface BufferPair {

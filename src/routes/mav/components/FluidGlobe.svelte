@@ -34,7 +34,7 @@
     const FLUID_COLOR = new THREE.Color(0x006994);  // Deeper blue
     const LIGHT_COLOR = new THREE.Color(0x89CFF0);  // Light blue for foam/surface
     const CRYSTAL_COLOR = new THREE.Color(0xffffff); // Pure white for crystal
-    const CRYSTAL_OPACITY = 0.08;  // Much more transparent 
+    const CRYSTAL_OPACITY = 0.025;  // Much more transparent 
 
     // Simulation setup
     const {
@@ -139,25 +139,36 @@
             fluidTexture: { value: fluidTexture },
             time: { value: 0 },
             fluidColor: { value: FLUID_COLOR },
-            lightColor: { value: LIGHT_COLOR }
+            lightColor: { value: LIGHT_COLOR },
+            heightField: { value: null }, // Will be updated by audio data
         },
         vertexShader: `
             varying vec3 vPosition;
             varying vec3 vNormal;
             varying vec2 vUv;
             varying vec3 vRefract;
+            varying vec3 vReflect;
+            uniform sampler2D heightField;
             
             void main() {
-                vPosition = position;
-                vNormal = normalize(normalMatrix * normal);
                 vUv = uv;
                 
-                // Calculate refraction vector for caustics
-                vec3 worldNormal = normalize(mat3(modelMatrix) * normal);
-                vec3 lightDir = normalize(vec3(1.0, 1.0, 2.0));
-                vRefract = refract(lightDir, worldNormal, 0.75);
+                // Calculate height offset based on audio data
+                float height = texture2D(heightField, vUv).r;
+                vec3 newPosition = position + normal * height * 0.2;
                 
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                // Calculate surface normal for reflections/refractions
+                vec3 worldNormal = normalize(mat3(modelMatrix) * normal);
+                vec3 eyeVector = normalize(cameraPosition - (modelMatrix * vec4(position, 1.0)).xyz);
+                
+                // Calculate reflection and refraction vectors
+                vRefract = refract(eyeVector, worldNormal, 0.75);
+                vReflect = reflect(eyeVector, worldNormal);
+                
+                vPosition = newPosition;
+                vNormal = normalize(normalMatrix * normal);
+                
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
             }
         `,
         fragmentShader: `
@@ -169,59 +180,78 @@
             varying vec3 vNormal;
             varying vec2 vUv;
             varying vec3 vRefract;
+            varying vec3 vReflect;
             
-            // Improved noise function for caustics
-            float hash(vec3 p) {
-                p = fract(p * vec3(443.897, 441.423, 437.195));
-                p += dot(p, p.yzx + 19.19);
-                return fract((p.x + p.y) * p.z);
+            // Fresnel approximation
+            float fresnel(vec3 normal, vec3 viewDir) {
+                return pow(1.0 - clamp(dot(normal, viewDir), 0.0, 1.0), 4.0);
             }
             
-            float causticPattern(vec3 pos, float time) {
-                vec3 shadowPos = pos + vRefract * (0.5 + sin(time * 0.5) * 0.1);
-                float pattern = 0.0;
+            // Improved noise function for dynamic ripples
+            float noise(vec3 p) {
+                vec3 i = floor(p);
+                vec3 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
                 
-                // Multi-layered caustic effect
-                for(float i = 1.0; i < 4.0; i++) {
-                    float scale = pow(2.0, i);
-                    pattern += hash(shadowPos * scale + time) / scale;
+                float n = i.x + i.y * 157.0 + 113.0 * i.z;
+                vec4 v = fract(sin(vec4(n + 0.0, n + 1.0, n + 157.0, n + 158.0)) * 43758.5453123);
+                
+                return mix(
+                    mix(mix(v.x, v.y, f.x), mix(v.z, v.w, f.x), f.y),
+                    mix(mix(v.x, v.y, f.x), mix(v.z, v.w, f.x), f.y + 1.0),
+                    f.z
+                );
+            }
+            
+            // Dynamic ripple pattern
+            float ripples(vec3 p) {
+                float d = 0.0;
+                float s = 1.0;
+                for(int i = 0; i < 4; i++) {
+                    d += noise(p * s + time) / s;
+                    s *= 2.0;
+                    p = p * 1.2 + vec3(1.3, 1.7, 2.1);
                 }
-                
-                return pattern;
+                return d;
             }
             
             void main() {
-                vec3 normalized = normalize(vPosition);
-                vec3 texCoord = normalized * 0.5 + 0.5;
+                vec3 viewDir = normalize(cameraPosition - vPosition);
                 
-                // Sample fluid density
+                // Sample fluid density with ripple distortion
+                vec3 rippleOffset = vec3(ripples(vPosition * 2.0 + time));
+                vec3 texCoord = normalize(vPosition + rippleOffset * 0.02) * 0.5 + 0.5;
+                
                 float density = texture2D(fluidTexture, 
                     vec2(texCoord.x + texCoord.z * ${N}.0,
                         texCoord.y + texCoord.z * ${N}.0) / ${N}.0).r;
                 
-                // Calculate caustics
-                float caustics = causticPattern(vPosition * 2.0, time);
-                caustics = pow(caustics, 3.0) * 2.0;
-                
-                // Ocean depth with caustics
+                // Calculate water depth and color
                 float depth = (1.0 - texCoord.y) * 0.6;
                 vec3 deepColor = fluidColor * 0.3;
-                vec3 surfaceColor = mix(fluidColor, lightColor, 0.7);
+                vec3 shallowColor = mix(fluidColor, lightColor, 0.7);
                 
-                // Add caustics to the color mix
-                vec3 waterColor = mix(deepColor, surfaceColor, density * (1.0 - depth));
-                waterColor += lightColor * caustics * (1.0 - depth) * 0.3;
+                // Add dynamic ripples and waves
+                float ripplePattern = ripples(vPosition * 4.0 + time * 0.5);
+                float waveHeight = ripplePattern * 0.1;
                 
-                // Dynamic waves
-                float wave = sin(texCoord.y * 20.0 + time + 
-                    sin(texCoord.x * 10.0 + time * 0.5) * 
-                    cos(texCoord.z * 15.0 + time * 0.7)) * 0.1;
+                // Mix colors with reflections and refractions
+                vec3 waterColor = mix(deepColor, shallowColor, density * (1.0 - depth) + waveHeight);
                 
-                waterColor += wave * lightColor * 0.1;
+                // Add caustics and specular highlights
+                float causticIntensity = pow(max(dot(normalize(vRefract), vec3(0.0, 1.0, 0.0)), 0.0), 4.0);
+                waterColor += lightColor * causticIntensity * (1.0 - depth) * 0.4;
                 
-                // Calculate final opacity with fresnel
-                float fresnel = pow(1.0 - abs(dot(normalize(vNormal), normalize(cameraPosition - vPosition))), 3.0);
-                float alpha = mix(0.6, 0.9, density * (1.0 - depth * 0.5) + fresnel);
+                // Calculate fresnel term for reflection blend
+                float fresnelTerm = fresnel(normalize(vNormal), viewDir);
+                
+                // Blend with reflections
+                vec3 reflectionColor = lightColor * pow(fresnelTerm, 2.0);
+                waterColor = mix(waterColor, reflectionColor, fresnelTerm * 0.5);
+                
+                // Dynamic opacity based on depth and waves
+                float alpha = mix(0.6, 0.9, density * (1.0 - depth * 0.5) + fresnelTerm);
+                alpha += waveHeight * 0.2;
                 
                 gl_FragColor = vec4(waterColor, alpha);
             }
@@ -295,8 +325,8 @@
             controls.autoRotateSpeed = 0.5;
 
             // Create optimized geometries
-            const geometry = new THREE.IcosahedronGeometry(2, isMobile ? 2 : 3);  // Reduced tessellation
-            const innerGeometry = new THREE.IcosahedronGeometry(1.95, isMobile ? 2 : 3);  // Slightly smaller radius
+            const geometry = new THREE.IcosahedronGeometry(2, isMobile ? 2 : 3);
+            const innerGeometry = new THREE.IcosahedronGeometry(1.98, isMobile ? 2 : 3);
 
             // Create meshes
             globe = new THREE.Mesh(geometry, outerMaterial);
@@ -411,6 +441,50 @@
         fluidTexture.needsUpdate = true;
     }
 
+    const heightFieldSize = 64;
+    const heightFieldData = new Float32Array(heightFieldSize * heightFieldSize * 4);
+    const heightFieldTexture = new THREE.DataTexture(
+        heightFieldData,
+        heightFieldSize,
+        heightFieldSize,
+        THREE.RGBAFormat,
+        THREE.FloatType
+    );
+    heightFieldTexture.minFilter = THREE.LinearFilter;
+    heightFieldTexture.magFilter = THREE.LinearFilter;
+    
+    // Update heightfield based on audio data
+    function updateHeightField() {
+        if (!audioData?.frequencies) return;
+        
+        const { frequencies } = audioData;
+        const binSize = frequencies.length / heightFieldSize;
+        
+        for (let i = 0; i < heightFieldSize; i++) {
+            for (let j = 0; j < heightFieldSize; j++) {
+                const idx = (i * heightFieldSize + j) * 4;
+                
+                // Sample audio frequencies in a circular pattern
+                const angle = (Math.PI * 2 * j) / heightFieldSize;
+                const radius = i / heightFieldSize;
+                const freqIndex = Math.floor((radius * frequencies.length) / 4);
+                
+                // Calculate height based on audio frequency and distance from center
+                let height = frequencies[freqIndex] / 255.0;
+                height *= Math.exp(-radius * 3); // Fade out from center
+                
+                // Store height in red channel
+                heightFieldData[idx] = height;
+                heightFieldData[idx + 1] = 0;
+                heightFieldData[idx + 2] = 0;
+                heightFieldData[idx + 3] = 1;
+            }
+        }
+        
+        heightFieldTexture.needsUpdate = true;
+        innerMaterial.uniforms.heightField.value = heightFieldTexture;
+    }
+
     // Optimized audio processing
     function processAudio() {
         if (!audioData?.frequencies) {
@@ -468,6 +542,7 @@
         innerMaterial.uniforms.time.value = time;
 
         processAudio();
+        updateHeightField();
         updateSimulation();
         updateFluidTexture();
 
