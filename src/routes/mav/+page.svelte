@@ -91,7 +91,8 @@
     <div class="container" class:has-error={errorMessage !== null}>
         <div class="scene-container">
             <FluidGlobe 
-                {audioData}/>
+                audioData={audioData as AudioData | null}
+            />
         </div>
 
         <div class="overlay-container">
