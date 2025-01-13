@@ -5,6 +5,7 @@
 	import { useFluidSimulation } from '../lib/fluidSimulation';
 	import AudioAnalyzer from './AudioAnalyzer.svelte';
 	import type { AudioData } from '../lib/types';
+	import { installOESTextureFloatLinearPolyfill, isOESTextureFloatLinearSupported } from '../lib/OESTextureFloatLinear';
 
 	// Create reference to AudioAnalyzer component
 	let audioAnalyzer: AudioAnalyzer;
@@ -291,6 +292,12 @@
 		console.log('Initializing Three.js scene');
 
 		try {
+			// Optional: Check support before installation
+			const supported = isOESTextureFloatLinearSupported();
+			console.log('OES Texture Float Linear Support:', supported);
+			// Install the polyfill
+			installOESTextureFloatLinearPolyfill();
+
 			const canvas = document.createElement('canvas');
 			const context = canvas.getContext('webgl2') || canvas.getContext('webgl');
 			if (!context) {

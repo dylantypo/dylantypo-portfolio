@@ -1,144 +1,141 @@
 <script lang="ts">
-    import { onDestroy, createEventDispatcher } from 'svelte';
-    import type { AudioData } from '../lib/types';
+	import { onDestroy, createEventDispatcher } from 'svelte';
+	import type { AudioData } from '../lib/types';
 
-    const dispatch = createEventDispatcher<{
-        audioData: AudioData;
-        error: string;
-        stateChange: boolean; // Add state change event
-    }>();
+	const dispatch = createEventDispatcher<{
+		audioData: AudioData;
+		error: string;
+		stateChange: boolean; // Add state change event
+	}>();
 
-    // Audio state using runes
-    let audioContext = $state<AudioContext | null>(null);
-    let analyser = $state<AnalyserNode | null>(null);
-    let isProcessing = $state(false);
-    let animationFrameId = $state<number | null>(null);
-    let lastProcessTime = $state(0); // Add timing optimization
+	// Audio state using runes
+	let audioContext = $state<AudioContext | null>(null);
+	let analyser = $state<AnalyserNode | null>(null);
+	let isProcessing = $state(false);
+	let animationFrameId = $state<number | null>(null);
+	let lastProcessTime = $state(0); // Add timing optimization
 
-    // Improve error handling with specific types
-    type AudioError = {
-        type: 'permission' | 'setup' | 'processing';
-        message: string;
-    };
+	// Improve error handling with specific types
+	type AudioError = {
+		type: 'permission' | 'setup' | 'processing';
+		message: string;
+	};
 
-    export async function startAudioAnalysis(): Promise<boolean> {
-        try {
-            if (audioContext) {
-                await audioContext.resume();
-            } else {
-                audioContext = new AudioContext();
-            }
-            
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true
-                },
-                video: false 
-            });
+	export async function startAudioAnalysis(): Promise<boolean> {
+		try {
+			if (audioContext) {
+				await audioContext.resume();
+			} else {
+				audioContext = new AudioContext();
+			}
 
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
-            analyser.smoothingTimeConstant = 0.8; // Add smoothing
-            
-            const source = audioContext.createMediaStreamSource(stream);
-            const gainNode = audioContext.createGain();
-            gainNode.gain.value = 0; // Prevent feedback
-            
-            source.connect(analyser);
-            source.connect(gainNode);
-            gainNode.connect(audioContext.destination);
+			const stream = await navigator.mediaDevices.getUserMedia({
+				audio: {
+					echoCancellation: true,
+					noiseSuppression: true,
+					autoGainControl: true
+				},
+				video: false
+			});
 
-            isProcessing = true;
-            dispatch('stateChange', true);
-            processAudio();
-            return true;
+			analyser = audioContext.createAnalyser();
+			analyser.fftSize = 256;
+			analyser.smoothingTimeConstant = 0.8; // Add smoothing
 
-        } catch (err) {
-            const error: AudioError = {
-                type: err instanceof Error && err.name === 'NotAllowedError' 
-                    ? 'permission' 
-                    : 'setup',
-                message: err instanceof Error ? err.message : 'Failed to access microphone'
-            };
-            console.error('Audio setup error:', error);
-            dispatch('error', error.message);
-            return false;
-        }
-    }
+			const source = audioContext.createMediaStreamSource(stream);
+			const gainNode = audioContext.createGain();
+			gainNode.gain.value = 0; // Prevent feedback
 
-    function processAudio() {
-        if (!analyser || !isProcessing) return;
+			source.connect(analyser);
+			source.connect(gainNode);
+			gainNode.connect(audioContext.destination);
 
-        const frequencyData = new Uint8Array(analyser.frequencyBinCount);
-        const timeData = new Uint8Array(analyser.frequencyBinCount);
+			isProcessing = true;
+			dispatch('stateChange', true);
+			processAudio();
+			return true;
+		} catch (err) {
+			const error: AudioError = {
+				type: err instanceof Error && err.name === 'NotAllowedError' ? 'permission' : 'setup',
+				message: err instanceof Error ? err.message : 'Failed to access microphone'
+			};
+			console.error('Audio setup error:', error);
+			dispatch('error', error.message);
+			return false;
+		}
+	}
 
-        function analyze(timestamp: number) {
-            if (!analyser || !isProcessing) return;
+	function processAudio() {
+		if (!analyser || !isProcessing) return;
 
-            // Add frame timing optimization
-            if (timestamp - lastProcessTime < 1000 / 60) { // 60fps cap
-                animationFrameId = requestAnimationFrame(analyze);
-                return;
-            }
-            lastProcessTime = timestamp;
+		const frequencyData = new Uint8Array(analyser.frequencyBinCount);
+		const timeData = new Uint8Array(analyser.frequencyBinCount);
 
-            try {
-                analyser.getByteFrequencyData(frequencyData);
-                analyser.getByteTimeDomainData(timeData);
+		function analyze(timestamp: number) {
+			if (!analyser || !isProcessing) return;
 
-                const sum = frequencyData.reduce((a, b) => a + b);
-                const averageFrequency = sum / frequencyData.length;
+			// Add frame timing optimization
+			if (timestamp - lastProcessTime < 1000 / 60) {
+				// 60fps cap
+				animationFrameId = requestAnimationFrame(analyze);
+				return;
+			}
+			lastProcessTime = timestamp;
 
-                const frequencies = new Float32Array(frequencyData.length);
-                const waveform = new Float32Array(timeData.length);
+			try {
+				analyser.getByteFrequencyData(frequencyData);
+				analyser.getByteTimeDomainData(timeData);
 
-                for (let i = 0; i < frequencyData.length; i++) {
-                    frequencies[i] = frequencyData[i] / 255;
-                    waveform[i] = (timeData[i] - 128) / 128;
-                }
+				const sum = frequencyData.reduce((a, b) => a + b);
+				const averageFrequency = sum / frequencyData.length;
 
-                dispatch('audioData', {
-                    frequencies,
-                    waveform,
-                    averageFrequency: averageFrequency / 255
-                });
+				const frequencies = new Float32Array(frequencyData.length);
+				const waveform = new Float32Array(timeData.length);
 
-            } catch (err) {
-                console.error('Audio processing error:', err);
-                dispatch('error', 'Audio processing failed');
-                stopAudioAnalysis();
-                return;
-            }
+				for (let i = 0; i < frequencyData.length; i++) {
+					frequencies[i] = frequencyData[i] / 255;
+					waveform[i] = (timeData[i] - 128) / 128;
+				}
 
-            animationFrameId = requestAnimationFrame(analyze);
-        }
+				dispatch('audioData', {
+					frequencies,
+					waveform,
+					averageFrequency: averageFrequency / 255
+				});
+			} catch (err) {
+				console.error('Audio processing error:', err);
+				dispatch('error', 'Audio processing failed');
+				stopAudioAnalysis();
+				return;
+			}
 
-        analyze(performance.now());
-    }
+			animationFrameId = requestAnimationFrame(analyze);
+		}
 
-    export function stopAudioAnalysis() {
-        isProcessing = false;
-        dispatch('stateChange', false);
-        
-        if (animationFrameId) {
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null;
-        }
-        
-        if (audioContext) {
-            audioContext.suspend().then(() => {
-                audioContext?.close();
-                audioContext = null;
-            });
-        }
-        
-        analyser = null;
-    }
+		analyze(performance.now());
+	}
 
-    // Cleanup on destroy
-    onDestroy(() => {
-        stopAudioAnalysis();
-    });
+	export function stopAudioAnalysis() {
+		isProcessing = false;
+		dispatch('stateChange', false);
+
+		if (animationFrameId) {
+			cancelAnimationFrame(animationFrameId);
+			animationFrameId = null;
+		}
+
+		if (audioContext) {
+			audioContext.suspend().then(() => {
+				audioContext?.close();
+				audioContext = null;
+			});
+		}
+
+		analyser = null;
+	}
+
+	// Cleanup on destroy
+	onDestroy(() => {
+		stopAudioAnalysis();
+	});
 </script>

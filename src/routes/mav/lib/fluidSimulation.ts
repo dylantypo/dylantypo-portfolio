@@ -188,8 +188,8 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 		temp: writable(buffers.current.temp),
 		pressure: writable(buffers.current.pressure),
 		temperature: writable(buffers.current.temperature),
-        normal: writable(buffers.current.normal),
-        caustics: writable(buffers.current.caustics)
+		normal: writable(buffers.current.normal),
+		caustics: writable(buffers.current.caustics)
 	};
 
 	// Spatial indexing setup
@@ -698,29 +698,32 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 	}
 
 	// Enhanced texture setup from water.js
-    function setupTextures(): void {
-        if (!gl) return;
+	function setupTextures(): void {
+		if (!gl) return;
 
-        const createTexture = (internalFormat: number = gl?.RGBA || 0x1908, format: number = gl?.RGBA || 0x1908): WebGLTexture | null => {
-            if (!gl) return null;
-            const texture = gl.createTexture();
-            if (!texture) return null;
-            
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, N, N, 0, format, gl.FLOAT, null);
-            return texture;
-        };
+		const createTexture = (
+			internalFormat: number = gl?.RGBA || 0x1908,
+			format: number = gl?.RGBA || 0x1908
+		): WebGLTexture | null => {
+			if (!gl) return null;
+			const texture = gl.createTexture();
+			if (!texture) return null;
 
-        densityTexture = createTexture() || null;
-        velocityTexture = createTexture() || null;
-        temperatureTexture = createTexture() || null;
-        normalTexture = createTexture() || null;
-        causticsTexture = createTexture() || null;
-    }
+			gl.bindTexture(gl.TEXTURE_2D, texture);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+			gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, N, N, 0, format, gl.FLOAT, null);
+			return texture;
+		};
+
+		densityTexture = createTexture() || null;
+		velocityTexture = createTexture() || null;
+		temperatureTexture = createTexture() || null;
+		normalTexture = createTexture() || null;
+		causticsTexture = createTexture() || null;
+	}
 
 	// Enhanced WebGL helpers from water.js
 	function compileShader(
@@ -888,49 +891,49 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 		initWebGL();
 	}
 
-    function addForce(x: number, y: number, z: number, amount: number): void {
-        const centerIndex = idx(Math.floor(x), Math.floor(y), Math.floor(z));
-        const radius = 2.5;
-        const falloffFactor = 2.0;
-        
-        for (let i = -Math.ceil(radius); i <= Math.ceil(radius); i++) {
-            for (let j = -Math.ceil(radius); j <= Math.ceil(radius); j++) {
-                for (let k = -Math.ceil(radius); k <= Math.ceil(radius); k++) {
-                    const dist = Math.sqrt(i*i + j*j + k*k);
-                    if (dist > radius) continue;
-                    
-                    const falloff = Math.exp(-falloffFactor * (dist / radius));
-                    const forceAmount = amount * falloff;
-                    const currentIndex = idx(x + i, y + j, z + k);
-                    
-                    buffers.current.density[currentIndex] += forceAmount;
-                    spatialIndex.add(currentIndex);
-                }
-            }
-        }
-    }
-    
-    function addVelocity(x: number, y: number, z: number, vx: number, vy: number, vz: number): void {
-        const centerIndex = idx(Math.floor(x), Math.floor(y), Math.floor(z));
-        const radius = 3.0;
-        
-        for (let i = -Math.ceil(radius); i <= Math.ceil(radius); i++) {
-            for (let j = -Math.ceil(radius); j <= Math.ceil(radius); j++) {
-                for (let k = -Math.ceil(radius); k <= Math.ceil(radius); k++) {
-                    const dist = Math.sqrt(i*i + j*j + k*k);
-                    if (dist > radius) continue;
-                    
-                    const currentIndex = idx(x + i, y + j, z + k);
-                    const factor = Math.exp(-dist / radius);
-                    
-                    buffers.current.velocityX[currentIndex] += vx * factor;
-                    buffers.current.velocityY[currentIndex] += vy * factor;
-                    buffers.current.velocityZ[currentIndex] += vz * factor;
-                    spatialIndex.add(currentIndex);
-                }
-            }
-        }
-    }
+	function addForce(x: number, y: number, z: number, amount: number): void {
+		const centerIndex = idx(Math.floor(x), Math.floor(y), Math.floor(z));
+		const radius = 2.5;
+		const falloffFactor = 2.0;
+
+		for (let i = -Math.ceil(radius); i <= Math.ceil(radius); i++) {
+			for (let j = -Math.ceil(radius); j <= Math.ceil(radius); j++) {
+				for (let k = -Math.ceil(radius); k <= Math.ceil(radius); k++) {
+					const dist = Math.sqrt(i * i + j * j + k * k);
+					if (dist > radius) continue;
+
+					const falloff = Math.exp(-falloffFactor * (dist / radius));
+					const forceAmount = amount * falloff;
+					const currentIndex = idx(x + i, y + j, z + k);
+
+					buffers.current.density[currentIndex] += forceAmount;
+					spatialIndex.add(currentIndex);
+				}
+			}
+		}
+	}
+
+	function addVelocity(x: number, y: number, z: number, vx: number, vy: number, vz: number): void {
+		const centerIndex = idx(Math.floor(x), Math.floor(y), Math.floor(z));
+		const radius = 3.0;
+
+		for (let i = -Math.ceil(radius); i <= Math.ceil(radius); i++) {
+			for (let j = -Math.ceil(radius); j <= Math.ceil(radius); j++) {
+				for (let k = -Math.ceil(radius); k <= Math.ceil(radius); k++) {
+					const dist = Math.sqrt(i * i + j * j + k * k);
+					if (dist > radius) continue;
+
+					const currentIndex = idx(x + i, y + j, z + k);
+					const factor = Math.exp(-dist / radius);
+
+					buffers.current.velocityX[currentIndex] += vx * factor;
+					buffers.current.velocityY[currentIndex] += vy * factor;
+					buffers.current.velocityZ[currentIndex] += vz * factor;
+					spatialIndex.add(currentIndex);
+				}
+			}
+		}
+	}
 
 	// Return public interface
 	return {
