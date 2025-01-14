@@ -1,5 +1,13 @@
 import { writable, type Writable } from 'svelte/store';
-import type { FluidState, SimulationConfig, FluidStore, BufferPair } from './types';
+import type { FluidState, SimulationConfig, FluidStore, BufferPair, TextureConfig, UniformLocations } from './types';
+
+// interface GPUResources {
+//     buffers: Map<string, WebGLBuffer>;
+//     textures: Map<string, WebGLTexture>;
+//     framebuffers: Map<string, WebGLFramebuffer>;
+//     shaders: Map<string, WebGLShader>;
+//     programs: Map<string, WebGLProgram>;
+// }
 
 const DEFAULT_CONFIG: SimulationConfig = {
 	gridSize: 256,
@@ -166,17 +174,18 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 	let normalProgram: WebGLProgram | null = null;
 	let causticsProgram: WebGLProgram | null = null;
 	let vertexBuffer: WebGLBuffer | null = null;
-	let densityTexture: WebGLTexture | null = null;
+	// let densityTexture: WebGLTexture | null = null;
 	let velocityTexture: WebGLTexture | null = null;
 	let temperatureTexture: WebGLTexture | null = null;
-	let normalTexture: WebGLTexture | null = null;
-	let causticsTexture: WebGLTexture | null = null;
+	// let normalTexture: WebGLTexture | null = null;
+	// let causticsTexture: WebGLTexture | null = null;
 
 	let uniformLocations = {
 		compute: {
 			position: null as WebGLUniformLocation | null,
 			uTexture: null as WebGLUniformLocation | null,
 			uDeltaTime: null as WebGLUniformLocation | null,
+			uTemperature: null as WebGLUniformLocation | null,
 			texelSize: null as WebGLUniformLocation | null
 		},
 		normal: {
@@ -191,41 +200,38 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 		}
 	};
 
+	// const gpuResources: GPUResources = {
+	// 	buffers: new Map(),
+	// 	textures: new Map(),
+	// 	framebuffers: new Map(),
+	// 	shaders: new Map(),
+	// 	programs: new Map()
+	// };
+
 	// Enhanced buffer system from both implementations
 	const buffers: BufferPair = {
-		current: {
-			density: new Float32Array(N * N * N),
-			velocityX: new Float32Array(N * N * N),
-			velocityY: new Float32Array(N * N * N),
-			velocityZ: new Float32Array(N * N * N),
-			temp: new Float32Array(N * N * N),
-			pressure: new Float32Array(N * N * N),
-			temperature: new Float32Array(N * N * N),
-			normal: new Float32Array(N * N * N * 3),
-			caustics: new Float32Array(N * N * N),
-			// New fields
-			vorticity: new Float32Array(N * N * N),
-			divergence: new Float32Array(N * N * N),
-			foam: new Float32Array(N * N * N),
-			turbulence: new Float32Array(N * N * N)
-		},
-		next: {
-			density: new Float32Array(N * N * N),
-			velocityX: new Float32Array(N * N * N),
-			velocityY: new Float32Array(N * N * N),
-			velocityZ: new Float32Array(N * N * N),
-			temp: new Float32Array(N * N * N),
-			pressure: new Float32Array(N * N * N),
-			temperature: new Float32Array(N * N * N),
-			normal: new Float32Array(N * N * N * 3),
-			caustics: new Float32Array(N * N * N),
-			// New fields
-			vorticity: new Float32Array(N * N * N),
-			divergence: new Float32Array(N * N * N),
-			foam: new Float32Array(N * N * N),
-			turbulence: new Float32Array(N * N * N)
-		}
+		current: createFluidState(N),
+		next: createFluidState(N)
 	};
+	
+	function createFluidState(size: number): FluidState {
+		const totalSize = size * size * size;
+		return {
+			density: new Float32Array(totalSize),
+			velocityX: new Float32Array(totalSize),
+			velocityY: new Float32Array(totalSize),
+			velocityZ: new Float32Array(totalSize),
+			temp: new Float32Array(totalSize),
+			pressure: new Float32Array(totalSize),
+			temperature: new Float32Array(totalSize),
+			vorticity: new Float32Array(totalSize),
+			divergence: new Float32Array(totalSize),
+			normal: new Float32Array(totalSize),
+			caustics: new Float32Array(totalSize),
+			foam: new Float32Array(totalSize),
+			turbulence: new Float32Array(totalSize)
+		};
+	}
 
 	// Stores setup
 	const stores: FluidStore = {
@@ -704,7 +710,14 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 
 			setupShaderPrograms();
 			setupBuffers();
-			setupTextures();
+			if (gl) {
+				const textures = setupTextures(gl, N);
+				// densityTexture = textures.densityTexture;
+				velocityTexture = textures.velocityTexture;
+				temperatureTexture = textures.temperatureTexture;
+				// normalTexture = textures.normalTexture;
+				// causticsTexture = textures.causticsTexture;
+			}
 
 			return true;
 		} catch (error) {
@@ -737,6 +750,7 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 				position: gl.getAttribLocation(computeProgram, 'position'),
 				uTexture: gl.getUniformLocation(computeProgram, 'uTexture'),
 				uDeltaTime: gl.getUniformLocation(computeProgram, 'uDeltaTime'),
+				uTemperature: gl.getUniformLocation(computeProgram, 'uTemperature'),
 				texelSize: gl.getUniformLocation(computeProgram, 'texelSize')
 			};
 		}
@@ -778,32 +792,94 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 		);
 	}
 
+	function createFloatTexture(gl: WebGLRenderingContext, config: TextureConfig): WebGLTexture | null {
+		const texture = gl.createTexture();
+		if (!texture) return null;
+	
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+		
+		if (config.generateMipmaps === false) {
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, config.minFilter || gl.NEAREST);
+		}
+		
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, config.magFilter || gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, config.wrapS || gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, config.wrapT || gl.CLAMP_TO_EDGE);
+	
+		if (config.unpackAlignment) {
+			gl.pixelStorei(gl.UNPACK_ALIGNMENT, config.unpackAlignment);
+		}
+	
+		if (config.flipY !== undefined) {
+			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, config.flipY);
+		}
+	
+		const internalFormat = gl.RGBA32F || gl.RGBA;
+		gl.texImage2D(
+			gl.TEXTURE_2D, 
+			0, 
+			internalFormat, 
+			config.width, 
+			config.height, 
+			0, 
+			config.format, 
+			config.type, 
+			null
+		);
+	
+		if (config.generateMipmaps) {
+			gl.generateMipmap(gl.TEXTURE_2D);
+		}
+	
+		return texture;
+	}
+
 	// Enhanced texture setup from water.js
-	function setupTextures(): void {
-		if (!gl) return;
-
-		const createTexture = (
-			internalFormat: number = gl?.RGBA || 0x1908,
-			format: number = gl?.RGBA || 0x1908
-		): WebGLTexture | null => {
-			if (!gl) return null;
-			const texture = gl.createTexture();
-			if (!texture) return null;
-
-			gl.bindTexture(gl.TEXTURE_2D, texture);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-			gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, N, N, 0, format, gl.FLOAT, null);
-			return texture;
+	function setupTextures(gl: WebGLRenderingContext, N: number): {
+		densityTexture: WebGLTexture | null;
+		velocityTexture: WebGLTexture | null;
+		temperatureTexture: WebGLTexture | null;
+		normalTexture: WebGLTexture | null;
+		causticsTexture: WebGLTexture | null;
+	} {
+		const textureConfig: TextureConfig = {
+			size: N,
+			width: N,
+			height: N,
+			format: gl.RGBA,
+			type: gl.FLOAT,
+			minFilter: gl.LINEAR,
+			magFilter: gl.LINEAR,
+			wrapS: gl.CLAMP_TO_EDGE,
+			wrapT: gl.CLAMP_TO_EDGE,
+			generateMipmaps: false,
+			flipY: false,
+			unpackAlignment: 1
 		};
-
-		densityTexture = createTexture() || null;
-		velocityTexture = createTexture() || null;
-		temperatureTexture = createTexture() || null;
-		normalTexture = createTexture() || null;
-		causticsTexture = createTexture() || null;
+	
+		const textures = {
+			densityTexture: createFloatTexture(gl, textureConfig),
+			velocityTexture: createFloatTexture(gl, textureConfig),
+			temperatureTexture: createFloatTexture(gl, textureConfig),
+			normalTexture: createFloatTexture(gl, textureConfig),
+			causticsTexture: createFloatTexture(gl, textureConfig)
+		};
+	
+		// Initialize velocity texture
+		if (textures.velocityTexture) {
+			const initialVelocity = new Float32Array(N * N * 4);
+			gl.bindTexture(gl.TEXTURE_2D, textures.velocityTexture);
+			gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, N, N, gl.RGBA, gl.FLOAT, initialVelocity);
+		}
+	
+		// Initialize temperature texture
+		if (textures.temperatureTexture) {
+			const initialTemp = new Float32Array(N * N * 4).fill(0.5);
+			gl.bindTexture(gl.TEXTURE_2D, textures.temperatureTexture);
+			gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, N, N, gl.RGBA, gl.FLOAT, initialTemp);
+		}
+	
+		return textures;
 	}
 
 	// Enhanced WebGL helpers from water.js
@@ -847,6 +923,22 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 		return program;
 	}
 
+	// Updated updateTemperature function
+	// function updateTemperature(x: number, y: number, z: number, temp: number): void {
+	// 	const index = idx(Math.floor(x), Math.floor(y), Math.floor(z));
+		
+	// 	// Update CPU buffers
+	// 	buffers.current.temperature[index] = temp;
+	// 	spatialIndex.add(index);
+
+	// 	// Update WebGL texture if available
+	// 	if (gl && temperatureTexture) {
+	// 		gl.bindTexture(gl.TEXTURE_2D, temperatureTexture);
+	// 		const data = new Float32Array([temp, 0.0, 0.0, 1.0]);
+	// 		gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, 1, 1, gl.RGBA, gl.FLOAT, data);
+	// 	}
+	// }
+
 	// Enhanced simulation update with WebGL support
 	function updateSimulation(): void {
 		time += timeStep;
@@ -862,67 +954,44 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 
 	// Update simulation using WebGL
 	function updateSimulationWebGL(): void {
-		if (!gl || !computeProgram || !causticsProgram || !normalProgram) return;
-
-		// Update main simulation
-		gl.useProgram(computeProgram);
-
+		if (!gl || !computeProgram || !velocityTexture || !temperatureTexture) return;
+	
 		gl.viewport(0, 0, N, N);
-
-		// Bind vertex buffer once since we'll reuse it
+	
+		// Update velocity field
+		gl.useProgram(computeProgram);
 		gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-
-		// Set compute uniforms and attributes
-		const compute = uniformLocations.compute;
-		if (typeof compute.position === 'number') {
-			gl.enableVertexAttribArray(compute.position);
-			gl.vertexAttribPointer(compute.position, 2, gl.FLOAT, false, 0, 0);
+	
+		// Update velocity uniforms
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, velocityTexture);
+		gl.uniform1i(uniformLocations.compute.uTexture!, 0);
+	
+		// Update velocity texture
+		const velocityData = new Float32Array(N * N * 4);
+		for (let i = 0; i < N * N; i++) {
+			velocityData[i * 4] = buffers.current.velocityX[i];
+			velocityData[i * 4 + 1] = buffers.current.velocityY[i];
+			velocityData[i * 4 + 2] = buffers.current.velocityZ[i];
+			velocityData[i * 4 + 3] = 1.0; // W component
 		}
-		if (compute.uTexture !== null) {
-			gl.uniform1i(compute.uTexture, 0);
-			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_2D, densityTexture);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F || gl.RGBA, N, N, 0, gl.RGBA, gl.FLOAT, velocityData);
+	
+		// Update temperature field
+		gl.activeTexture(gl.TEXTURE1);
+		gl.bindTexture(gl.TEXTURE_2D, temperatureTexture);
+		gl.uniform1i(uniformLocations.compute.uTemperature!, 1);
+	
+		// Update temperature texture
+		const temperatureData = new Float32Array(N * N * 4);
+		for (let i = 0; i < N * N; i++) {
+			temperatureData[i * 4] = buffers.current.temperature[i];
+			temperatureData[i * 4 + 1] = 0.0;
+			temperatureData[i * 4 + 2] = 0.0;
+			temperatureData[i * 4 + 3] = 1.0;
 		}
-		if (compute.uDeltaTime !== null) {
-			gl.uniform1f(compute.uDeltaTime, timeStep);
-		}
-		if (compute.texelSize !== null) {
-			gl.uniform2f(compute.texelSize, 1.0 / N, 1.0 / N);
-		}
-		gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-		// Update normals
-		gl.useProgram(normalProgram);
-		const normal = uniformLocations.normal;
-		if (typeof normal.position === 'number') {
-			gl.enableVertexAttribArray(normal.position);
-			gl.vertexAttribPointer(normal.position, 2, gl.FLOAT, false, 0, 0);
-		}
-		if (normal.uTexture !== null) {
-			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_2D, normalTexture);
-			gl.uniform1i(normal.uTexture, 0);
-		}
-		if (normal.texelSize !== null) {
-			gl.uniform2f(normal.texelSize, 1.0 / N, 1.0 / N);
-		}
-		gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-		// Update caustics
-		gl.useProgram(causticsProgram);
-		const caustics = uniformLocations.caustics;
-		if (typeof caustics.position === 'number') {
-			gl.enableVertexAttribArray(caustics.position);
-			gl.vertexAttribPointer(caustics.position, 2, gl.FLOAT, false, 0, 0);
-		}
-		if (caustics.uTexture !== null) {
-			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_2D, causticsTexture);
-			gl.uniform1i(caustics.uTexture, 0);
-		}
-		if (caustics.uTime !== null) {
-			gl.uniform1f(caustics.uTime, time);
-		}
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F || gl.RGBA, N, N, 0, gl.RGBA, gl.FLOAT, temperatureData);
+	
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
 	}
 
@@ -983,7 +1052,7 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 		advect(next.density, current.density, next.velocityX, next.velocityY, next.velocityZ);
 
 		// Swap buffers and update stores
-		[buffers.current, buffers.next] = [buffers.next, buffers.current];
+		// [buffers.current, buffers.next] = [buffers.next, buffers.current];
 
 		// Update all stores
 		for (const key in stores) {
@@ -1023,24 +1092,19 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 	}
 
 	function addVelocity(x: number, y: number, z: number, vx: number, vy: number, vz: number): void {
-		const centerIndex = idx(Math.floor(x), Math.floor(y), Math.floor(z));
-		const radius = 3.0;
+		const index = idx(Math.floor(x), Math.floor(y), Math.floor(z));
+		
+		// Update CPU buffers
+		buffers.current.velocityX[index] += vx;
+		buffers.current.velocityY[index] += vy;
+		buffers.current.velocityZ[index] += vz;
+		spatialIndex.add(index);
 
-		for (let i = -Math.ceil(radius); i <= Math.ceil(radius); i++) {
-			for (let j = -Math.ceil(radius); j <= Math.ceil(radius); j++) {
-				for (let k = -Math.ceil(radius); k <= Math.ceil(radius); k++) {
-					const dist = Math.sqrt(i * i + j * j + k * k);
-					if (dist > radius) continue;
-
-					const currentIndex = idx(x + i, y + j, z + k);
-					const factor = Math.exp(-dist / radius);
-
-					buffers.current.velocityX[currentIndex] += vx * factor;
-					buffers.current.velocityY[currentIndex] += vy * factor;
-					buffers.current.velocityZ[currentIndex] += vz * factor;
-					spatialIndex.add(currentIndex);
-				}
-			}
+		// Update WebGL texture if available
+		if (gl && velocityTexture) {
+			gl.bindTexture(gl.TEXTURE_2D, velocityTexture);
+			const data = new Float32Array([vx, vy, vz, 1.0]);
+			gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, 1, 1, gl.RGBA, gl.FLOAT, data);
 		}
 	}
 

@@ -66,9 +66,6 @@
 	onMount(() => {
 		if (!browser) return;
 		isInitialized = true;
-
-		// Set initial background color
-		document.body.style.backgroundColor = '#000510';
 	});
 
 	onDestroy(() => {

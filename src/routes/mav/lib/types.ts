@@ -2,235 +2,316 @@ import type * as THREE from 'three';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { Writable } from 'svelte/store';
 
+// WebGL Context Extensions
+declare global {
+    interface WebGLRenderingContext {
+        RGBA32F?: number;
+    }
+    
+    interface WebGL2RenderingContext {
+        RGBA32F: number;
+    }
+}
+
+// Enhanced Texture Configuration
+export interface TextureConfig {
+    size: number;
+    width: number;
+    height: number;
+    format: number;
+    type: number;
+    minFilter?: number;
+    magFilter?: number;
+    wrapS?: number;
+    wrapT?: number;
+    anisotropy?: number;
+    generateMipmaps?: boolean;
+    flipY?: boolean;
+    unpackAlignment?: number;
+}
+
+// Organized Uniform Locations
+export interface UniformLocations {
+    compute: ComputeUniforms;
+    normal: NormalUniforms;
+    caustics: CausticUniforms;
+}
+
+interface ComputeUniforms {
+    position: number | null;
+    uTexture: WebGLUniformLocation | null;
+    uDeltaTime: WebGLUniformLocation | null;
+    uTemperature: WebGLUniformLocation | null;
+    texelSize: WebGLUniformLocation | null;
+}
+
+interface NormalUniforms {
+    position: number | null;
+    uTexture: WebGLUniformLocation | null;
+    texelSize: WebGLUniformLocation | null;
+}
+
+interface CausticUniforms {
+    position: number | null;
+    uTexture: WebGLUniformLocation | null;
+    uTime: WebGLUniformLocation | null;
+}
+
 // Enhanced Audio Processing Types
 export interface FrequencyBand {
-	low: number;
-	high: number;
+    readonly low: number;
+    readonly high: number;
+    readonly centerFrequency: number;
+    readonly bandwidth: number;
 }
 
 export interface AudioBands {
-	bass: number;
-	midLow: number;
-	midHigh: number;
-	treble: number;
+    readonly bass: number;
+    readonly midLow: number;
+    readonly midHigh: number;
+    readonly treble: number;
+    readonly fullSpectrum: number;
 }
 
 export interface WaveformAnalysis {
-	rms: number; // Root Mean Square (overall energy)
-	crest: number; // Crest factor (peak-to-RMS ratio)
-	zeroCrossings: number; // Number of zero crossings (frequency estimation)
+    readonly rms: number;
+    readonly crest: number;
+    readonly zeroCrossings: number;
+    readonly spectralCentroid: number;
+    readonly spectralFlatness: number;
 }
 
 export interface AudioData {
-	frequencies: Float32Array;
-	bands: AudioBands;
-	waveform: Float32Array;
-	energy: number;
-	peaks: Float32Array;
-	waveformAnalysis: WaveformAnalysis;
+    readonly frequencies: Float32Array;
+    readonly bands: AudioBands;
+    readonly waveform: Float32Array;
+    readonly energy: number;
+    readonly peaks: Float32Array;
+    readonly waveformAnalysis: WaveformAnalysis;
+    readonly timestamp: number;
 }
 
 export interface AudioSettings {
-	fftSize: number;
-	smoothingTimeConstant: number;
-	minDecibels: number;
-	maxDecibels: number;
-	sampleRate: number;
-	frameCap: number;
-	gain: number;
-	noiseFloor: number;
-	peakDecay: number;
-	energyDistribution: number;
+    readonly fftSize: number;
+    readonly smoothingTimeConstant: number;
+    readonly minDecibels: number;
+    readonly maxDecibels: number;
+    readonly sampleRate: number;
+    readonly frameCap: number;
+    readonly gain: number;
+    readonly noiseFloor: number;
+    readonly peakDecay: number;
+    readonly energyDistribution: number;
+    readonly bandSplitFrequencies: number[];
 }
 
-// Enhanced Fluid State Types
+// Enhanced Fluid State Types with ReadonlyArrays for immutability
 export interface FluidState {
-	density: Float32Array;
-	velocityX: Float32Array;
-	velocityY: Float32Array;
-	velocityZ: Float32Array;
-	temp: Float32Array;
-	pressure: Float32Array;
-	temperature: Float32Array;
-	vorticity: Float32Array; // Added for vorticity confinement
-	divergence: Float32Array; // Added for pressure solving
-	normal: Float32Array;
-	caustics: Float32Array;
-	foam: Float32Array; // Added for foam/bubble simulation
-	turbulence: Float32Array; // Added for turbulence modeling
+    readonly density: Float32Array;
+    readonly velocityX: Float32Array;
+    readonly velocityY: Float32Array;
+    readonly velocityZ: Float32Array;
+    readonly temp: Float32Array;
+    readonly pressure: Float32Array;
+    readonly temperature: Float32Array;
+    readonly vorticity: Float32Array;
+    readonly divergence: Float32Array;
+    readonly normal: Float32Array;
+    readonly caustics: Float32Array;
+    readonly foam: Float32Array;
+    readonly turbulence: Float32Array;
 }
 
-// Enhanced Simulation Configuration
+// Enhanced Configuration with Validation
 export interface SimulationConfig {
-	gridSize: number;
-	iterations: number;
-	viscosity: number;
-	diffusion: number;
-	timeStep: number;
-	useWebGL: boolean;
-	useSpatialIndex: boolean;
-	temperature: number;
-	density: number;
-	gravity: number;
-	vorticityStrength: number;
-	wavelength: number;
-	damping: number;
-	causticStrength: number;
-	normalStrength: number;
-	refractionRatio: number;
-	// Added fluid dynamics parameters
-	surfaceTension: number;
-	buoyancy: number;
-	turbulenceFactor: number;
-	foamThreshold: number;
-	vorticityConfinement: number;
+    readonly gridSize: number;
+    readonly iterations: number;
+    readonly viscosity: number;
+    readonly diffusion: number;
+    readonly timeStep: number;
+    readonly useWebGL: boolean;
+    readonly useSpatialIndex: boolean;
+    readonly temperature: number;
+    readonly density: number;
+    readonly gravity: number;
+    readonly vorticityStrength: number;
+    readonly wavelength: number;
+    readonly damping: number;
+    readonly causticStrength: number;
+    readonly normalStrength: number;
+    readonly refractionRatio: number;
+    readonly surfaceTension: number;
+    readonly buoyancy: number;
+    readonly turbulenceFactor: number;
+    readonly foamThreshold: number;
+    readonly vorticityConfinement: number;
+    readonly maxParticles?: number;
+    readonly particleSize?: number;
 }
 
-// Three.js Context
+// Enhanced Three.js Context with Performance Monitoring
 export interface ThreeContext {
-	scene: THREE.Scene;
-	camera: THREE.PerspectiveCamera;
-	renderer: THREE.WebGLRenderer;
-	controls: OrbitControls;
-	clock: THREE.Clock; // Added for consistent time tracking
-	raycaster: THREE.Raycaster; // Added for interaction
+    readonly scene: THREE.Scene;
+    readonly camera: THREE.PerspectiveCamera;
+    readonly renderer: THREE.WebGLRenderer;
+    readonly controls: OrbitControls;
+    readonly clock: THREE.Clock;
+    readonly raycaster: THREE.Raycaster;
+    readonly stats?: {
+        fps: number;
+        drawCalls: number;
+        triangles: number;
+        points: number;
+    };
 }
 
-// Enhanced Fluid Store
-export interface FluidStore {
-	density: Writable<Float32Array>;
-	velocityX: Writable<Float32Array>;
-	velocityY: Writable<Float32Array>;
-	velocityZ: Writable<Float32Array>;
-	temp: Writable<Float32Array>;
-	pressure: Writable<Float32Array>;
-	temperature: Writable<Float32Array>;
-	vorticity: Writable<Float32Array>;
-	divergence: Writable<Float32Array>;
-	normal: Writable<Float32Array>;
-	caustics: Writable<Float32Array>;
-	foam: Writable<Float32Array>;
-	turbulence: Writable<Float32Array>;
-}
+// Enhanced Fluid Store with Type Safety
+export type FluidStore = {
+    [K in keyof FluidState]: Writable<FluidState[K]>;
+};
 
 export interface BufferPair {
-	current: FluidState;
-	next: FluidState;
+    readonly current: FluidState;
+    readonly next: FluidState;
 }
 
-// Enhanced WebGL Types
+// Enhanced WebGL Context with Resource Management
 export interface WebGLContext {
-	gl: WebGLRenderingContext;
-	computeProgram: WebGLProgram;
-	normalProgram: WebGLProgram;
-	causticsProgram: WebGLProgram;
-	vorticityProgram: WebGLProgram; // Added for vorticity computation
-	divergenceProgram: WebGLProgram; // Added for divergence computation
-	pressureProgram: WebGLProgram; // Added for pressure solving
-	turbulenceProgram: WebGLProgram; // Added for turbulence
-	foamProgram: WebGLProgram; // Added for foam generation
-	vertexBuffer: WebGLBuffer;
-	frameBuffers: Map<string, WebGLFramebuffer>;
+    readonly gl: WebGLRenderingContext | WebGL2RenderingContext;
+    readonly programs: {
+        compute: WebGLProgram;
+        normal: WebGLProgram;
+        caustics: WebGLProgram;
+        vorticity: WebGLProgram;
+        divergence: WebGLProgram;
+        pressure: WebGLProgram;
+        turbulence: WebGLProgram;
+        foam: WebGLProgram;
+    };
+    readonly buffers: {
+        vertex: WebGLBuffer;
+        index: WebGLBuffer;
+        frame: Map<string, WebGLFramebuffer>;
+    };
+    readonly extensions: {
+        [key: string]: any;
+    };
 }
 
-// Enhanced Fluid Textures
+// Enhanced Fluid Textures with Resource Management
 export interface FluidTextures {
-	density: WebGLTexture;
-	velocity: WebGLTexture;
-	temperature: WebGLTexture;
-	pressure: WebGLTexture;
-	vorticity: WebGLTexture;
-	divergence: WebGLTexture;
-	normal: WebGLTexture;
-	caustics: WebGLTexture;
-	foam: WebGLTexture;
-	turbulence: WebGLTexture;
+    readonly density: WebGLTexture;
+    readonly velocity: WebGLTexture;
+    readonly temperature: WebGLTexture;
+    readonly pressure: WebGLTexture;
+    readonly vorticity: WebGLTexture;
+    readonly divergence: WebGLTexture;
+    readonly normal: WebGLTexture;
+    readonly caustics: WebGLTexture;
+    readonly foam: WebGLTexture;
+    readonly turbulence: WebGLTexture;
 }
 
-// Enhanced Shader Types
+// Enhanced Shader Types with Validation
 export interface ShaderUniforms {
-	[key: string]: {
-		type: string;
-		value: number | number[] | THREE.Texture | THREE.Matrix4 | THREE.Vector3;
-		needsUpdate?: boolean;
-	};
+    readonly [key: string]: {
+        readonly type: string;
+        value: number | number[] | THREE.Texture | THREE.Matrix4 | THREE.Vector3;
+        readonly needsUpdate?: boolean;
+        readonly validate?: (value: any) => boolean;
+    };
 }
 
-// Enhanced Audio-Fluid Interaction
+// Enhanced Audio-Fluid Interaction with Validation
 export interface AudioFluidParams {
-	frequencyInfluence: number;
-	waveformInfluence: number;
-	intensityThreshold: number;
-	smoothingFactor: number;
-	bandWeights: {
-		// Weights for different frequency bands
-		bass: number;
-		midLow: number;
-		midHigh: number;
-		treble: number;
-	};
-	energyToForce: number; // Convert audio energy to fluid force
-	peakMultiplier: number; // Amplification for peak detection
-	turbulenceInfluence: number; // How much audio affects turbulence
-	foamGeneration: number; // How much audio generates foam
+    readonly frequencyInfluence: number;
+    readonly waveformInfluence: number;
+    readonly intensityThreshold: number;
+    readonly smoothingFactor: number;
+    readonly bandWeights: {
+        readonly bass: number;
+        readonly midLow: number;
+        readonly midHigh: number;
+        readonly treble: number;
+    };
+    readonly energyToForce: number;
+    readonly peakMultiplier: number;
+    readonly turbulenceInfluence: number;
+    readonly foamGeneration: number;
+    validate(): boolean;
 }
 
-// Enhanced Visualization Parameters
+// Enhanced Visualization Parameters with Defaults
 export interface FluidVisualizationParams {
-	colorMap: THREE.Texture;
-	normalMap: THREE.Texture;
-	causticMap: THREE.Texture;
-	foamMap: THREE.Texture; // Added for foam texture
-	turbulenceMap: THREE.Texture; // Added for turbulence visualization
-	opacity: number;
-	refractionRatio: number;
-	fresnelBias: number;
-	fresnelScale: number;
-	fresnelPower: number;
-	emissiveIntensity: number;
-	roughness: number;
-	metalness: number;
-	envMapIntensity: number;
+    readonly colorMap: THREE.Texture;
+    readonly normalMap: THREE.Texture;
+    readonly causticMap: THREE.Texture;
+    readonly foamMap: THREE.Texture;
+    readonly turbulenceMap: THREE.Texture;
+    readonly opacity: number;
+    readonly refractionRatio: number;
+    readonly fresnelBias: number;
+    readonly fresnelScale: number;
+    readonly fresnelPower: number;
+    readonly emissiveIntensity: number;
+    readonly roughness: number;
+    readonly metalness: number;
+    readonly envMapIntensity: number;
+    getDefaults(): FluidVisualizationParams;
 }
 
-// Enhanced Spatial Indexing
+// Enhanced Spatial Indexing with Optimization
 export interface SpatialCell {
-	index: number;
-	active: boolean;
-	particles: number[];
-	neighbors: number[];
-	density: number; // Local density
-	temperature: number; // Local temperature
-	pressure: number; // Local pressure
-	vorticity: number; // Local vorticity
-	turbulence: number; // Local turbulence
+    readonly index: number;
+    active: boolean;
+    readonly particles: Float32Array; // Using typed array for better performance
+    readonly neighbors: Float32Array; // Using typed array for better performance
+    readonly density: number;
+    readonly temperature: number;
+    readonly pressure: number;
+    readonly vorticity: number;
+    readonly turbulence: number;
+    readonly bounds: {
+        readonly min: THREE.Vector3;
+        readonly max: THREE.Vector3;
+    };
 }
 
 export interface SpatialIndex {
-	cells: Map<number, SpatialCell>;
-	cellSize: number;
-	gridSize: number;
-	activeCount: number; // Number of active cells
-	maxParticlesPerCell: number;
-	rebuildThreshold: number; // When to rebuild the index
+    readonly cells: Map<number, SpatialCell>;
+    readonly cellSize: number;
+    readonly gridSize: number;
+    readonly activeCount: number;
+    readonly maxParticlesPerCell: number;
+    readonly rebuildThreshold: number;
+    readonly octreeDepth: number;
+    update(dt: number): void;
+    query(position: THREE.Vector3, radius: number): SpatialCell[];
 }
 
-// Performance Monitoring
+// Enhanced Performance Monitoring
 export interface PerformanceMetrics {
-	fps: number;
-	frameTime: number;
-	simulationTime: number;
-	renderTime: number;
-	particleCount: number;
-	activeCells: number;
-	memoryUsage: number;
+    readonly fps: number;
+    readonly frameTime: number;
+    readonly simulationTime: number;
+    readonly renderTime: number;
+    readonly particleCount: number;
+    readonly activeCells: number;
+    readonly memoryUsage: number;
+    readonly gpuMemoryUsage?: number;
+    readonly drawCalls: number;
+    readonly triangles: number;
+    readonly textureMemory: number;
 }
 
-// Interaction Types
+// Enhanced Interaction Types with Validation
 export interface InteractionEvent {
-	position: THREE.Vector3;
-	force: THREE.Vector3;
-	radius: number;
-	type: 'touch' | 'mouse' | 'audio' | 'external';
-	intensity: number;
+    readonly position: THREE.Vector3;
+    readonly force: THREE.Vector3;
+    readonly radius: number;
+    readonly type: 'touch' | 'mouse' | 'audio' | 'external';
+    readonly intensity: number;
+    readonly timestamp: number;
+    readonly pressure?: number;
+    validate(): boolean;
 }

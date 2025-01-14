@@ -73,6 +73,7 @@
 		velocityX,
 		velocityY,
 		velocityZ,
+		temperature,
 		updateSimulation,
 		addForce,
 		addVelocity,
@@ -81,8 +82,17 @@
 		gridSize: TEXTURE_SIZE,
 		iterations: 4,
 		viscosity: 0.0008,
-		diffusion: 0.0001
+		diffusion: 0.0001,
+		useWebGL: true
 	});
+
+	const textureConfig = {
+		size: N,
+		format: THREE.RGBAFormat,
+		type: THREE.FloatType,
+		minFilter: THREE.LinearFilter,
+		magFilter: THREE.LinearFilter
+	};
 
 	// Create optimized fluid texture
 	const fluidTexture = new THREE.DataTexture(
@@ -92,8 +102,8 @@
 		THREE.RGBAFormat,
 		THREE.FloatType
 	);
-	fluidTexture.minFilter = THREE.LinearFilter;
-	fluidTexture.magFilter = THREE.LinearFilter;
+	fluidTexture.minFilter = textureConfig.minFilter;
+	fluidTexture.magFilter = textureConfig.magFilter;
 
 	const velocityTexture = new THREE.DataTexture(
 		new Float32Array(N * N * 4),
@@ -519,7 +529,9 @@
 		innerMaterial.uniforms.sphereCenter.value = new THREE.Vector3(0, 0, 0);
 		innerMaterial.uniforms.sphereRadius.value = 2.0;
 		innerMaterial.uniforms.fluidLevel.value = FILL_START; // Start at bottom
+		innerMaterial.uniforms.fluidTexture.value = fluidTexture;
 		innerMaterial.uniforms.velocityTexture.value = velocityTexture;
+		innerMaterial.uniforms.temperature = { value: 0.5 };
 		innerMaterial.needsUpdate = true;
 	}
 
@@ -546,6 +558,7 @@
 		const velocityXValue = $velocityX;
 		const velocityYValue = $velocityY;
 		const velocityZValue = $velocityZ;
+		const temperatureValue = $temperature; 
 
 		// Update main fluid texture
 		for (let i = 0; i < N * N * N; i++) {
@@ -553,7 +566,7 @@
 			textureData[i4] = densityValue[i];
 			textureData[i4 + 1] = velocityXValue[i];
 			textureData[i4 + 2] = velocityYValue[i];
-			textureData[i4 + 3] = velocityZValue[i];
+			textureData[i4 + 3] = temperatureValue[i]; 
 		}
 
 		// Set texture data with correct typing
@@ -714,8 +727,18 @@
 			// Temperature influence through force and velocity
 			if (freqAvg > 0.5) {
 				const tempForce = freqAvg * 0.1 * fluidScale;
+				const x = cos * thirdN + halfN;
+				const y = sin * thirdN + halfN;
+				const z = halfN;
+				
+				// Add stronger vertical force and temperature at high frequencies
 				addForce(x, y, z, tempForce * 50);
 				addVelocity(x, y, z, 0, tempForce * 20, 0);
+				
+				// Optionally update global temperature based on audio intensity
+				if (innerMaterial instanceof THREE.ShaderMaterial) {
+					innerMaterial.uniforms.temperature.value = Math.min(1.0, averageFrequency / 255.0);
+				}
 			}
 		}
 	}
