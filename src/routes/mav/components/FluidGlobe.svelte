@@ -193,116 +193,132 @@
 			varying vec2 vUv;
 			varying vec3 vViewDir;
 			varying vec3 vWorldPos;
+			varying mat4 vModelMatrix;
 			
 			void main() {
 				vUv = uv;
 				vNormal = normalize(normalMatrix * normal);
+				vPosition = position;
 				
-				// Calculate position with wave displacement
+				// Calculate world position and add subtle waves
 				vec3 newPosition = position;
+				float wave = sin(position.x * 5.0 + time * 2.0) * 0.02 * 
+							smoothstep(-2.0, 1.0, position.y) +
+							cos(position.z * 5.0 + time * 1.5) * 0.02 * 
+							smoothstep(-2.0, 1.0, position.y);
+							
+				newPosition.y += wave;
+				
 				vec4 worldPos = modelMatrix * vec4(newPosition, 1.0);
 				vWorldPos = worldPos.xyz;
-				
 				vViewDir = normalize(cameraPosition - worldPos.xyz);
-				vPosition = newPosition;
+				vModelMatrix = modelMatrix;
 				
 				gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
-			}
-		`,
-		fragmentShader: `
-			uniform sampler2D fluidTexture;
-			uniform float time;
-			uniform vec3 fluidColor;
-			uniform vec3 lightColor;
-			uniform vec3 lightPosition;
-			uniform float iorAir;
-			uniform float iorWater;
-			uniform vec3 sphereCenter;
-			uniform float sphereRadius;
-			uniform float fluidLevel;
-			
-			varying vec3 vPosition;
-			varying vec3 vNormal;
-			varying vec2 vUv;
-			varying vec3 vViewDir;
-			varying vec3 vWorldPos;
-
-			float intersectSphere(vec3 origin, vec3 ray) {
-				vec3 toSphere = origin - sphereCenter;
-				float a = dot(ray, ray);
-				float b = 2.0 * dot(toSphere, ray);
-				float c = dot(toSphere, toSphere) - sphereRadius * sphereRadius;
-				float discriminant = b*b - 4.0*a*c;
-				if (discriminant > 0.0) {
-					float t = (-b - sqrt(discriminant)) / (2.0 * a);
-					if (t > 0.0) return t;
-				}
-				return 1.0e6;
-			}
-
-			vec3 getSurfaceRayColor(vec3 origin, vec3 ray, vec3 waterColor) {
-				vec3 color;
-				float q = intersectSphere(origin, ray);
-				if (q < 1.0e6) {
-					vec3 point = origin + ray * q;
-					float caustic = pow(max(0.0, dot(
-						normalize(refract(-lightPosition, vec3(0.0, 1.0, 0.0), iorAir / iorWater)),
-						normalize(point - sphereCenter)
-					)), 5.0);
-					color = waterColor * (0.5 + caustic * 0.5);
-				} else if (ray.y < 0.0) {
-					color = waterColor * 0.5;
-				} else {
-					color = waterColor + vec3(pow(max(0.0, dot(lightPosition, ray)), 5000.0)) * 0.5;
-				}
-				return color;
-			}
-			
-			float fresnel(float cosTheta) {
-				float R0 = pow((iorAir - iorWater) / (iorAir + iorWater), 2.0);
-				return R0 + (1.0 - R0) * pow(1.0 - cosTheta, 5.0);
-			}
-			
-			float caustics(vec3 pos) {
-				vec3 lightDir = normalize(lightPosition);
-				vec3 normalizedPos = normalize(pos);
-				float causticPattern = sin(normalizedPos.x * 10.0 + time) * 
-									cos(normalizedPos.z * 10.0 + time * 0.7) * 
-									sin(normalizedPos.y * 8.0 + time * 1.3);
-				return pow(max(0.0, causticPattern), 3.0) * 0.5;
-			}
-			
-			void main() {
-				vec3 normal = normalize(vNormal);
-				vec3 worldPos = vWorldPos;
-				
-				// Check if this fragment is below the fluid level
-				if (worldPos.y < fluidLevel) {
-					float cosTheta = max(0.0, dot(normal, vViewDir));
-					
-					vec3 reflectedRay = reflect(vViewDir, normal);
-					vec3 refractedRay = refract(vViewDir, normal, iorAir / iorWater);
-					
-					float fresnelTerm = fresnel(cosTheta);
-					
-					// Get both reflection and refraction colors
-					vec3 reflectedColor = getSurfaceRayColor(worldPos, reflectedRay, fluidColor);
-					vec3 refractedColor = getSurfaceRayColor(worldPos, refractedRay, fluidColor);
-					
-					// Final color blend with everything
-					vec3 finalColor = mix(refractedColor, reflectedColor, fresnelTerm);
-					
-					// Add foam at water level
-					float waterLevelDist = abs(worldPos.y - fluidLevel);
-					float foam = 1.0 - smoothstep(0.0, 0.1, waterLevelDist);
-					finalColor += lightColor * foam * 0.5;
-					
-					gl_FragColor = vec4(finalColor, 0.9);
-				} else {
-					// Above water level - completely transparent
-					gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
-				}
 			}`,
+		fragmentShader: `
+		uniform sampler2D fluidTexture;
+		uniform float time;
+		uniform vec3 fluidColor;
+		uniform vec3 lightColor;
+		uniform vec3 lightPosition;
+		uniform float iorAir;
+		uniform float iorWater;
+		uniform vec3 sphereCenter;
+		uniform float sphereRadius;
+		uniform float fluidLevel;
+		
+		varying vec3 vPosition;
+		varying vec3 vNormal;
+		varying vec2 vUv;
+		varying vec3 vViewDir;
+		varying vec3 vWorldPos;
+		varying mat4 vModelMatrix;
+		
+		float intersectSphere(vec3 origin, vec3 ray) {
+			vec3 toSphere = origin - sphereCenter;
+			float a = dot(ray, ray);
+			float b = 2.0 * dot(toSphere, ray);
+			float c = dot(toSphere, toSphere) - sphereRadius * sphereRadius;
+			float discriminant = b*b - 4.0*a*c;
+			if (discriminant > 0.0) {
+				float t = (-b - sqrt(discriminant)) / (2.0 * a);
+				if (t > 0.0) return t;
+			}
+			return 1.0e6;
+		}
+
+		vec3 getSurfaceRayColor(vec3 origin, vec3 ray, vec3 waterColor) {
+			vec3 color;
+			float q = intersectSphere(origin, ray);
+			if (q < 1.0e6) {
+				vec3 point = origin + ray * q;
+				float caustic = pow(max(0.0, dot(
+					normalize(refract(-lightPosition, vec3(0.0, 1.0, 0.0), iorAir / iorWater)),
+					normalize(point - sphereCenter)
+				)), 5.0);
+				color = waterColor * (0.5 + caustic * 0.5);
+			} else if (ray.y < 0.0) {
+				color = waterColor * 0.5;
+			} else {
+				color = waterColor + vec3(pow(max(0.0, dot(lightPosition, ray)), 5000.0)) * 0.5;
+			}
+			return color;
+		}
+		
+		float fresnel(float cosTheta) {
+			float R0 = pow((iorAir - iorWater) / (iorAir + iorWater), 2.0);
+			return R0 + (1.0 - R0) * pow(1.0 - cosTheta, 5.0);
+		}
+		
+		float caustics(vec3 pos) {
+			vec3 lightDir = normalize(lightPosition);
+			vec3 normalizedPos = normalize(pos);
+			float causticPattern = sin(normalizedPos.x * 10.0 + time) * 
+								cos(normalizedPos.z * 10.0 + time * 0.7) * 
+								sin(normalizedPos.y * 8.0 + time * 1.3);
+			return pow(max(0.0, causticPattern), 3.0) * 0.5;
+		}
+		
+		void main() {
+			vec3 normal = normalize(vNormal);
+			
+			// Use local position directly for water level check
+			float localHeight = vPosition.y;
+			
+			if (localHeight < fluidLevel) {
+				float cosTheta = max(0.0, dot(normal, vViewDir));
+				
+				vec3 reflectedRay = reflect(vViewDir, normal);
+				vec3 refractedRay = refract(vViewDir, normal, iorAir / iorWater);
+				
+				float fresnelTerm = fresnel(cosTheta);
+				
+				vec3 reflectedColor = getSurfaceRayColor(vWorldPos, reflectedRay, fluidColor);
+				vec3 refractedColor = getSurfaceRayColor(vWorldPos, refractedRay, fluidColor);
+				
+				vec3 finalColor = mix(refractedColor, reflectedColor, fresnelTerm);
+				
+				// Add foam at water level using local height
+				float waterLevelDist = abs(localHeight - fluidLevel);
+				float foam = 1.0 - smoothstep(0.0, 0.1, waterLevelDist);
+				
+				// Add dynamic waves to foam
+				float waveOffset = sin(vPosition.x * 5.0 + time * 2.0) * 0.05 + 
+								cos(vPosition.z * 5.0 + time * 1.5) * 0.05;
+				foam *= 1.0 + waveOffset;
+				
+				finalColor += lightColor * foam * 0.5;
+				
+				// Add subtle waves to transparency
+				float transparency = 0.9 + sin(vPosition.x * 3.0 + time) * 0.05 + 
+										cos(vPosition.z * 3.0 + time * 1.2) * 0.05;
+				
+				gl_FragColor = vec4(finalColor, transparency);
+			} else {
+				gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+			}
+		}`,
 		transparent: true,
 		side: THREE.BackSide,
 		blending: THREE.AdditiveBlending
@@ -311,22 +327,20 @@
 	// Fluid fill animation parameters
 	let fillStartTime = 0;
 	const FILL_DURATION = 3000; // 3 seconds to fill
-	const FILL_START = -2.0;    // Start at bottom of sphere
-	const FILL_END = 0.65;       // Fill to near top
+	const FILL_START = -1.95; // Start at bottom of sphere
+	const FILL_END = 0.75; // Fill to near top
 
 	function updateFluidLevel(currentTime: number) {
 		if (fillStartTime === 0) {
 			fillStartTime = currentTime;
 		}
-		
+
 		const elapsed = currentTime - fillStartTime;
 		const progress = Math.min(elapsed / FILL_DURATION, 1.0);
-		
-		// Smooth easing function
-		const t = progress < 0.5
-			? 4 * progress * progress * progress
-			: 1 - Math.pow(-2 * progress + 2, 3) / 2;
-		
+
+		// Smoother easing function
+		const t = progress < 0.5 ? 4 * Math.pow(progress, 3) : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
 		const fluidLevel = FILL_START + (FILL_END - FILL_START) * t;
 		if (innerMaterial instanceof THREE.ShaderMaterial) {
 			innerMaterial.uniforms.fluidLevel.value = fluidLevel;
@@ -504,7 +518,7 @@
 		innerMaterial.uniforms.lightPosition.value = new THREE.Vector3(2, 2, -1).normalize();
 		innerMaterial.uniforms.sphereCenter.value = new THREE.Vector3(0, 0, 0);
 		innerMaterial.uniforms.sphereRadius.value = 2.0;
-		innerMaterial.uniforms.fluidLevel.value = FILL_START;  // Start at bottom
+		innerMaterial.uniforms.fluidLevel.value = FILL_START; // Start at bottom
 		innerMaterial.uniforms.velocityTexture.value = velocityTexture;
 		innerMaterial.needsUpdate = true;
 	}

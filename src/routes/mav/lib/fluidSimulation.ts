@@ -4,7 +4,7 @@ import type { FluidState, SimulationConfig, FluidStore, BufferPair } from './typ
 const DEFAULT_CONFIG: SimulationConfig = {
 	gridSize: 256,
 	iterations: 16,
-	viscosity: 0.000001,
+	viscosity: 0.0000001,
 	diffusion: 0.000001,
 	timeStep: 0.016,
 	useWebGL: true,
