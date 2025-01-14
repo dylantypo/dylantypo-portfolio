@@ -2,17 +2,29 @@ import { writable, type Writable } from 'svelte/store';
 import type { FluidState, SimulationConfig, FluidStore, BufferPair } from './types';
 
 const DEFAULT_CONFIG: SimulationConfig = {
-	gridSize: 256, // Increased for better detail
-	iterations: 16, // From water.js optimal value
-	viscosity: 0.000001, // Keep your lower viscosity for water behavior
-	diffusion: 0.000001, // Keep lower diffusion for sharper waves
-	timeStep: 0.016, // Stable timestep from water.js
+	gridSize: 256,
+	iterations: 16,
+	viscosity: 0.000001,
+	diffusion: 0.000001,
+	timeStep: 0.016,
 	useWebGL: true,
 	useSpatialIndex: true,
 	temperature: 0.25,
 	density: 0.0125,
 	gravity: -9.81,
-	vorticityStrength: 0.15
+	vorticityStrength: 0.15,
+	// New water.js parameters
+	wavelength: 4.0,
+	damping: 0.985,
+	causticStrength: 0.75,
+	normalStrength: 1.0,
+	refractionRatio: 0.98,
+	// Additional fluid dynamics parameters
+	surfaceTension: 0.072,
+	buoyancy: 9.81,
+	turbulenceFactor: 0.1,
+	foamThreshold: 0.5,
+	vorticityConfinement: 0.3
 };
 
 let time = 0;
@@ -37,6 +49,7 @@ const VERTEX_SHADER = `
     }
 `;
 
+// Updated fragment shader for the water
 const FRAGMENT_SHADER = `
     precision highp float;
     varying vec2 vUv;
@@ -45,36 +58,42 @@ const FRAGMENT_SHADER = `
     varying vec2 vT;
     varying vec2 vB;
     uniform sampler2D uTexture;
-    uniform float uDeltaTime;
-    uniform vec2 texelSize;
+    uniform float uTime;
+    uniform vec3 uLightPosition;
+    uniform vec3 uGlobeDeformation; // Audio-driven deformation
+
+    // Ocean parameters
+    const vec3 DEEP_WATER = vec3(0.0, 0.05, 0.2);
+    const vec3 SHALLOW_WATER = vec3(0.0, 0.5, 1.0);
+    const float SURFACE_TENSION = 0.08;
     
     void main() {
-        vec4 L = texture2D(uTexture, vL);
-        vec4 R = texture2D(uTexture, vR);
-        vec4 T = texture2D(uTexture, vT);
-        vec4 B = texture2D(uTexture, vB);
-        vec4 C = texture2D(uTexture, vUv);
+        // Sample neighboring pixels for surface normal calculation
+        vec4 center = texture2D(uTexture, vUv);
+        vec4 left = texture2D(uTexture, vL);
+        vec4 right = texture2D(uTexture, vR);
+        vec4 top = texture2D(uTexture, vT);
+        vec4 bottom = texture2D(uTexture, vB);
 
-        // Combine the water simulation logic from water.js
-        float div = (R.x - L.x + T.y - B.y) * 0.5;
+        // Calculate water depth
+        float depth = center.r;
         
-        // Height field computation
-        float height = texture2D(uTexture, vUv).r;
-        float dx = texture2D(uTexture, vR).r - texture2D(uTexture, vL).r;
-        float dy = texture2D(uTexture, vT).r - texture2D(uTexture, vB).r;
+        // Apply surface tension
+        float surfaceCurvature = (left.r + right.r + top.r + bottom.r) * 0.25 - center.r;
+        depth += surfaceCurvature * SURFACE_TENSION;
         
-        // Enhanced wave propagation
-        vec2 velocity = C.gb;
-        float newHeight = height + (-dx * velocity.x - dy * velocity.y) * uDeltaTime;
+        // Calculate water color based on depth
+        vec3 waterColor = mix(SHALLOW_WATER, DEEP_WATER, depth);
         
-        // Add atmospheric pressure term from water.js
-        float pressure = (L.x + R.x + T.x + B.x - 4.0 * C.x) * 0.25;
+        // Add caustics and light scattering
+        float causticIntensity = pow(max(0.0, dot(normalize(vec3(surfaceCurvature, 1.0, surfaceCurvature)), normalize(uLightPosition))), 4.0);
+        waterColor += causticIntensity * vec3(0.2, 0.3, 0.4);
         
-        // Combine with your temperature influence
-        float tempInfluence = texture2D(uTexture, vUv).a;
-        newHeight += pressure * (1.0 + tempInfluence * 0.1);
+        // Apply globe deformation influence
+        vec3 deformedNormal = normalize(vec3(surfaceCurvature) + uGlobeDeformation);
+        float deformationEffect = dot(deformedNormal, vec3(0.0, 1.0, 0.0));
         
-        gl_FragColor = vec4(newHeight, div, velocity);
+        gl_FragColor = vec4(waterColor, 0.9);
     }
 `;
 
@@ -153,6 +172,25 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 	let normalTexture: WebGLTexture | null = null;
 	let causticsTexture: WebGLTexture | null = null;
 
+	let uniformLocations = {
+		compute: {
+			position: null as WebGLUniformLocation | null,
+			uTexture: null as WebGLUniformLocation | null,
+			uDeltaTime: null as WebGLUniformLocation | null,
+			texelSize: null as WebGLUniformLocation | null
+		},
+		normal: {
+			position: null as WebGLUniformLocation | null,
+			uTexture: null as WebGLUniformLocation | null,
+			texelSize: null as WebGLUniformLocation | null
+		},
+		caustics: {
+			position: null as WebGLUniformLocation | null,
+			uTexture: null as WebGLUniformLocation | null,
+			uTime: null as WebGLUniformLocation | null
+		}
+	};
+
 	// Enhanced buffer system from both implementations
 	const buffers: BufferPair = {
 		current: {
@@ -163,8 +201,13 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 			temp: new Float32Array(N * N * N),
 			pressure: new Float32Array(N * N * N),
 			temperature: new Float32Array(N * N * N),
-			normal: new Float32Array(N * N * N * 3), // Added from water.js
-			caustics: new Float32Array(N * N * N) // Added from water.js
+			normal: new Float32Array(N * N * N * 3),
+			caustics: new Float32Array(N * N * N),
+			// New fields
+			vorticity: new Float32Array(N * N * N),
+			divergence: new Float32Array(N * N * N),
+			foam: new Float32Array(N * N * N),
+			turbulence: new Float32Array(N * N * N)
 		},
 		next: {
 			density: new Float32Array(N * N * N),
@@ -175,7 +218,12 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 			pressure: new Float32Array(N * N * N),
 			temperature: new Float32Array(N * N * N),
 			normal: new Float32Array(N * N * N * 3),
-			caustics: new Float32Array(N * N * N)
+			caustics: new Float32Array(N * N * N),
+			// New fields
+			vorticity: new Float32Array(N * N * N),
+			divergence: new Float32Array(N * N * N),
+			foam: new Float32Array(N * N * N),
+			turbulence: new Float32Array(N * N * N)
 		}
 	};
 
@@ -189,7 +237,12 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 		pressure: writable(buffers.current.pressure),
 		temperature: writable(buffers.current.temperature),
 		normal: writable(buffers.current.normal),
-		caustics: writable(buffers.current.caustics)
+		caustics: writable(buffers.current.caustics),
+		// New stores
+		vorticity: writable(buffers.current.vorticity),
+		divergence: writable(buffers.current.divergence),
+		foam: writable(buffers.current.foam),
+		turbulence: writable(buffers.current.turbulence)
 	};
 
 	// Spatial indexing setup
@@ -661,7 +714,6 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 		}
 	}
 
-	// Enhanced shader setup from water.js
 	function setupShaderPrograms(): void {
 		if (!gl) return;
 
@@ -674,9 +726,38 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 			throw new Error('Failed to compile shaders');
 		}
 
+		// Create programs
 		computeProgram = createProgram(gl, vertShader, fragShader);
 		normalProgram = createProgram(gl, vertShader, normalFragShader);
 		causticsProgram = createProgram(gl, vertShader, causticsFragShader);
+
+		// Cache uniform locations for compute program
+		if (computeProgram) {
+			uniformLocations.compute = {
+				position: gl.getAttribLocation(computeProgram, 'position'),
+				uTexture: gl.getUniformLocation(computeProgram, 'uTexture'),
+				uDeltaTime: gl.getUniformLocation(computeProgram, 'uDeltaTime'),
+				texelSize: gl.getUniformLocation(computeProgram, 'texelSize')
+			};
+		}
+
+		// Cache uniform locations for normal program
+		if (normalProgram) {
+			uniformLocations.normal = {
+				position: gl.getAttribLocation(normalProgram, 'position'),
+				uTexture: gl.getUniformLocation(normalProgram, 'uTexture'),
+				texelSize: gl.getUniformLocation(normalProgram, 'texelSize')
+			};
+		}
+
+		// Cache uniform locations for caustics program
+		if (causticsProgram) {
+			uniformLocations.caustics = {
+				position: gl.getAttribLocation(causticsProgram, 'position'),
+				uTexture: gl.getUniformLocation(causticsProgram, 'uTexture'),
+				uTime: gl.getUniformLocation(causticsProgram, 'uTime')
+			};
+		}
 
 		gl.deleteShader(vertShader);
 		gl.deleteShader(fragShader);
@@ -781,39 +862,67 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 
 	// Update simulation using WebGL
 	function updateSimulationWebGL(): void {
-		if (!gl || !computeProgram || !causticsProgram) return;
-
-		// Bind framebuffer and set viewport
-		gl.viewport(0, 0, N, N);
+		if (!gl || !computeProgram || !causticsProgram || !normalProgram) return;
 
 		// Update main simulation
 		gl.useProgram(computeProgram);
 
-		const uniforms = {
-			uTexture: 0,
-			uDeltaTime: timeStep,
-			texelSize: [1.0 / N, 1.0 / N]
-		};
+		gl.viewport(0, 0, N, N);
 
-		for (const [name, value] of Object.entries(uniforms)) {
-			const location = gl.getUniformLocation(computeProgram, name);
-			if (typeof value === 'number') {
-				gl.uniform1f(location, value);
-			} else {
-				gl.uniform2f(location, value[0], value[1]);
-			}
+		// Bind vertex buffer once since we'll reuse it
+		gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+
+		// Set compute uniforms and attributes
+		const compute = uniformLocations.compute;
+		if (typeof compute.position === 'number') {
+			gl.enableVertexAttribArray(compute.position);
+			gl.vertexAttribPointer(compute.position, 2, gl.FLOAT, false, 0, 0);
 		}
-
-		// Draw simulation step
+		if (compute.uTexture !== null) {
+			gl.uniform1i(compute.uTexture, 0);
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, densityTexture);
+		}
+		if (compute.uDeltaTime !== null) {
+			gl.uniform1f(compute.uDeltaTime, timeStep);
+		}
+		if (compute.texelSize !== null) {
+			gl.uniform2f(compute.texelSize, 1.0 / N, 1.0 / N);
+		}
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
 
 		// Update normals
 		gl.useProgram(normalProgram);
+		const normal = uniformLocations.normal;
+		if (typeof normal.position === 'number') {
+			gl.enableVertexAttribArray(normal.position);
+			gl.vertexAttribPointer(normal.position, 2, gl.FLOAT, false, 0, 0);
+		}
+		if (normal.uTexture !== null) {
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, normalTexture);
+			gl.uniform1i(normal.uTexture, 0);
+		}
+		if (normal.texelSize !== null) {
+			gl.uniform2f(normal.texelSize, 1.0 / N, 1.0 / N);
+		}
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
 
 		// Update caustics
 		gl.useProgram(causticsProgram);
-		gl.uniform1f(gl.getUniformLocation(causticsProgram, 'uTime'), time);
+		const caustics = uniformLocations.caustics;
+		if (typeof caustics.position === 'number') {
+			gl.enableVertexAttribArray(caustics.position);
+			gl.vertexAttribPointer(caustics.position, 2, gl.FLOAT, false, 0, 0);
+		}
+		if (caustics.uTexture !== null) {
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, causticsTexture);
+			gl.uniform1i(caustics.uTexture, 0);
+		}
+		if (caustics.uTime !== null) {
+			gl.uniform1f(caustics.uTime, time);
+		}
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
 	}
 

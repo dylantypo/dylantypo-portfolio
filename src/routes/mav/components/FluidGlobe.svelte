@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import * as THREE from 'three';
+	import type { ShaderMaterial, Material, WebGLRenderTarget } from 'three';
 	import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 	import { useFluidSimulation } from '../lib/fluidSimulation';
 	import AudioAnalyzer from './AudioAnalyzer.svelte';
@@ -112,20 +113,31 @@
 			time: { value: 0 },
 			crystalColor: { value: CRYSTAL_COLOR },
 			baseOpacity: { value: 0.05 },
-			refractionStrength: { value: 0.1 }
+			refractionStrength: { value: 0.1 },
+			audioIntensity: { value: 0.0 },
+			audioDeformation: { value: new THREE.Vector3(0, 0, 0) }
 		},
 		vertexShader: `
 			uniform float time;
+			uniform float audioIntensity;
+			uniform vec3 audioDeformation;
 			varying vec3 vPosition;
 			varying vec3 vNormal;
 			varying vec3 vViewDir;
 			
 			void main() {
-				vPosition = position;
+				// Apply audio-driven deformation
+				vec3 pos = position;
+				float deformationAmount = audioIntensity * 0.2;
+				pos += normal * (sin(position.y * 10.0 + time) * audioDeformation.x +
+							cos(position.x * 8.0 + time * 0.7) * audioDeformation.y +
+							sin(position.z * 12.0 + time * 1.3) * audioDeformation.z) * deformationAmount;
+				
+				vPosition = pos;
 				vNormal = normalize(normalMatrix * normal);
-				vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+				vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
 				vViewDir = normalize(cameraPosition - worldPosition.xyz);
-				gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+				gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
 			}
 		`,
 		fragmentShader: `
@@ -172,7 +184,7 @@
 			lightPosition: { value: new THREE.Vector3(2, 2, -1).normalize() },
 			sphereCenter: { value: new THREE.Vector3(0, 0, 0) },
 			sphereRadius: { value: 2.0 },
-			poolHeight: { value: 0.25 },
+			poolHeight: { value: 1 },
 			velocityTexture: { value: null }
 		},
 		vertexShader: `
@@ -464,7 +476,7 @@
 		outerMaterial.uniforms.time.value = 0;
 		outerMaterial.uniforms.crystalColor.value = CRYSTAL_COLOR;
 		outerMaterial.uniforms.baseOpacity.value = 0.05;
-		outerMaterial.uniforms.refractionStrength.value = 0.1;
+		outerMaterial.uniforms.refractionStrength.value = 0.5;
 		outerMaterial.needsUpdate = true;
 
 		// Update inner material uniforms
@@ -477,7 +489,7 @@
 		innerMaterial.uniforms.lightPosition.value = new THREE.Vector3(2, 2, -1).normalize();
 		innerMaterial.uniforms.sphereCenter.value = new THREE.Vector3(0, 0, 0);
 		innerMaterial.uniforms.sphereRadius.value = 2.0;
-		innerMaterial.uniforms.poolHeight.value = 1.0;
+		innerMaterial.uniforms.poolHeight.value = 0.05;
 		innerMaterial.uniforms.velocityTexture.value = velocityTexture;
 		innerMaterial.needsUpdate = true;
 	}
@@ -499,6 +511,8 @@
 	// Efficient texture update
 	const textureData = new Float32Array(N * N * N * 4);
 	function updateFluidTexture() {
+		if (!fluidTexture || !velocityTexture) return;
+
 		const densityValue = $density;
 		const velocityXValue = $velocityX;
 		const velocityYValue = $velocityY;
@@ -512,10 +526,16 @@
 			textureData[i4 + 2] = velocityYValue[i];
 			textureData[i4 + 3] = velocityZValue[i];
 		}
-		fluidTexture.image.data = textureData;
+
+		// Set texture data with correct typing
+		fluidTexture.image = {
+			data: textureData,
+			width: N,
+			height: N * N
+		};
 		fluidTexture.needsUpdate = true;
 
-		// Update velocity texture
+		// Update velocity texture with proper typing
 		const velocityData = new Float32Array(N * N * 4);
 		for (let i = 0; i < N * N; i++) {
 			const i4 = i * 4;
@@ -524,9 +544,17 @@
 			velocityData[i4 + 2] = velocityZValue[i];
 			velocityData[i4 + 3] = 1.0;
 		}
-		velocityTexture.image.data = velocityData;
+
+		velocityTexture.image = {
+			data: velocityData,
+			width: N,
+			height: N
+		};
 		velocityTexture.needsUpdate = true;
-		innerMaterial.uniforms.velocityTexture.value = velocityTexture;
+
+		if (innerMaterial instanceof THREE.ShaderMaterial) {
+			innerMaterial.uniforms.velocityTexture.value = velocityTexture;
+		}
 	}
 
 	const heightFieldSize = 64;
@@ -538,8 +566,16 @@
 		THREE.RGBAFormat,
 		THREE.FloatType
 	);
+
+	// Set texture data with correct typing
+	heightFieldTexture.image = {
+		data: heightFieldData,
+		width: heightFieldSize,
+		height: heightFieldSize
+	};
 	heightFieldTexture.minFilter = THREE.LinearFilter;
 	heightFieldTexture.magFilter = THREE.LinearFilter;
+	heightFieldTexture.needsUpdate = true;
 
 	// Update heightfield based on audio data
 	function updateHeightField() {
@@ -583,6 +619,22 @@
 		}
 
 		const { frequencies, waveform, averageFrequency } = audioData;
+
+		// Process audio for the outer globe deformation
+		const bassFreq = frequencies.slice(0, 10).reduce((a: number, b: number) => a + b, 0) / 10;
+		const midFreq = frequencies.slice(10, 30).reduce((a: number, b: number) => a + b, 0) / 20;
+		const highFreq =
+			frequencies.slice(30).reduce((a: number, b: number) => a + b, 0) / (frequencies.length - 30);
+
+		// Update globe deformation based on audio
+		outerMaterial.uniforms.audioIntensity.value = averageFrequency;
+		outerMaterial.uniforms.audioDeformation.value.set(
+			(bassFreq / 255) * 0.1,
+			(midFreq / 255) * 0.05,
+			(highFreq / 255) * 0.025
+		);
+
+		// Process audio for fluid simulation
 		const binSize = frequencies.length / 4;
 		const halfN = N / 2;
 		const thirdN = N / 3;
@@ -612,8 +664,12 @@
 			const y = sin * thirdN + halfN;
 			const z = halfN;
 
-			// Combine frequency and waveform for force
-			const forceStrength = (freqAvg * 80 + waveAvg * 20) * averageFrequency;
+			// Scale down fluid forces when globe deformation is high
+			const globeDeformation = outerMaterial.uniforms.audioIntensity.value;
+			const fluidScale = 1.0 - Math.min(globeDeformation * 0.5, 0.7);
+
+			// Combine frequency and waveform for force with scaled influence
+			const forceStrength = (freqAvg * 80 + waveAvg * 20) * averageFrequency * fluidScale;
 			addForce(x, y, z, forceStrength);
 
 			// Add velocity with waveform influence
@@ -621,16 +677,14 @@
 				x,
 				y,
 				z,
-				cos * freqAvg * 40 * (1 + waveAvg),
-				sin * freqAvg * 40 * (1 + waveAvg),
-				(Math.random() - 0.5) * freqAvg * 15 * (1 + waveAvg)
+				cos * freqAvg * 40 * (1 + waveAvg) * fluidScale,
+				sin * freqAvg * 40 * (1 + waveAvg) * fluidScale,
+				(Math.random() - 0.5) * freqAvg * 15 * (1 + waveAvg) * fluidScale
 			);
 
-			// Instead of directly accessing buffers, pass the temperature influence
-			// through the force and velocity
+			// Temperature influence through force and velocity
 			if (freqAvg > 0.5) {
-				// Add temperature influence through additional force
-				const tempForce = freqAvg * 0.1;
+				const tempForce = freqAvg * 0.1 * fluidScale;
 				addForce(x, y, z, tempForce * 50);
 				addVelocity(x, y, z, 0, tempForce * 20, 0);
 			}
@@ -655,8 +709,10 @@
 
 			// Convert to seconds and update materials
 			const timeInSeconds = currentTime * 0.001;
+
+			// Update both materials with time and ensure proper phasing
 			outerMaterial.uniforms.time.value = timeInSeconds;
-			innerMaterial.uniforms.time.value = timeInSeconds;
+			innerMaterial.uniforms.time.value = timeInSeconds * 0.8; // Slightly slower for inner fluid
 
 			// Update scene
 			cubeCamera.position.copy(globe.position);
@@ -667,8 +723,16 @@
 				processAudio();
 				updateHeightField();
 			}
+
+			// Update simulation and textures
 			updateSimulation();
 			updateFluidTexture();
+
+			// Apply secondary deformations based on audio
+			if (isAudioActive && globe) {
+				const deformation = outerMaterial.uniforms.audioDeformation.value;
+				globe.scale.set(1 + deformation.x * 0.1, 1 + deformation.y * 0.1, 1 + deformation.z * 0.1);
+			}
 
 			// Render
 			controls.update();
@@ -683,76 +747,180 @@
 		}
 	}
 
+	function isShaderMaterial(material: THREE.Material | null): material is THREE.ShaderMaterial {
+		return material !== null && material instanceof THREE.ShaderMaterial;
+	}
+
 	function cleanup() {
-		// Cancel animation
+		// Cancel animation frame
 		if (animationId) {
 			cancelAnimationFrame(animationId);
 			animationId = null;
 		}
 
-		// Stop audio processing
+		// Stop audio processing and release audio context
 		stopAudio();
+		audioData = null;
 
-		// Remove event listeners
-		window.removeEventListener('resize', handleResize);
-		document.removeEventListener('visibilitychange', () => {
+		// Remove event listeners with proper reference cleanup
+		const visibilityHandler = () => {
 			if (document.hidden) controls.autoRotate = false;
 			else if (!isMobile) controls.autoRotate = true;
-		});
-		screen?.orientation?.removeEventListener('change', () => {
+		};
+		const orientationHandler = () => {
 			handleResize();
 			camera.aspect = window.innerWidth / window.innerHeight;
 			camera.updateProjectionMatrix();
 			controls.reset();
-		});
-		if (isMobile) {
-			container.removeEventListener('touchend', () => {});
+		};
+
+		window.removeEventListener('resize', handleResize);
+		document.removeEventListener('visibilitychange', visibilityHandler);
+		screen?.orientation?.removeEventListener('change', orientationHandler);
+
+		if (isMobile && container) {
+			container.removeEventListener('touchend', () => {
+				const now = Date.now();
+				if (now - lastTouchEnd <= 300) {
+					return;
+				}
+				lastTouchEnd = now;
+			});
 		}
 
-		// Dispose of meshes and materials
 		[globe, innerGlobe].forEach((mesh) => {
 			if (!mesh) return;
 			mesh.geometry?.dispose();
+
+			// Handle materials with proper type checking
 			if (Array.isArray(mesh.material)) {
-				mesh.material.forEach((mat) => mat?.dispose());
-			} else {
-				mesh.material?.dispose();
+				mesh.material.forEach((mat) => {
+					if (mat instanceof THREE.ShaderMaterial) {
+						// Safely access shader material uniforms
+						if ('audioIntensity' in mat.uniforms) {
+							mat.uniforms.audioIntensity.value = 0;
+						}
+						if ('audioDeformation' in mat.uniforms) {
+							mat.uniforms.audioDeformation.value.set(0, 0, 0);
+						}
+					}
+					mat.dispose();
+				});
+			} else if (mesh.material instanceof THREE.ShaderMaterial) {
+				// Safely access shader material uniforms
+				if ('audioIntensity' in mesh.material.uniforms) {
+					mesh.material.uniforms.audioIntensity.value = 0;
+				}
+				if ('audioDeformation' in mesh.material.uniforms) {
+					mesh.material.uniforms.audioDeformation.value.set(0, 0, 0);
+				}
+				mesh.material.dispose();
 			}
 		});
 
-		// Dispose of textures
-		[fluidTexture, velocityTexture, heightFieldTexture, cubeRenderTarget].forEach((texture) => {
-			texture?.dispose();
-		});
+		// Dispose of all textures
+		function cleanupTextures() {
+			[fluidTexture, velocityTexture, heightFieldTexture, cubeRenderTarget].forEach((texture) => {
+				if (!texture) return;
+				if ('image' in texture && texture.image) {
+					// Create empty buffer instead of null
+					texture.image.data = new Float32Array(0);
+				}
+				texture.dispose();
+			});
+		}
 
-		// Dispose of materials
+		// Dispose of materials with proper cleanup of uniforms
 		[outerMaterial, innerMaterial].forEach((material) => {
-			material?.dispose();
+			if (!material) return;
+			// Clear uniform references and textures
+			Object.values(material.uniforms || {}).forEach((uniform) => {
+				if (uniform.value && uniform.value.dispose) {
+					uniform.value.dispose();
+				}
+				uniform.value = null;
+			});
+			material.dispose();
 		});
 
-		// Clean up renderer
+		// Reset scene transforms
+		if (globe) {
+			globe.scale.set(1, 1, 1);
+			globe.position.set(0, 0, 0);
+		}
+
+		// Clean up renderer with context handling
 		if (renderer) {
+			// Ensure WebGL context is properly lost
+			const gl = renderer.getContext();
+			if (gl && 'getExtension' in gl) {
+				gl.getExtension('WEBGL_lose_context')?.loseContext();
+			}
 			renderer.dispose();
 			renderer.forceContextLoss();
+			renderer.domElement.remove();
 		}
 
 		// Clear scene and dispose controls
-		scene?.clear();
+		if (scene) {
+			scene.traverse((object) => {
+				if (object instanceof THREE.Mesh) {
+					object.geometry?.dispose();
+					if (object.material.isMaterial) {
+						cleanMaterial(object.material);
+					} else {
+						for (const material of object.material) {
+							cleanMaterial(material);
+						}
+					}
+				}
+			});
+			scene.clear();
+		}
+
 		controls?.dispose();
+
+		// Helper function to clean materials
+		function cleanMaterial(material: THREE.Material) {
+			material.dispose();
+			// Clean up material's textures
+			if ('uniforms' in material) {
+				Object.values(material.uniforms || {}).forEach((uniform) => {
+					if (uniform.value && uniform.value.dispose) {
+						uniform.value.dispose();
+					}
+				});
+			}
+		}
 	}
 
-	// Update existing lifecycle hooks
+	// Enhanced lifecycle hooks
 	onMount(() => {
-		initThree();
-		animate(0);
+		// Check for mobile device
+		isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+		// Initialize scene with proper error handling
+		try {
+			initThree();
+			animate(0);
+		} catch (error) {
+			console.error('Failed to initialize 3D scene:', error);
+			showError('Failed to initialize visualization. Please reload the page.');
+		}
 	});
 
 	onDestroy(() => {
+		// Ensure animation is stopped before cleanup
 		if (animationId) {
 			cancelAnimationFrame(animationId);
 			animationId = null;
 		}
-		cleanup();
+		// Run cleanup with error handling
+		try {
+			cleanup();
+		} catch (error) {
+			console.error('Error during cleanup:', error);
+		}
 	});
 </script>
 
