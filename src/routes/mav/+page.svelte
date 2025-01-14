@@ -1,120 +1,138 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	import Controls from './components/Controls.svelte';
-	import AudioAnalyzer from './components/AudioAnalyzer.svelte';
-	import FluidGlobe from './components/FluidGlobe.svelte';
-	import type { AudioData } from './lib/types';
-	import { browser } from '$app/environment';
+    import { onMount, onDestroy } from 'svelte';
+    import Controls from './components/Controls.svelte';
+    import AudioAnalyzer from './components/AudioAnalyzer.svelte';
+    import FluidGlobe from './components/FluidGlobe.svelte';
+    import type { AudioData } from './lib/types';
+    import { browser } from '$app/environment';
 
-	// State management
-	let hasAudioPermission = $state(false);
-	let audioData = $state<AudioData | null>(null);
-	let analyzer = $state<AudioAnalyzer | undefined>(undefined);
-	let errorMessage = $state<string | null>(null);
-	let isInitialized = $state(false);
+    // State management with explicit types
+    let hasAudioPermission = $state(false);
+    let audioData = $state<AudioData | null>(null);
+    let analyzer = $state<AudioAnalyzer | undefined>(undefined);
+    let errorMessage = $state<string | null>(null);
+    let isInitialized = $state(false);
 
-	// Audio handlers
-	async function handleRequestAudio() {
-		try {
-			if (!analyzer) {
-				errorMessage = 'Audio analyzer not initialized';
-				return;
-			}
+    // Streamlined audio handlers
+    async function handleRequestAudio() {
+        if (!analyzer) {
+            setError('Audio analyzer not initialized');
+            return;
+        }
 
-			const success = await analyzer.startAudioAnalysis();
-			hasAudioPermission = success;
+        try {
+            const success = await analyzer.startAudioAnalysis();
+            
+            if (success) {
+                hasAudioPermission = true;
+                errorMessage = null;
+            } else {
+                setError('Failed to start audio analysis');
+            }
+        } catch (err) {
+            console.error('Audio request error:', err);
+            setError('Failed to initialize audio');
+        }
+    }
 
-			if (!success) {
-				errorMessage = 'Failed to start audio analysis';
-			} else {
-				errorMessage = null;
-			}
-		} catch (err) {
-			console.error('Audio request error:', err);
-			errorMessage = 'Failed to initialize audio';
-			hasAudioPermission = false;
-		}
-	}
+    function handleStopAudio() {
+        try {
+            if (analyzer) {
+                analyzer.stopAudioAnalysis();
+                resetAudioState();
+            }
+        } catch (err) {
+            console.error('Error stopping audio:', err);
+            setError('Failed to stop audio analysis');
+        }
+    }
 
-	function handleStopAudio() {
-		try {
-			if (analyzer) {
-				analyzer.stopAudioAnalysis();
-				hasAudioPermission = false;
-				audioData = null;
-				errorMessage = null;
-			}
-		} catch (err) {
-			console.error('Error stopping audio:', err);
-			errorMessage = 'Failed to stop audio analysis';
-		}
-	}
+    // Utility functions for state management
+    function setError(message: string) {
+        errorMessage = message;
+        resetAudioState();
+    }
 
-	// Error handler
-	function handleError(e: CustomEvent<string>) {
-		errorMessage = e.detail;
-		hasAudioPermission = false;
-		audioData = null;
-	}
+    function resetAudioState() {
+        hasAudioPermission = false;
+        audioData = null;
+    }
 
-	// Audio data handler
-	function handleAudioData(e: CustomEvent<AudioData>) {
-		audioData = e.detail;
-	}
+    function dismissError() {
+        errorMessage = null;
+    }
 
-	// Lifecycle
-	onMount(() => {
-		if (!browser) return;
-		isInitialized = true;
-	});
+    // Event handlers
+    function handleError(e: CustomEvent<string>) {
+        setError(e.detail);
+    }
 
-	onDestroy(() => {
-		if (hasAudioPermission) {
-			handleStopAudio();
-		}
-		// Force a redraw on cleanup to prevent ghost images
-		if (browser) {
-			requestAnimationFrame(() => {
-				document.body.style.display = 'none';
-				requestAnimationFrame(() => {
-					document.body.style.display = '';
-				});
-			});
-		}
-	});
+    function handleAudioData(e: CustomEvent<AudioData>) {
+        audioData = e.detail;
+    }
+
+    // Lifecycle
+    onMount(() => {
+        if (!browser) return;
+        isInitialized = true;
+    });
+
+    onDestroy(() => {
+        // Clean up audio if active
+        if (hasAudioPermission) {
+            handleStopAudio();
+        }
+
+        // Force a redraw on cleanup to prevent ghost images
+        if (browser) {
+            requestAnimationFrame(() => {
+                document.body.style.display = 'none';
+                requestAnimationFrame(() => {
+                    document.body.style.display = '';
+                });
+            });
+        }
+    });
 </script>
 
 {#if browser && isInitialized}
-	<div class="container" class:has-error={errorMessage !== null}>
-		<div class="scene-container">
-			<FluidGlobe audioData={audioData as AudioData | null} />
-		</div>
+    <div class="container" class:has-error={errorMessage !== null}>
+        <div class="scene-container">
+            <FluidGlobe 
+                audioData={audioData as AudioData | null}
+                {hasAudioPermission}
+            />
+        </div>
 
-		<div class="overlay-container">
-			<AudioAnalyzer bind:this={analyzer} on:audioData={handleAudioData} on:error={handleError} />
+        <div class="overlay-container">
+            <AudioAnalyzer 
+                bind:this={analyzer}
+                on:audioData={handleAudioData}
+                on:error={handleError}
+            />
 
-			<Controls
-				{hasAudioPermission}
-				onRequestAudio={handleRequestAudio}
-				onStopAudio={handleStopAudio}
-			/>
+            <Controls
+                {hasAudioPermission}
+                onRequestAudio={handleRequestAudio}
+                onStopAudio={handleStopAudio}
+            />
 
-			{#if errorMessage}
-				<div class="error-overlay" role="alert">
-					<div class="error-message">
-						{errorMessage}
-						<button
-							onclick={() => (errorMessage = null)}
-							class="error-close"
-							aria-label="Dismiss error"
-						>
-							×
-						</button>
-					</div>
-				</div>
-			{/if}
-		</div>
-	</div>
+            {#if errorMessage}
+                <div class="error-overlay" role="alert">
+                    <div class="error-message">
+                        {errorMessage}
+                        <button
+                            onclick={dismissError}
+                            class="error-close"
+                            aria-label="Dismiss error"
+                        >
+                            ×
+                        </button>
+                    </div>
+                </div>
+            {/if}
+        </div>
+    </div>
 {/if}
 
 <style>

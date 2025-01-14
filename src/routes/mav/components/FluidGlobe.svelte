@@ -1,10 +1,8 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import * as THREE from 'three';
-	import type { ShaderMaterial, Material, WebGLRenderTarget } from 'three';
 	import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 	import { useFluidSimulation } from '../lib/fluidSimulation';
-	import AudioAnalyzer from './AudioAnalyzer.svelte';
 	import type { AudioData } from '../lib/types';
 	import {
 		installOESTextureFloatLinearPolyfill,
@@ -12,30 +10,16 @@
 	} from '../lib/OESTextureFloatLinear';
 
 	// Create reference to AudioAnalyzer component
-	let audioAnalyzer: AudioAnalyzer;
-	let { audioData = null } = $props<{
+	let {
+		audioData = null,
+		hasAudioPermission = false // Add this to control audio-dependent features
+	} = $props<{
 		audioData: AudioData | null;
+		hasAudioPermission: boolean;
 	}>();
-	let isAudioActive = $state(false);
 
-	// Audio handling functions
-	async function startAudio() {
-		if (audioAnalyzer) {
-			isAudioActive = await audioAnalyzer.startAudioAnalysis();
-		}
-	}
-
-	function stopAudio() {
-		if (audioAnalyzer) {
-			audioAnalyzer.stopAudioAnalysis();
-			isAudioActive = false;
-		}
-	}
-
-	// Handle audio data updates
-	function handleAudioData(event: CustomEvent<AudioData>) {
-		audioData = event.detail;
-	}
+	// Near your other state declarations, add:
+	let isAudioActive = $derived(hasAudioPermission && audioData !== null);
 
 	// Refs with explicit types
 	let container: HTMLDivElement;
@@ -653,7 +637,7 @@
 
 	// Enhanced audio processing with better fluid interaction
 	function processAudio() {
-		if (!audioData?.frequencies || !isAudioActive) {
+		if (!audioData?.frequencies || !hasAudioPermission) {
 			if (import.meta.env.DEV) {
 				console.warn('No active audio data for fluid simulation');
 			}
@@ -773,7 +757,7 @@
 			cubeCamera.update(renderer, scene);
 
 			// Process updates
-			if (isAudioActive) {
+			if (hasAudioPermission) {
 				processAudio();
 				updateHeightField();
 			}
@@ -811,10 +795,6 @@
 			cancelAnimationFrame(animationId);
 			animationId = null;
 		}
-
-		// Stop audio processing and release audio context
-		stopAudio();
-		audioData = null;
 
 		// Remove event listeners with proper reference cleanup
 		const visibilityHandler = () => {
@@ -977,12 +957,6 @@
 		}
 	});
 </script>
-
-<AudioAnalyzer
-	bind:this={audioAnalyzer}
-	on:audioData={handleAudioData}
-	on:error={(e) => console.error('Audio error:', e.detail)}
-/>
 
 <div
 	class="container"
