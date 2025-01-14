@@ -66,7 +66,6 @@
 	const FLUID_COLOR = new THREE.Color(0x006994); // Deeper blue
 	const LIGHT_COLOR = new THREE.Color(0x89cff0); // Light blue for foam/surface
 	const CRYSTAL_COLOR = new THREE.Color(0xffffff); // Pure white for crystal
-	const CRYSTAL_OPACITY = 0.001; // Much more transparent
 
 	// Simulation setup
 	const {
@@ -112,9 +111,9 @@
 			fluidTexture: { value: fluidTexture },
 			time: { value: 0 },
 			crystalColor: { value: CRYSTAL_COLOR },
-			baseOpacity: { value: 0.05 },
+			baseOpacity: { value: 0.025 },
 			refractionStrength: { value: 0.1 },
-			audioIntensity: { value: 0.0 },
+			audioIntensity: { value: 0.5 },
 			audioDeformation: { value: new THREE.Vector3(0, 0, 0) }
 		},
 		vertexShader: `
@@ -184,7 +183,7 @@
 			lightPosition: { value: new THREE.Vector3(2, 2, -1).normalize() },
 			sphereCenter: { value: new THREE.Vector3(0, 0, 0) },
 			sphereRadius: { value: 2.0 },
-			poolHeight: { value: 1 },
+			fluidLevel: { value: -2.0 },
 			velocityTexture: { value: null }
 		},
 		vertexShader: `
@@ -220,6 +219,7 @@
 			uniform float iorWater;
 			uniform vec3 sphereCenter;
 			uniform float sphereRadius;
+			uniform float fluidLevel;
 			
 			varying vec3 vPosition;
 			varying vec3 vNormal;
@@ -258,13 +258,11 @@
 				return color;
 			}
 			
-			// Schlick's approximation for Fresnel
 			float fresnel(float cosTheta) {
 				float R0 = pow((iorAir - iorWater) / (iorAir + iorWater), 2.0);
 				return R0 + (1.0 - R0) * pow(1.0 - cosTheta, 5.0);
 			}
 			
-			// Calculate caustics contribution
 			float caustics(vec3 pos) {
 				vec3 lightDir = normalize(lightPosition);
 				vec3 normalizedPos = normalize(pos);
@@ -274,49 +272,66 @@
 				return pow(max(0.0, causticPattern), 3.0) * 0.5;
 			}
 			
-			// Calculate underwater lighting
-			vec3 underwaterEffect(vec3 pos, vec3 normal, vec3 viewDir) {
-				vec3 refractedLight = refract(-lightPosition, vec3(0.0, 1.0, 0.0), iorAir / iorWater);
-				float diffuse = max(0.0, dot(-refractedLight, normal));
-				
-				// Add depth-based attenuation
-				float depth = length(pos) * 0.5;
-				vec3 attenuatedColor = fluidColor * exp(-depth * 0.2);
-				
-				// Add caustics
-				float causticIntensity = caustics(pos);
-				vec3 causticColor = lightColor * causticIntensity * diffuse;
-				
-				return mix(attenuatedColor, causticColor, 0.5);
-			}
-			
 			void main() {
 				vec3 normal = normalize(vNormal);
-				float cosTheta = max(0.0, dot(normal, vViewDir));
+				vec3 worldPos = vWorldPos;
 				
-				vec3 reflectedRay = reflect(vViewDir, normal);
-				vec3 refractedRay = refract(vViewDir, normal, iorAir / iorWater);
-				
-				float fresnelTerm = fresnel(cosTheta);
-				
-				// Get both reflection and refraction colors
-				vec3 reflectedColor = getSurfaceRayColor(vWorldPos, reflectedRay, fluidColor);
-				vec3 refractedColor = getSurfaceRayColor(vWorldPos, refractedRay, fluidColor);
-				
-				// Final color blend with everything
-				vec3 finalColor = mix(refractedColor, reflectedColor, fresnelTerm);
-				
-				// Add foam at edges
-				float foam = 1.0 - smoothstep(0.2, 0.5, length(normal.xz));
-				finalColor += lightColor * foam * 0.5;
-				
-				gl_FragColor = vec4(finalColor, 0.9);
-			}
-		`,
+				// Check if this fragment is below the fluid level
+				if (worldPos.y < fluidLevel) {
+					float cosTheta = max(0.0, dot(normal, vViewDir));
+					
+					vec3 reflectedRay = reflect(vViewDir, normal);
+					vec3 refractedRay = refract(vViewDir, normal, iorAir / iorWater);
+					
+					float fresnelTerm = fresnel(cosTheta);
+					
+					// Get both reflection and refraction colors
+					vec3 reflectedColor = getSurfaceRayColor(worldPos, reflectedRay, fluidColor);
+					vec3 refractedColor = getSurfaceRayColor(worldPos, refractedRay, fluidColor);
+					
+					// Final color blend with everything
+					vec3 finalColor = mix(refractedColor, reflectedColor, fresnelTerm);
+					
+					// Add foam at water level
+					float waterLevelDist = abs(worldPos.y - fluidLevel);
+					float foam = 1.0 - smoothstep(0.0, 0.1, waterLevelDist);
+					finalColor += lightColor * foam * 0.5;
+					
+					gl_FragColor = vec4(finalColor, 0.9);
+				} else {
+					// Above water level - completely transparent
+					gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+				}
+			}`,
 		transparent: true,
 		side: THREE.BackSide,
 		blending: THREE.AdditiveBlending
 	});
+
+	// Fluid fill animation parameters
+	let fillStartTime = 0;
+	const FILL_DURATION = 3000; // 3 seconds to fill
+	const FILL_START = -2.0;    // Start at bottom of sphere
+	const FILL_END = 0.65;       // Fill to near top
+
+	function updateFluidLevel(currentTime: number) {
+		if (fillStartTime === 0) {
+			fillStartTime = currentTime;
+		}
+		
+		const elapsed = currentTime - fillStartTime;
+		const progress = Math.min(elapsed / FILL_DURATION, 1.0);
+		
+		// Smooth easing function
+		const t = progress < 0.5
+			? 4 * progress * progress * progress
+			: 1 - Math.pow(-2 * progress + 2, 3) / 2;
+		
+		const fluidLevel = FILL_START + (FILL_END - FILL_START) * t;
+		if (innerMaterial instanceof THREE.ShaderMaterial) {
+			innerMaterial.uniforms.fluidLevel.value = fluidLevel;
+		}
+	}
 
 	function showError(message: string) {
 		const warning = document.createElement('div');
@@ -489,7 +504,7 @@
 		innerMaterial.uniforms.lightPosition.value = new THREE.Vector3(2, 2, -1).normalize();
 		innerMaterial.uniforms.sphereCenter.value = new THREE.Vector3(0, 0, 0);
 		innerMaterial.uniforms.sphereRadius.value = 2.0;
-		innerMaterial.uniforms.poolHeight.value = 0.05;
+		innerMaterial.uniforms.fluidLevel.value = FILL_START;  // Start at bottom
 		innerMaterial.uniforms.velocityTexture.value = velocityTexture;
 		innerMaterial.needsUpdate = true;
 	}
@@ -713,6 +728,8 @@
 			// Update both materials with time and ensure proper phasing
 			outerMaterial.uniforms.time.value = timeInSeconds;
 			innerMaterial.uniforms.time.value = timeInSeconds * 0.8; // Slightly slower for inner fluid
+
+			updateFluidLevel(currentTime);
 
 			// Update scene
 			cubeCamera.position.copy(globe.position);
