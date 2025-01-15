@@ -3,21 +3,21 @@ import type { SimulationConfig } from './types';
 
 export const DEFAULT_CONFIG: SimulationConfig = {
 	// Simulation parameters
-	gridSize: 128,
-	iterations: 8,
-	timeStep: 0.5,
+	gridSize: 16,
+	iterations: 16,
+	timeStep: 1/60,
 
 	// Physics parameters
 	viscosity: 0.0000001,
 	diffusion: 0.0000001,
-	gravity: -12.0,
+	gravity: -9.81,
 	density: 0.008,
 	temperature: 0.4,
 
 	// Fluid dynamics
-	surfaceTension: 0.15,
+	surfaceTension: 0.2,
 	buoyancy: 15.0,
-	vorticityStrength: 0.3,
+	vorticityStrength: 0.4,
 	vorticityConfinement: 0.5,
 	turbulenceFactor: 0.25,
 

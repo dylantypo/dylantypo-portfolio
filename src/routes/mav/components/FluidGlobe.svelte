@@ -2,6 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import * as THREE from 'three';
 	import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+	import { DEFAULT_CONFIG } from '../lib/config';
 	import { useFluidSimulation } from '../lib/fluidSimulation';
 	import { FluidPhysics } from '../lib/physics';
 	import type { AudioData } from '../lib/types';
@@ -34,8 +35,8 @@
 	let cubeRenderTarget: THREE.WebGLCubeRenderTarget;
 
 	// Performance optimizations
-	const TEXTURE_SIZE = 64;
-	const RAF_THROTTLE = 1000 / 60; // 60 FPS cap
+	const TEXTURE_SIZE = 16;
+	const RAF_THROTTLE = 1 / 60; // 60 FPS cap
 	let lastRAFTime = 0;
 	let isMobile = $state(false);
 	let lastTouchEnd = 0;
@@ -65,8 +66,8 @@
 	// Fluid fill animation parameters
 	let fillStartTime = 0;
 	const FILL_DURATION = 2500; // 2.5 seconds to fill
-	const FILL_START = -2.5; // Start at bottom of sphere
-	const FILL_END = -0.35; // Fill to near top
+	const FILL_START = -0.8 * FLUID_RADIUS; // Start at bottom of sphere
+	const FILL_END = 0.8 * FLUID_RADIUS; // Fill to near top
 
 	// Simulation setup
 	const {
@@ -81,22 +82,12 @@
 		config: { gridSize: N }
 	} = useFluidSimulation({
 		gridSize: TEXTURE_SIZE,
-		iterations: 6,
-		viscosity: 0.0000001,
-		diffusion: 0.0000001,
 		useWebGL: true
 	});
 
 	const physics = new FluidPhysics({
 		gridSize: TEXTURE_SIZE,
-		iterations: 6,
-		viscosity: 0.0000001,
-		diffusion: 0.0000001,
-		timeStep: 1 / 60,
-		temperature: 0.4,
-		density: 0.008,
-		gravity: -12.0,
-		vorticityStrength: 0.3
+		timeStep: 1 / 60
 	});
 
 	const textureConfig = {
@@ -207,6 +198,10 @@
 			sphereRadius: { value: FLUID_RADIUS },
 			fluidLevel: { value: FILL_START },
 			velocityTexture: { value: null },
+			surfaceTension: { value: DEFAULT_CONFIG.surfaceTension },
+			damping: { value: DEFAULT_CONFIG.damping },
+			buoyancy: { value: DEFAULT_CONFIG.buoyancy },
+			vorticityStrength: { value: DEFAULT_CONFIG.vorticityStrength },
 			lightPositions: {
 				value: [
 					new THREE.Vector3(0, 2, 2).normalize(), // Main light
@@ -268,6 +263,10 @@
 			uniform vec3 sphereCenter;
 			uniform float sphereRadius;
 			uniform float fluidLevel;
+			uniform float surfaceTension;
+			uniform float damping;
+			uniform float buoyancy;
+			uniform float vorticityStrength;
 			uniform vec3 lightPositions[4];
 			uniform vec3 lightColors[4];
 			uniform float lightIntensities[4];
@@ -379,11 +378,20 @@
 			void main() {
 				vec3 normal = normalize(vNormal);
 				
-				// Use view space Y coordinate for fluid level check
-				float viewHeight = vViewPosition.y;
+				// Calculate spherical coordinates and fluid properties
+				vec3 localPos = vWorldPos - sphereCenter;
+				float dist = length(localPos);
 				
-				// Adjust fluid level check to view space
-				if (viewHeight < (fluidLevel + sin(vViewPosition.x * 0.5 + time) * 0.1)) {
+				// Calculate fluid dynamics
+				float boundaryDist = (sphereRadius - dist) / sphereRadius;
+				float fluidDist = (fluidLevel - localPos.y) / sphereRadius;
+				
+				// Dynamic fluid boundaries with smooth transitions
+				float fluidBoundary = smoothstep(-0.1, 0.1, fluidDist);
+				float sphereBoundary = smoothstep(0.0, 0.1, boundaryDist);
+				float dynamicFactor = min(1.0, fluidBoundary * sphereBoundary) * surfaceTension;
+				
+				if (sphereBoundary > 0.0 && fluidBoundary > 0.0) {
 					float cosTheta = max(0.0, dot(normal, vViewDir));
 					vec3 reflectedRay = reflect(vViewDir, normal);
 					vec3 refractedRay = refract(vViewDir, normal, iorAir / iorWater);
@@ -392,16 +400,22 @@
 					vec3 reflectedColor = getSurfaceRayColor(vWorldPos, reflectedRay, fluidColor);
 					vec3 refractedColor = getSurfaceRayColor(vWorldPos, refractedRay, fluidColor);
 					
-					// Adjust mix ratio to favor reflections while maintaining transparency
-					float reflectionStrength = mix(0.3, 0.7, fresnelTerm);
+					// Dynamic mixing based on fluid properties
+					float reflectionStrength = mix(0.3, 0.7, fresnelTerm * dynamicFactor);
 					vec3 finalColor = mix(refractedColor, reflectedColor, reflectionStrength);
 					
-					// Add underwater depth effect
-					float depth = abs(viewHeight - fluidLevel);
-					float underwaterFactor = exp(-depth * 0.5);
-					finalColor = mix(fluidColor * 0.5, finalColor, underwaterFactor);
+					// Enhanced depth and fluid dynamics effects
+					float depth = (1.0 - boundaryDist) * sphereRadius;
+					float underwaterFactor = exp(-depth * 0.3) * dynamicFactor;
 					
-					// Enhance specular highlights
+					// Apply damping and buoyancy
+					float dampingFactor = mix(1.0, damping, boundaryDist);
+					float buoyancyFactor = buoyancy * (1.0 - localPos.y / sphereRadius);
+					
+					finalColor = mix(fluidColor * 0.5, finalColor, underwaterFactor * dampingFactor) + 
+								vec3(buoyancyFactor * 0.1);
+					
+					// Enhanced specular with vorticity influence
 					vec3 specularColor = vec3(0.0);
 					for(int i = 0; i < 4; i++) {
 						vec3 lightDir = normalize(lightPositions[i]);
@@ -409,18 +423,18 @@
 						float spec = pow(max(dot(normal, halfwayDir), 0.0), 64.0);
 						specularColor += lightColors[i] * spec * lightIntensities[i] * 0.5;
 					}
-					finalColor += specularColor;
+					finalColor += specularColor * (1.0 + vorticityStrength * dynamicFactor);
 					
-					// Add foam with adjusted transparency
-					float waterLevelDist = abs(viewHeight - fluidLevel);
+					// Dynamic foam with fluid interaction
+					float waterLevelDist = abs(localPos.y - fluidLevel * sphereRadius);
 					float foam = 1.0 - smoothstep(0.0, 0.1, waterLevelDist);
-					float waveOffset = sin(vViewPosition.x * 5.0 + time * 2.0) * 0.05 + 
-									cos(vViewPosition.z * 5.0 + time * 1.5) * 0.05;
-					foam *= 1.0 + waveOffset;
+					float waveOffset = sin(localPos.x * 5.0 + time * 2.0) * 0.05 + 
+									cos(localPos.z * 5.0 + time * 1.5) * 0.05;
+					foam *= (1.0 + waveOffset) * dynamicFactor;
 					
-					// View-dependent foam
+					// View-dependent foam with fluid dynamics
 					float viewFoamFactor = 1.0 - abs(dot(normal, vec3(0.0, 1.0, 0.0)));
-					foam *= viewFoamFactor * 0.5;
+					foam *= viewFoamFactor * 0.5 * (1.0 + vorticityStrength);
 					
 					vec3 foamLight = vec3(0.0);
 					for(int i = 0; i < 4; i++) {
@@ -431,13 +445,24 @@
 					
 					finalColor += foam * foamLight * 0.5;
 					
-					// View and depth-dependent transparency
-					float baseTransparency = 0.7;  // Increased base transparency
-					float depthFactor = exp(-depth * 0.3);  // Slower depth falloff
+					// Dynamic transparency based on fluid properties
+					float baseTransparency = 0.7;
+					float depthFactor = exp(-depth * 0.3);
 					float viewFactor = pow(1.0 - abs(dot(normal, vViewDir)), 2.0);
-					float transparency = mix(baseTransparency, 0.95, viewFactor * depthFactor);
-					
-					gl_FragColor = vec4(finalColor, transparency);
+
+					// Add droplet factor
+					float dropletFactor = 1.0;
+					if (dist > sphereRadius * 0.9) {
+						dropletFactor = smoothstep(sphereRadius * 0.9, sphereRadius, dist);
+					}
+
+					float dynamicTransparency = mix(
+						baseTransparency, 
+						0.95, 
+						viewFactor * depthFactor * dynamicFactor * dropletFactor
+					);
+
+					gl_FragColor = vec4(finalColor, dynamicTransparency * sphereBoundary * fluidBoundary);
 				} else {
 					gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
 				}
@@ -447,24 +472,29 @@
 		blending: THREE.AdditiveBlending
 	});
 
-	function updateFluidLevel(currentTime: number) {
-		if (fillStartTime === 0) {
-			fillStartTime = currentTime;
+	function initializeFluid() {
+		// Initialize base fluid level
+		const halfN = N / 2;
+		const quarterN = N / 4;
+
+		for (let i = 0; i < N; i++) {
+			for (let j = 0; j < N / 2; j++) {
+				// Fill bottom half initially
+				for (let k = 0; k < N; k++) {
+					const idx = i + j * N + k * N * N;
+					$density[idx] = 1.0;
+					// Add some initial movement
+					$velocityX[idx] = (Math.random() - 0.5) * 0.1;
+					$velocityY[idx] = Math.abs(Math.random()) * 0.1;
+					$velocityZ[idx] = (Math.random() - 0.5) * 0.1;
+				}
+			}
 		}
 
-		const elapsed = currentTime - fillStartTime;
-		const progress = Math.min(elapsed / FILL_DURATION, 1.0);
-
-		// Smoother easing function
-		const t = progress < 0.5 ? 4 * Math.pow(progress, 3) : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-
-		if (innerMaterial instanceof THREE.ShaderMaterial && camera) {
-			// Add subtle adjustment based on camera angle
-			const cameraAngle = Math.atan2(camera.position.z, camera.position.x);
-			const fluidAdjustment = Math.sin(cameraAngle) * 0.1;
-
-			innerMaterial.uniforms.fluidLevel.value =
-				FILL_START + (FILL_END - FILL_START) * t + fluidAdjustment;
+		// Add some initial forces
+		for (let i = 0; i < 4; i++) {
+			const angle = (i / 4) * Math.PI * 2;
+			addForce(halfN + Math.cos(angle) * quarterN, N / 4, halfN + Math.sin(angle) * quarterN, 1.0);
 		}
 	}
 
@@ -489,7 +519,7 @@
 			preserveDrawingBuffer: false,
 			powerPreference: 'high-performance'
 		});
-		renderer.setClearColor(0x000000, 0.1); // Set to transparent
+		renderer.setClearColor(0x000000, 0.55); // Set to transparent
 		renderer.setSize(window.innerWidth, window.innerHeight);
 		renderer.setPixelRatio(
 			isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2)
@@ -912,6 +942,32 @@
 			const forceStrength = (freqAvg * 120 + waveAvg * 30) * averageFrequency * fluidScale;
 			addForce(x, y, z, forceStrength);
 
+			// Add splashing behavior
+			if (forceStrength > 0.6) {
+				const splashRadius = Math.min(N / 4, Math.floor(forceStrength * 5));
+				for (let sx = -splashRadius; sx <= splashRadius; sx++) {
+					for (let sz = -splashRadius; sz <= splashRadius; sz++) {
+						const dist = Math.sqrt(sx * sx + sz * sz);
+						if (dist <= splashRadius) {
+							const splash = forceStrength * (1 - dist / splashRadius);
+							const splashX = Math.floor(x + sx);
+							const splashZ = Math.floor(z + sz);
+							if (splashX >= 0 && splashX < N && splashZ >= 0 && splashZ < N) {
+								addForce(splashX, y + Math.random() * 2, splashZ, splash * 0.5);
+								addVelocity(
+									splashX,
+									y + Math.random() * 2,
+									splashZ,
+									(Math.random() - 0.5) * splash * 20,
+									splash * 30,
+									(Math.random() - 0.5) * splash * 20
+								);
+							}
+						}
+					}
+				}
+			}
+
 			// Add velocity with waveform influence
 			addVelocity(
 				x,
@@ -941,6 +997,90 @@
 		}
 	}
 
+	function updateFluidBoundaries() {
+		const radius = FLUID_RADIUS;
+		const { surfaceTension, damping, vorticityStrength } = DEFAULT_CONFIG;
+		const currentTime = performance.now();
+
+		// Handle initial fill animation
+		if (fillStartTime === 0) {
+			fillStartTime = currentTime;
+		}
+		const elapsed = currentTime - fillStartTime;
+		const progress = Math.min(elapsed / FILL_DURATION, 1.0);
+		const t = progress < 0.5 ? 4 * Math.pow(progress, 3) : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+		// Update fluid level based on camera position
+		if (innerMaterial instanceof THREE.ShaderMaterial && camera) {
+			const baseFluidLevel = FILL_START + (FILL_END - FILL_START) * t;
+
+			// Get camera-relative position
+			const localCameraPosition = new THREE.Vector3();
+			localCameraPosition.copy(camera.position);
+			if (globe) {
+				const inverseMatrix = new THREE.Matrix4();
+				inverseMatrix.copy(globe.matrixWorld).invert();
+				localCameraPosition.applyMatrix4(inverseMatrix);
+			}
+
+			// Calculate fluid level adjustments
+			const upVector = new THREE.Vector3(0, 1, 0);
+			const cameraAngle = localCameraPosition.angleTo(upVector);
+			const tiltAdjustment = Math.sin(cameraAngle) * 0.15;
+			const heightAdjustment = (localCameraPosition.y / 10) * 0.1;
+
+			// Update fluid level uniform
+			const finalFluidLevel = Math.max(
+				FILL_START,
+				Math.min(FILL_END, baseFluidLevel + tiltAdjustment + heightAdjustment)
+			);
+			innerMaterial.uniforms.fluidLevel.value = finalFluidLevel;
+		}
+
+		// Update fluid forces
+		for (let i = 0; i < N; i++) {
+			for (let j = 0; j < N; j++) {
+				for (let k = 0; k < N; k++) {
+					const pos = new THREE.Vector3(
+						(i / N - 0.5) * radius * 2,
+						(j / N - 0.5) * radius * 2,
+						(k / N - 0.5) * radius * 2
+					);
+
+					const dist = pos.length();
+					if (dist > radius * 0.8) {
+						const normal = pos.clone().normalize();
+						const strength = (dist - radius * 0.8) / (radius * 0.2);
+
+						const densityValue = $density[i + j * N + k * N * N];
+						if (densityValue > 0.1) {
+							// Surface tension for droplet formation
+							const tensionForce = surfaceTension * strength * densityValue * t; // Scale with fill progress
+							addForce(i, j, k, -tensionForce);
+
+							// Vorticity and curl
+							const vortexStrength = vorticityStrength * (1.0 - strength);
+							const curl = new THREE.Vector3(
+								(Math.random() - 0.5) * vortexStrength,
+								(Math.random() - 0.5) * vortexStrength,
+								(Math.random() - 0.5) * vortexStrength
+							);
+
+							addVelocity(
+								i,
+								j,
+								k,
+								curl.x - normal.x * strength * damping,
+								curl.y - normal.y * strength * damping,
+								curl.z - normal.z * strength * damping
+							);
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// Optimized animation loop
 	function animate(currentTime: number) {
 		try {
@@ -964,8 +1104,6 @@
 			outerMaterial.uniforms.time.value = timeInSeconds;
 			innerMaterial.uniforms.time.value = timeInSeconds * 0.8; // Slightly slower for inner fluid
 
-			updateFluidLevel(currentTime);
-
 			// Update scene
 			cubeCamera.position.copy(globe.position);
 			cubeCamera.update(renderer, scene);
@@ -987,9 +1125,35 @@
 				);
 			}
 
+			updateFluidBoundaries();
+			if (innerMaterial.uniforms.vorticityStrength) {
+				innerMaterial.uniforms.vorticityStrength.value = DEFAULT_CONFIG.vorticityStrength;
+			}
+
 			// Update simulation and textures
 			updateSimulation();
 			updateFluidTexture();
+
+			// // Constant Motion
+			// const halfN = N / 2;
+			// const quarterN = N / 4;
+
+			// // Add gentle swirling motion
+			// for (let i = 0; i < 4; i++) {
+			// 	const angle = (i / 4) * Math.PI * 2 + timeInSeconds;
+			// 	const x = halfN + Math.cos(angle) * quarterN;
+			// 	const z = halfN + Math.sin(angle) * quarterN;
+
+			// 	addForce(x, quarterN, z, 0.1);
+			// 	addVelocity(
+			// 		x,
+			// 		quarterN,
+			// 		z,
+			// 		Math.cos(angle) * 0.5,
+			// 		Math.sin(timeInSeconds) * 0.2,
+			// 		Math.sin(angle) * 0.5
+			// 	);
+			// }
 
 			// Apply secondary deformations based on audio
 			if (isAudioActive && globe) {
@@ -1149,6 +1313,7 @@
 		// Initialize scene with proper error handling
 		try {
 			initThree();
+			// initializeFluid();
 			animate(0);
 		} catch (error) {
 			console.error('Failed to initialize 3D scene:', error);
