@@ -5,7 +5,7 @@ export const DEFAULT_CONFIG: SimulationConfig = {
 	// Simulation parameters
 	gridSize: 128,
 	iterations: 8,
-	timeStep: 0.025,
+	timeStep: 0.5,
 
 	// Physics parameters
 	viscosity: 0.0000001,
@@ -22,12 +22,12 @@ export const DEFAULT_CONFIG: SimulationConfig = {
 	turbulenceFactor: 0.25,
 
 	// Water effects
-	wavelength: 15.0,
+	wavelength: 8.5,
 	damping: 0.95,
 	causticStrength: 0.9,
 	normalStrength: 1.5,
 	refractionRatio: 0.95,
-	foamThreshold: 0.5,
+	foamThreshold: 0.2,
 
 	// Optimization flags
 	useWebGL: true,

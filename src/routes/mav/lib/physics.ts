@@ -1,4 +1,5 @@
 import type { FluidState, SimulationConfig } from './types';
+import { DEFAULT_CONFIG } from './config';
 import * as THREE from 'three';
 export class FluidPhysics {
 	private readonly gridSize: number;
@@ -10,81 +11,158 @@ export class FluidPhysics {
 	private readonly densityCoef: number;
 	private readonly gravity: number;
 	private readonly vorticityStrength: number;
+	private readonly surfaceTension: number;
+	private readonly buoyancy: number;
+	private readonly vorticityConfinement: number;
+	private readonly turbulenceFactor: number;
+	private readonly wavelength: number;
+	private readonly damping: number;
+
+	// Cache frequently used calculations
+	private readonly gridSizeSquared: number;
+	private readonly gridSizeMinus1: number;
+	private readonly gridSizeMinus2: number;
+	private readonly halfGridSize: number;
+	private readonly dtScale: number;
+	private readonly vorticityScale: number;
+	private readonly buoyancyScale: number;
 
 	constructor(config: Partial<SimulationConfig>) {
-		// Provide defaults for all required properties
+		// Merge with DEFAULT_CONFIG for complete configuration
 		const fullConfig = {
-			gridSize: config.gridSize ?? 128,
-			iterations: config.iterations ?? 8,
-			viscosity: config.viscosity ?? 0.0000001,
-			diffusion: config.diffusion ?? 0.0000001,
-			timeStep: config.timeStep ?? 0.025,
-			temperature: config.temperature ?? 0.4,
-			density: config.density ?? 0.008,
-			gravity: config.gravity ?? -12.0,
-			vorticityStrength: config.vorticityStrength ?? 0.3,
+			...DEFAULT_CONFIG,
+			...config
+		};
 
-			// Additional required properties with defaults
-			useWebGL: config.useWebGL ?? true,
-			useSpatialIndex: config.useSpatialIndex ?? false,
-			wavelength: config.wavelength ?? 15.0,
-			damping: config.damping ?? 0.95,
-			causticStrength: config.causticStrength ?? 0.9,
-			normalStrength: config.normalStrength ?? 1.5,
-			refractionRatio: config.refractionRatio ?? 0.95,
-			surfaceTension: config.surfaceTension ?? 0.15,
-			buoyancy: config.buoyancy ?? 15.0,
-			turbulenceFactor: config.turbulenceFactor ?? 0.25,
-			foamThreshold: config.foamThreshold ?? 0.5,
-			vorticityConfinement: config.vorticityConfinement ?? 0.5
-		} as const;
-
+		// Core simulation parameters
 		this.gridSize = fullConfig.gridSize;
 		this.iterations = fullConfig.iterations;
+		this.timeStep = fullConfig.timeStep;
+
+		// Fluid properties
 		this.viscosity = fullConfig.viscosity;
 		this.diffusion = fullConfig.diffusion;
-		this.timeStep = fullConfig.timeStep;
 		this.temperature = fullConfig.temperature;
 		this.densityCoef = fullConfig.density;
+
+		// Forces and dynamics
 		this.gravity = fullConfig.gravity;
 		this.vorticityStrength = fullConfig.vorticityStrength;
+		this.surfaceTension = fullConfig.surfaceTension;
+		this.buoyancy = fullConfig.buoyancy;
+		this.vorticityConfinement = fullConfig.vorticityConfinement;
+		this.turbulenceFactor = fullConfig.turbulenceFactor;
+
+		// Wave characteristics
+		this.wavelength = fullConfig.wavelength;
+		this.damping = fullConfig.damping;
+
+		// Precalculate frequently used values
+		this.gridSizeSquared = this.gridSize * this.gridSize;
+		this.gridSizeMinus1 = this.gridSize - 1;
+		this.gridSizeMinus2 = this.gridSize - 2;
+		this.halfGridSize = Math.floor(this.gridSize / 2);
+		this.dtScale = this.timeStep * this.gridSizeMinus2;
+		this.vorticityScale = this.vorticityStrength * this.vorticityConfinement * this.timeStep;
+		this.buoyancyScale = this.buoyancy * this.timeStep;
 	}
 
+	// Optimize the idx function for better performance
 	private idx(x: number, y: number, z: number): number {
-		x = Math.max(0, Math.min(this.gridSize - 1, Math.floor(x)));
-		y = Math.max(0, Math.min(this.gridSize - 1, Math.floor(y)));
-		z = Math.max(0, Math.min(this.gridSize - 1, Math.floor(z)));
-		return x + y * this.gridSize + z * this.gridSize * this.gridSize;
+		// Use bitwise operations for faster bounds checking
+		x = x < 0 ? 0 : x > this.gridSizeMinus1 ? this.gridSizeMinus1 : x | 0;
+		y = y < 0 ? 0 : y > this.gridSizeMinus1 ? this.gridSizeMinus1 : y | 0;
+		z = z < 0 ? 0 : z > this.gridSizeMinus1 ? this.gridSizeMinus1 : z | 0;
+		return x + y * this.gridSize + z * this.gridSizeSquared;
 	}
 
 	updateSimulation(
-		buffers: FluidState,
-		time: number,
-		activeRegions: Uint8Array,
-		spatialIndex: Set<number>
-	): void {
-		// Apply physics steps
-		this.diffuse(buffers.velocityX, buffers.velocityX, this.viscosity, buffers.temperature);
-		this.diffuse(buffers.velocityY, buffers.velocityY, this.viscosity, buffers.temperature);
-		this.diffuse(buffers.velocityZ, buffers.velocityZ, this.viscosity, buffers.temperature);
+        next: FluidState,
+        current: FluidState,
+        time: number,
+        activeRegions: Uint8Array,
+        spatialIndex: Set<number>
+    ): void {
+        const {
+            velocityX: currVelX,
+            velocityY: currVelY,
+            velocityZ: currVelZ,
+            density: currDensity,
+            temperature: currTemp,
+            pressure: currPressure
+        } = current;
 
-		this.advect(
-			buffers.density,
-			buffers.density,
-			buffers.velocityX,
-			buffers.velocityY,
-			buffers.velocityZ,
-			buffers.temperature
-		);
+        const {
+            velocityX: nextVelX,
+            velocityY: nextVelY,
+            velocityZ: nextVelZ,
+            density: nextDensity,
+            temperature: nextTemp,
+            pressure: nextPressure,
+            temp: nextT
+        } = next;
 
-		this.applyVorticityConfinement(
-			buffers.velocityX,
-			buffers.velocityY,
-			buffers.velocityZ,
-			buffers.temp,
-			buffers.temperature
-		);
-		this.applyBuoyancy(buffers.velocityY, buffers.temperature, buffers.density, buffers.pressure);
+        // Process velocity fields in parallel
+        Promise.all([
+            new Promise<void>((resolve) => {
+                this.diffuse(nextVelX, currVelX, this.viscosity, currTemp);
+                resolve();
+            }),
+            new Promise<void>((resolve) => {
+                this.diffuse(nextVelY, currVelY, this.viscosity, currTemp);
+                resolve();
+            }),
+            new Promise<void>((resolve) => {
+                this.diffuse(nextVelZ, currVelZ, this.viscosity, currTemp);
+                resolve();
+            })
+        ]).then(() => {
+            // Advect density field
+            this.advect(nextDensity, currDensity, currVelX, currVelY, currVelZ, currTemp);
+
+            // Apply forces
+            this.applyVorticityConfinement(nextVelX, nextVelY, nextVelZ, nextT, currTemp);
+            this.applyBuoyancy(nextVelY, currTemp, currDensity, nextPressure);
+        });
+
+        // Update active regions if needed
+        if (spatialIndex.size > 0) {
+            this.updateActiveRegions(activeRegions, spatialIndex);
+        }
+    }
+
+	// Helper method to update active regions
+	private updateActiveRegions(activeRegions: Uint8Array, spatialIndex: Set<number>): void {
+		const cellSize = Math.max(1, Math.floor(this.gridSize / 8));
+		const cellCount = Math.ceil(this.gridSize / cellSize);
+
+		// Clear previous active regions
+		activeRegions.fill(0);
+
+		// Update from spatial index more efficiently
+		for (const index of spatialIndex) {
+			const x = ((index % this.gridSize) / cellSize) | 0;
+			const y = (((index / this.gridSize) % this.gridSize) / cellSize) | 0;
+			const z = (index / this.gridSizeSquared / cellSize) | 0;
+
+			// Mark current cell and immediate neighbors
+			for (let dx = -1; dx <= 1; dx++) {
+				const nx = x + dx;
+				if (nx < 0 || nx >= cellCount) continue;
+
+				for (let dy = -1; dy <= 1; dy++) {
+					const ny = y + dy;
+					if (ny < 0 || ny >= cellCount) continue;
+
+					for (let dz = -1; dz <= 1; dz++) {
+						const nz = z + dz;
+						if (nz < 0 || nz >= cellCount) continue;
+
+						activeRegions[nx + ny * cellCount + nz * cellCount * cellCount] = 1;
+					}
+				}
+			}
+		}
 	}
 
 	addForce(
@@ -95,7 +173,12 @@ export class FluidPhysics {
 		z: number,
 		amount: number
 	): void {
-		const index = this.idx(x, y, z);
+		// Use optimal idx calculation directly
+		x = x < 0 ? 0 : x > this.gridSizeMinus1 ? this.gridSizeMinus1 : x | 0;
+		y = y < 0 ? 0 : y > this.gridSizeMinus1 ? this.gridSizeMinus1 : y | 0;
+		z = z < 0 ? 0 : z > this.gridSizeMinus1 ? this.gridSizeMinus1 : z | 0;
+		const index = x + y * this.gridSize + z * this.gridSizeSquared;
+
 		buffers.density[index] += amount;
 		spatialIndex.add(index);
 	}
@@ -110,7 +193,12 @@ export class FluidPhysics {
 		vy: number,
 		vz: number
 	): void {
-		const index = this.idx(x, y, z);
+		// Use optimal idx calculation directly
+		x = x < 0 ? 0 : x > this.gridSizeMinus1 ? this.gridSizeMinus1 : x | 0;
+		y = y < 0 ? 0 : y > this.gridSizeMinus1 ? this.gridSizeMinus1 : y | 0;
+		z = z < 0 ? 0 : z > this.gridSizeMinus1 ? this.gridSizeMinus1 : z | 0;
+		const index = x + y * this.gridSize + z * this.gridSizeSquared;
+
 		buffers.velocityX[index] += vx;
 		buffers.velocityY[index] += vy;
 		buffers.velocityZ[index] += vz;
@@ -118,47 +206,70 @@ export class FluidPhysics {
 	}
 
 	applyBoundaryConditions(field: Float32Array, scale: number = 1): void {
-		for (let i = 0; i < this.gridSize; i++) {
-			for (let j = 0; j < this.gridSize; j++) {
+		const tensionFactor = scale * (1.0 - this.surfaceTension);
+		const dampingTensionFactor = tensionFactor * this.damping;
+		const gridSize = this.gridSize;
+		const gridSizeM1 = this.gridSizeMinus1;
+		const gridSizeM2 = this.gridSizeMinus2;
+
+		for (let i = 0; i < gridSize; i++) {
+			for (let j = 0; j < gridSize; j++) {
+				const rowOffset = i + j * gridSize;
+				const rowOffsetM1 = i + gridSizeM1 * gridSize;
+				const rowOffsetM2 = i + gridSizeM2 * gridSize;
+
 				// Bottom and top boundaries
-				field[this.idx(i, 0, j)] = field[this.idx(i, 1, j)] * scale;
-				field[this.idx(i, this.gridSize - 1, j)] = field[this.idx(i, this.gridSize - 2, j)] * scale;
+				field[rowOffset] = field[i + gridSize] * tensionFactor;
+				field[rowOffsetM1] = field[rowOffsetM2] * tensionFactor;
 
-				// Left and right boundaries with damping
-				field[this.idx(0, i, j)] = field[this.idx(1, i, j)] * scale * 0.8;
-				field[this.idx(this.gridSize - 1, i, j)] =
-					field[this.idx(this.gridSize - 2, i, j)] * scale * 0.8;
+				// Left and right boundaries
+				const leftIdx = j * gridSize;
+				const rightIdxM1 = gridSizeM1 + j * gridSize;
+				const rightIdxM2 = gridSizeM2 + j * gridSize;
+				field[leftIdx] = field[1 + j * gridSize] * dampingTensionFactor;
+				field[rightIdxM1] = field[rightIdxM2] * dampingTensionFactor;
 
-				// Front and back boundaries with reflection
-				field[this.idx(i, j, 0)] = field[this.idx(i, j, 1)] * scale * 0.9;
-				field[this.idx(i, j, this.gridSize - 1)] =
-					field[this.idx(i, j, this.gridSize - 2)] * scale * 0.9;
+				// Front and back boundaries
+				const frontIdx = i + j * gridSize;
+				const backIdxM1 = i + j * gridSize + gridSizeM1 * this.gridSizeSquared;
+				const backIdxM2 = i + j * gridSize + gridSizeM2 * this.gridSizeSquared;
+				field[frontIdx] = field[i + j * gridSize + this.gridSizeSquared] * tensionFactor;
+				field[backIdxM1] = field[backIdxM2] * tensionFactor;
 			}
 		}
 	}
 
 	diffuse(x: Float32Array, x0: Float32Array, diff: number, temperature: Float32Array): void {
-		const a = this.timeStep * diff * (this.gridSize - 2) * (this.gridSize - 2);
+		const turbulentDiff = diff * (1.0 + this.turbulenceFactor * this.diffusion);
+		const a = this.timeStep * turbulentDiff * this.gridSizeMinus2 * this.gridSizeMinus2;
 		const invDenom = 1 / (1 + 6 * a);
 
-		for (let iter = 0; iter < this.iterations; iter++) {
-			for (let i = 1; i < this.gridSize - 1; i++) {
-				for (let j = 1; j < this.gridSize - 1; j++) {
-					for (let k = 1; k < this.gridSize - 1; k++) {
-						const index = this.idx(i, j, k);
-						const tempFactor = 1.0 + temperature[index] * 0.1;
+		// Preallocate indices for the 6 neighbor cells
+		const neighbors = new Int32Array(6);
 
-						x[index] =
-							(x0[index] +
-								a *
-									tempFactor *
-									(x[this.idx(i + 1, j, k)] +
-										x[this.idx(i - 1, j, k)] +
-										x[this.idx(i, j + 1, k)] +
-										x[this.idx(i, j - 1, k)] +
-										x[this.idx(i, j, k + 1)] +
-										x[this.idx(i, j, k - 1)])) *
-							invDenom;
+		for (let iter = 0; iter < this.iterations; iter++) {
+			for (let i = 1; i < this.gridSizeMinus1; i++) {
+				for (let j = 1; j < this.gridSizeMinus1; j++) {
+					const rowOffset = i + j * this.gridSize;
+					for (let k = 1; k < this.gridSizeMinus1; k++) {
+						const index = rowOffset + k * this.gridSizeSquared;
+
+						// Precompute neighbor indices
+						neighbors[0] = index + 1; // i+1
+						neighbors[1] = index - 1; // i-1
+						neighbors[2] = index + this.gridSize; // j+1
+						neighbors[3] = index - this.gridSize; // j-1
+						neighbors[4] = index + this.gridSizeSquared; // k+1
+						neighbors[5] = index - this.gridSizeSquared; // k-1
+
+						// Sum neighbors in a SIMD-friendly way
+						let sum = 0;
+						for (let n = 0; n < 6; n++) {
+							sum += x[neighbors[n]];
+						}
+
+						const tempFactor = 1.0 + temperature[index] * this.temperature;
+						x[index] = (x0[index] + a * tempFactor * sum) * invDenom;
 					}
 				}
 			}
@@ -203,48 +314,61 @@ export class FluidPhysics {
 		dtz: number,
 		direction: number
 	): void {
-		for (let i = 1; i < this.gridSize - 1; i++) {
-			for (let j = 1; j < this.gridSize - 1; j++) {
-				for (let k = 1; k < this.gridSize - 1; k++) {
-					const index = this.idx(i, j, k);
+		// Pre-calculate array offsets
+		const gridSizeF = this.gridSize;
+		const maxIndex = this.gridSizeMinus1 - 0.5;
+		const minIndex = 0.5;
+
+		for (let i = 1; i < this.gridSizeMinus1; i++) {
+			for (let j = 1; j < this.gridSizeMinus1; j++) {
+				const rowOffset = i + j * gridSizeF;
+				for (let k = 1; k < this.gridSizeMinus1; k++) {
+					const index = rowOffset + k * this.gridSizeSquared;
+
+					// Optimize temperature factor calculation
 					const tempFactor = 1.0 + temperature[index] * 0.05;
+					const velocityScale = tempFactor * direction;
 
-					let x = i - dtx * velocX[index] * tempFactor * direction;
-					let y = j - dty * velocY[index] * tempFactor * direction;
-					let z = k - dtz * velocZ[index] * tempFactor * direction;
+					// Vectorize position calculations
+					const x = Math.max(minIndex, Math.min(maxIndex, i - dtx * velocX[index] * velocityScale));
+					const y = Math.max(minIndex, Math.min(maxIndex, j - dty * velocY[index] * velocityScale));
+					const z = Math.max(minIndex, Math.min(maxIndex, k - dtz * velocZ[index] * velocityScale));
 
-					x = Math.max(0.5, Math.min(this.gridSize - 1.5, x));
-					y = Math.max(0.5, Math.min(this.gridSize - 1.5, y));
-					z = Math.max(0.5, Math.min(this.gridSize - 1.5, z));
-
-					target[index] = this.interpolate(source, x, y, z);
+					target[index] = this.interpolateOptimized(source, x, y, z);
 				}
 			}
 		}
 	}
 
-	private interpolate(field: Float32Array, x: number, y: number, z: number): number {
-		const i0 = Math.floor(x);
-		const i1 = i0 + 1;
-		const j0 = Math.floor(y);
-		const j1 = j0 + 1;
-		const k0 = Math.floor(z);
-		const k1 = k0 + 1;
+	private interpolateOptimized(field: Float32Array, x: number, y: number, z: number): number {
+		// Use bitwise operations for faster floor
+		const i0 = x | 0;
+		const j0 = y | 0;
+		const k0 = z | 0;
 
-		const s1 = x - i0;
-		const s0 = 1 - s1;
-		const t1 = y - j0;
-		const t0 = 1 - t1;
-		const u1 = z - k0;
-		const u0 = 1 - u1;
+		// Compute fractions once
+		const sx = x - i0;
+		const sy = y - j0;
+		const sz = z - k0;
 
+		// Pre-calculate array indices
+		const i0j0k0 = i0 + j0 * this.gridSize + k0 * this.gridSizeSquared;
+		const i0j0k1 = i0j0k0 + this.gridSizeSquared;
+		const i0j1k0 = i0j0k0 + this.gridSize;
+		const i0j1k1 = i0j1k0 + this.gridSizeSquared;
+		const i1j0k0 = i0j0k0 + 1;
+		const i1j0k1 = i1j0k0 + this.gridSizeSquared;
+		const i1j1k0 = i1j0k0 + this.gridSize;
+		const i1j1k1 = i1j1k0 + this.gridSizeSquared;
+
+		// Use linear combination for better vectorization
 		return (
-			s0 *
-				(t0 * (u0 * field[this.idx(i0, j0, k0)] + u1 * field[this.idx(i0, j0, k1)]) +
-					t1 * (u0 * field[this.idx(i0, j1, k0)] + u1 * field[this.idx(i0, j1, k1)])) +
-			s1 *
-				(t0 * (u0 * field[this.idx(i1, j0, k0)] + u1 * field[this.idx(i1, j0, k1)]) +
-					t1 * (u0 * field[this.idx(i1, j1, k0)] + u1 * field[this.idx(i1, j1, k1)]))
+			(1 - sx) *
+				((1 - sy) * ((1 - sz) * field[i0j0k0] + sz * field[i0j0k1]) +
+					sy * ((1 - sz) * field[i0j1k0] + sz * field[i0j1k1])) +
+			sx *
+				((1 - sy) * ((1 - sz) * field[i1j0k0] + sz * field[i1j0k1]) +
+					sy * ((1 - sz) * field[i1j1k0] + sz * field[i1j1k1]))
 		);
 	}
 
@@ -255,35 +379,44 @@ export class FluidPhysics {
 		backward: Float32Array,
 		boundaryScale: number
 	): void {
-		for (let i = 1; i < this.gridSize - 1; i++) {
-			for (let j = 1; j < this.gridSize - 1; j++) {
-				for (let k = 1; k < this.gridSize - 1; k++) {
-					const index = this.idx(i, j, k);
+		// Pre-calculate offsets for neighbor access
+		const gridSize = this.gridSize;
+		const neighbors = {
+			left: -1,
+			right: 1,
+			bottom: -gridSize,
+			top: gridSize,
+			back: -this.gridSizeSquared,
+			front: this.gridSizeSquared
+		};
 
+		for (let i = 1; i < this.gridSizeMinus1; i++) {
+			for (let j = 1; j < this.gridSizeMinus1; j++) {
+				const rowOffset = i + j * gridSize;
+				for (let k = 1; k < this.gridSizeMinus1; k++) {
+					const index = rowOffset + k * this.gridSizeSquared;
+
+					// Apply MacCormack correction
 					const correction = (forward[index] - backward[index]) * 0.5;
 					d[index] = forward[index] + correction;
 
-					// Ensure monotonicity
-					const maxVal = Math.max(
-						d0[this.idx(i - 1, j, k)],
-						d0[this.idx(i + 1, j, k)],
-						d0[this.idx(i, j - 1, k)],
-						d0[this.idx(i, j + 1, k)],
-						d0[this.idx(i, j, k - 1)],
-						d0[this.idx(i, j, k + 1)]
-					);
-					const minVal = Math.min(
-						d0[this.idx(i - 1, j, k)],
-						d0[this.idx(i + 1, j, k)],
-						d0[this.idx(i, j - 1, k)],
-						d0[this.idx(i, j + 1, k)],
-						d0[this.idx(i, j, k - 1)],
-						d0[this.idx(i, j, k + 1)]
-					);
+					// Calculate min/max from neighbors more efficiently
+					let maxVal = d0[index];
+					let minVal = d0[index];
+
+					// Check neighbors with direct array access
+					for (const offset of Object.values(neighbors)) {
+						const neighborVal = d0[index + offset];
+						maxVal = Math.max(maxVal, neighborVal);
+						minVal = Math.min(minVal, neighborVal);
+					}
+
+					// Clamp value for monotonicity
 					d[index] = Math.max(minVal, Math.min(maxVal, d[index]));
 				}
 			}
 		}
+
 		this.applyBoundaryConditions(d, boundaryScale);
 	}
 
@@ -294,48 +427,72 @@ export class FluidPhysics {
 		temp: Float32Array,
 		temperature: Float32Array
 	): void {
-		// Calculate curl and vorticity
-		for (let i = 1; i < this.gridSize - 1; i++) {
-			for (let j = 1; j < this.gridSize - 1; j++) {
-				for (let k = 1; k < this.gridSize - 1; k++) {
-					const index = this.idx(i, j, k);
+		const halfDelta = 0.5;
+		const gridSize = this.gridSize;
+		const gridSizeSquared = this.gridSizeSquared;
 
-					const dwzdy = (velocZ[this.idx(i, j + 1, k)] - velocZ[this.idx(i, j - 1, k)]) * 0.5;
-					const dwydz = (velocY[this.idx(i, j, k + 1)] - velocY[this.idx(i, j, k - 1)]) * 0.5;
-					const dwxdz = (velocX[this.idx(i, j, k + 1)] - velocX[this.idx(i, j, k - 1)]) * 0.5;
-					const dwzdx = (velocZ[this.idx(i + 1, j, k)] - velocZ[this.idx(i - 1, j, k)]) * 0.5;
-					const dwydx = (velocY[this.idx(i + 1, j, k)] - velocY[this.idx(i - 1, j, k)]) * 0.5;
-					const dwxdy = (velocX[this.idx(i, j + 1, k)] - velocX[this.idx(i, j - 1, k)]) * 0.5;
+		// Pre-allocate arrays for curl components
+		const curlX = new Float32Array(gridSizeSquared * gridSize);
+		const curlY = new Float32Array(gridSizeSquared * gridSize);
+		const curlZ = new Float32Array(gridSizeSquared * gridSize);
 
-					temp[index] = Math.sqrt(
-						Math.pow(dwzdy - dwydz, 2) + Math.pow(dwxdz - dwzdx, 2) + Math.pow(dwydx - dwxdy, 2)
-					);
+		// Calculate curl components in separate passes for better cache usage
+		for (let i = 1; i < this.gridSizeMinus1; i++) {
+			for (let j = 1; j < this.gridSizeMinus1; j++) {
+				const rowOffset = i + j * gridSize;
+				for (let k = 1; k < this.gridSizeMinus1; k++) {
+					const index = rowOffset + k * gridSizeSquared;
+
+					// Calculate curl components with better memory access
+					const dwzdy = (velocZ[index + gridSize] - velocZ[index - gridSize]) * halfDelta;
+					const dwydz =
+						(velocY[index + gridSizeSquared] - velocY[index - gridSizeSquared]) * halfDelta;
+					const dwxdz =
+						(velocX[index + gridSizeSquared] - velocX[index - gridSizeSquared]) * halfDelta;
+					const dwzdx = (velocZ[index + 1] - velocZ[index - 1]) * halfDelta;
+					const dwydx = (velocY[index + 1] - velocY[index - 1]) * halfDelta;
+					const dwxdy = (velocX[index + gridSize] - velocX[index - gridSize]) * halfDelta;
+
+					// Store curl components
+					curlX[index] = dwzdy - dwydz;
+					curlY[index] = dwxdz - dwzdx;
+					curlZ[index] = dwydx - dwxdy;
+
+					// Calculate curl magnitude with turbulence
+					const turbulenceFactor = 1.0 + this.turbulenceFactor * temperature[index];
+					temp[index] =
+						Math.sqrt(
+							curlX[index] * curlX[index] +
+								curlY[index] * curlY[index] +
+								curlZ[index] * curlZ[index]
+						) * turbulenceFactor;
 				}
 			}
 		}
 
-		// Apply vorticity confinement force
-		const epsilon = this.vorticityStrength;
-		for (let i = 1; i < this.gridSize - 1; i++) {
-			for (let j = 1; j < this.gridSize - 1; j++) {
-				for (let k = 1; k < this.gridSize - 1; k++) {
-					const index = this.idx(i, j, k);
+		// Apply vorticity confinement in a separate pass
+		const vorticityScale = this.vorticityScale;
 
-					const dx = (temp[this.idx(i + 1, j, k)] - temp[this.idx(i - 1, j, k)]) * 0.5;
-					const dy = (temp[this.idx(i, j + 1, k)] - temp[this.idx(i, j - 1, k)]) * 0.5;
-					const dz = (temp[this.idx(i, j, k + 1)] - temp[this.idx(i, j, k - 1)]) * 0.5;
+		for (let i = 1; i < this.gridSizeMinus1; i++) {
+			for (let j = 1; j < this.gridSizeMinus1; j++) {
+				const rowOffset = i + j * gridSize;
+				for (let k = 1; k < this.gridSizeMinus1; k++) {
+					const index = rowOffset + k * gridSizeSquared;
 
-					const length = Math.sqrt(dx * dx + dy * dy + dz * dz) + 1e-5;
-					const nx = dx / length;
-					const ny = dy / length;
-					const nz = dz / length;
+					const dx = (temp[index + 1] - temp[index - 1]) * halfDelta;
+					const dy = (temp[index + gridSize] - temp[index - gridSize]) * halfDelta;
+					const dz = (temp[index + gridSizeSquared] - temp[index - gridSizeSquared]) * halfDelta;
 
-					const tempFactor = 1.0 + temperature[index] * 0.2;
-					const strength = epsilon * temp[index] * this.timeStep * tempFactor;
+					const lenSqr = dx * dx + dy * dy + dz * dz;
+					if (lenSqr > 1e-10) {
+						const len = Math.sqrt(lenSqr);
+						const strengthScale =
+							(vorticityScale * temp[index] * (1.0 + temperature[index] * this.temperature)) / len;
 
-					velocX[index] += strength * nx;
-					velocY[index] += strength * ny;
-					velocZ[index] += strength * nz;
+						velocX[index] += strengthScale * (dy * curlZ[index] - dz * curlY[index]);
+						velocY[index] += strengthScale * (dz * curlX[index] - dx * curlZ[index]);
+						velocZ[index] += strengthScale * (dx * curlY[index] - dy * curlX[index]);
+					}
 				}
 			}
 		}
@@ -352,14 +509,33 @@ export class FluidPhysics {
 				for (let k = 1; k < this.gridSize - 1; k++) {
 					const index = this.idx(i, j, k);
 
-					const buoyancy = temp[index] * this.temperature - dens[index] * this.densityCoef;
-					velocY[index] += (buoyancy + this.gravity * dens[index]) * this.timeStep;
+					// Enhanced buoyancy calculation using temperature and density
+					const buoyancyForce = temp[index] * this.temperature - dens[index] * this.densityCoef;
+					const finalBuoyancy = buoyancyForce * this.buoyancy;
 
-					// Wave dynamics
+					// Apply combined forces with gravity
+					velocY[index] += (finalBuoyancy + this.gravity * dens[index]) * this.timeStep;
+
+					// Wave dynamics with wavelength and damping
 					const height = pressure[index];
 					const targetHeight = dens[index];
-					const delta = (targetHeight - height) * 0.1;
+
+					// Apply wavelength and damping to wave motion
+					const waveStep = this.wavelength / this.gridSize;
+					const dampingFactor = 1.0 - this.damping;
+					const delta = (targetHeight - height) * dampingFactor * waveStep;
+
 					pressure[index] = height + delta;
+
+					// Apply surface tension to pressure field
+					if (j > 1 && j < this.gridSize - 2) {
+						const surfaceCurvature =
+							(pressure[this.idx(i, j + 1, k)] +
+								pressure[this.idx(i, j - 1, k)] -
+								2.0 * pressure[index]) *
+							this.surfaceTension;
+						pressure[index] += surfaceCurvature * this.timeStep;
+					}
 				}
 			}
 		}
@@ -372,49 +548,52 @@ export class FluidPhysics {
 		angularVelocity: THREE.Vector3,
 		rotation: THREE.Euler
 	): void {
-		const gridCenter = Math.floor(this.gridSize / 2);
-		const frictionCoeff = 0.98;
+		const frictionFactor = (1 - 0.98) * this.timeStep; // Pre-calculate friction
 		const rotationScale = 0.5;
+		const gravity = -9.81 * this.timeStep;
 
-		// Create rotation matrix from provided rotation
+		// Create rotation matrices once
 		const rotationMatrix = new THREE.Matrix4().makeRotationFromEuler(rotation);
 		const inverseRotation = new THREE.Matrix4().copy(rotationMatrix).invert();
 
-		for (let i = 1; i < this.gridSize - 1; i++) {
-			for (let j = 1; j < this.gridSize - 1; j++) {
-				for (let k = 1; k < this.gridSize - 1; k++) {
-					const index = this.idx(i, j, k);
+		// Pre-calculate inverse grid center for normalization
+		const invGridCenter = 1 / this.halfGridSize;
 
-					// Calculate position relative to center in local space
-					const relX = (i - gridCenter) / gridCenter;
-					const relY = (j - gridCenter) / gridCenter;
-					const relZ = (k - gridCenter) / gridCenter;
+		// Reuse vectors to avoid allocation
+		const localPos = new THREE.Vector3();
+		const worldPos = new THREE.Vector3();
+		const worldVel = new THREE.Vector3();
+		const worldGravity = new THREE.Vector3(0, gravity, 0).applyMatrix4(inverseRotation);
 
-					// Convert to world space
-					const localPos = new THREE.Vector3(relX, relY, relZ);
-					const worldPos = localPos.applyMatrix4(rotationMatrix);
+		for (let i = 1; i < this.gridSizeMinus1; i++) {
+			for (let j = 1; j < this.gridSizeMinus1; j++) {
+				const rowOffset = i + j * this.gridSize;
+				for (let k = 1; k < this.gridSizeMinus1; k++) {
+					const index = rowOffset + k * this.gridSizeSquared;
 
-					// Calculate tangential velocity in world space
-					const targetVelocX =
-						(angularVelocity.y * worldPos.z - angularVelocity.z * worldPos.y) * rotationScale;
-					const targetVelocY =
-						(angularVelocity.z * worldPos.x - angularVelocity.x * worldPos.z) * rotationScale;
-					const targetVelocZ =
-						(angularVelocity.x * worldPos.y - angularVelocity.y * worldPos.x) * rotationScale;
+					// Calculate normalized position relative to center
+					localPos.set(
+						(i - this.halfGridSize) * invGridCenter,
+						(j - this.halfGridSize) * invGridCenter,
+						(k - this.halfGridSize) * invGridCenter
+					);
 
-					// Convert velocity back to local space
-					const worldVel = new THREE.Vector3(targetVelocX, targetVelocY, targetVelocZ);
-					const localVel = worldVel.applyMatrix4(inverseRotation);
+					// Transform to world space
+					worldPos.copy(localPos).applyMatrix4(rotationMatrix);
 
-					// Apply forces with friction
-					velocX[index] += (localVel.x - velocX[index]) * (1 - frictionCoeff) * this.timeStep;
-					velocY[index] += (localVel.y - velocY[index]) * (1 - frictionCoeff) * this.timeStep;
-					velocZ[index] += (localVel.z - velocZ[index]) * (1 - frictionCoeff) * this.timeStep;
+					// Calculate tangential velocity directly
+					worldVel
+						.set(
+							(angularVelocity.y * worldPos.z - angularVelocity.z * worldPos.y) * rotationScale,
+							(angularVelocity.z * worldPos.x - angularVelocity.x * worldPos.z) * rotationScale,
+							(angularVelocity.x * worldPos.y - angularVelocity.y * worldPos.x) * rotationScale
+						)
+						.applyMatrix4(inverseRotation);
 
-					// Add gravity in world space
-					const gravity = -9.81 * this.timeStep;
-					const worldGravity = new THREE.Vector3(0, gravity, 0).applyMatrix4(inverseRotation);
-					velocY[index] += worldGravity.y;
+					// Apply forces with combined friction and timestep
+					velocX[index] += worldVel.x * frictionFactor;
+					velocY[index] += worldVel.y * frictionFactor + worldGravity.y;
+					velocZ[index] += worldVel.z * frictionFactor;
 				}
 			}
 		}

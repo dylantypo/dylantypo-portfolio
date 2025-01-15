@@ -186,8 +186,8 @@ export type FluidStore = {
 };
 
 export interface BufferPair {
-	readonly current: FluidState;
-	readonly next: FluidState;
+	current: FluidState;
+	next: FluidState;
 }
 
 // Enhanced WebGL Context with Resource Management

@@ -486,7 +486,6 @@
 		renderer = new THREE.WebGLRenderer({
 			antialias: true,
 			alpha: true,
-			// premultipliedAlpha: false,
 			preserveDrawingBuffer: false,
 			powerPreference: 'high-performance'
 		});
@@ -515,7 +514,7 @@
 		controls.dampingFactor = isMobile ? 0.2 : 0.05;
 		controls.rotateSpeed = isMobile ? 1.0 : 0.8;
 		controls.zoomSpeed = isMobile ? 1.2 : 0.8;
-		controls.minDistance = 6;
+		controls.minDistance = 2;
 		controls.maxDistance = 10;
 		controls.autoRotate = !isMobile;
 		controls.autoRotateSpeed = 0.75;

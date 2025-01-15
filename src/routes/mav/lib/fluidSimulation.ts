@@ -40,7 +40,7 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 	}
 
 	// Initialize buffers
-	const buffers = {
+	const buffers: BufferPair = {
 		current: createFluidState(N),
 		next: createFluidState(N)
 	};
@@ -69,55 +69,27 @@ export function useFluidSimulation(config: Partial<SimulationConfig> = {}) {
 		if (cfg.useWebGL && renderer.isInitialized()) {
 			renderer.updateSimulation(buffers.current, time);
 		} else {
-			physics.updateSimulation(buffers.current, time, activeRegions, spatialIndex);
-		}
+			// Copy current state to next buffer before modifications
+			for (const key in buffers.next) {
+				if (Object.prototype.hasOwnProperty.call(buffers.next, key)) {
+					const nextArray = buffers.next[key as keyof FluidState] as Float32Array;
+					const currentArray = buffers.current[key as keyof FluidState] as Float32Array;
+					nextArray.set(currentArray);
+				}
+			}
 
-		if (cfg.useSpatialIndex) {
-			updateActiveRegions();
+			physics.updateSimulation(buffers.next, buffers.current, time, activeRegions, spatialIndex);
+			swapBuffers();
 		}
 
 		updateStores();
 	}
 
-	// Update active regions with temporal coherence
-	function updateActiveRegions(): void {
-		const oldRegions = new Uint8Array(activeRegions);
-		activeRegions.fill(0);
-
-		// Update from spatial index
-		for (const index of spatialIndex) {
-			const x = Math.floor((index % N) / cellSize);
-			const y = Math.floor(((index / N) % N) / cellSize);
-			const z = Math.floor(index / (N * N) / cellSize);
-
-			// Mark current cell and neighbors as active
-			for (let dx = -1; dx <= 1; dx++) {
-				for (let dy = -1; dy <= 1; dy++) {
-					for (let dz = -1; dz <= 1; dz++) {
-						const nx = x + dx;
-						const ny = y + dy;
-						const nz = z + dz;
-						if (
-							nx >= 0 &&
-							nx < cellCount &&
-							ny >= 0 &&
-							ny < cellCount &&
-							nz >= 0 &&
-							nz < cellCount
-						) {
-							activeRegions[nx + ny * cellCount + nz * cellCount * cellCount] = 1;
-						}
-					}
-				}
-			}
-		}
-
-		// Add temporal coherence
-		for (let i = 0; i < activeRegions.length; i++) {
-			if (oldRegions[i] && !activeRegions[i]) {
-				activeRegions[i] = 0.5; // Keep region partially active
-			}
-		}
+	// Function to swap current and next buffers
+	function swapBuffers(): void {
+		const temp = buffers.current;
+		buffers.current = buffers.next;
+		buffers.next = temp;
 	}
 
 	// Public methods
