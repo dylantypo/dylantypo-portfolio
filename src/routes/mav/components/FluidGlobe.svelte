@@ -70,22 +70,22 @@
 		config: { gridSize: N }
 	} = useFluidSimulation({
 		gridSize: TEXTURE_SIZE,
-		iterations: 2,
-		viscosity: 0.000001,
-		diffusion: 0.000001,
+		iterations: 6,
+		viscosity: 0.0000001,
+		diffusion: 0.0000001,
 		useWebGL: true
 	});
 
 	const physics = new FluidPhysics({
 		gridSize: TEXTURE_SIZE,
-		iterations: 2,
-		viscosity: 0.000001,
-		diffusion: 0.000001,
+		iterations: 6,
+		viscosity: 0.0000001,
+		diffusion: 0.0000001,
 		timeStep: 1 / 60,
-		temperature: 0.5,
-		density: 1.0,
-		gravity: -9.81,
-		vorticityStrength: 0.15
+		temperature: 0.4,
+		density: 0.008,
+		gravity: -12.0,
+		vorticityStrength: 0.3
 	});
 
 	const textureConfig = {
@@ -192,11 +192,23 @@
 			heightField: { value: null },
 			iorAir: { value: 1.0 },
 			iorWater: { value: 1.333 },
-			lightPosition: { value: new THREE.Vector3(2, 2, -1).normalize() },
 			sphereCenter: { value: new THREE.Vector3(0, 0, 0) },
 			sphereRadius: { value: 1 },
 			fluidLevel: { value: -2.0 },
-			velocityTexture: { value: null }
+			velocityTexture: { value: null },
+			lightPositions: { value: [
+				new THREE.Vector3(2, 2, -1),
+				new THREE.Vector3(-2, 1, 2),
+				new THREE.Vector3(2, 3, 2),
+				new THREE.Vector3(-2, 2, -2)
+			]},
+			lightColors: { value: [
+				new THREE.Color(0xffffff),
+				new THREE.Color(0xffffff),
+				new THREE.Color(0x89cff0),
+				new THREE.Color(0x89cff0)
+			]},
+			lightIntensities: { value: [1.2, 0.8, 1.0, 0.8] },
 		},
 		vertexShader: `
 			uniform float time;
@@ -215,9 +227,9 @@
 				
 				// Calculate world position and add subtle waves
 				vec3 newPosition = position;
-				float wave = sin(position.x * 5.0 + time * 2.0) * 0.02 * 
+				float wave = sin(position.x * 5.0 + time * 2.0) * 0.03 * 
 							smoothstep(-2.0, 1.0, position.y) +
-							cos(position.z * 5.0 + time * 1.5) * 0.02 * 
+							cos(position.z * 5.0 + time * 1.5) * 0.03 * 
 							smoothstep(-2.0, 1.0, position.y);
 							
 				newPosition.y += wave;
@@ -235,12 +247,14 @@
 			uniform float time;
 			uniform vec3 fluidColor;
 			uniform vec3 lightColor;
-			uniform vec3 lightPosition;
 			uniform float iorAir;
 			uniform float iorWater;
 			uniform vec3 sphereCenter;
 			uniform float sphereRadius;
 			uniform float fluidLevel;
+			uniform vec3 lightPositions[4];
+			uniform vec3 lightColors[4];
+			uniform float lightIntensities[4];
 			
 			varying vec3 vPosition;
 			varying vec3 vNormal;
@@ -263,21 +277,70 @@
 				return 1.0e6;
 			}
 
+			vec3 calculateLighting(vec3 normal, vec3 viewDir, vec3 baseColor) {
+				vec3 finalColor = vec3(0.0);
+				
+				// Ambient contribution
+				vec3 ambient = baseColor * 0.3;
+				finalColor += ambient;
+
+				// Calculate contribution from each light
+				for(int i = 0; i < 4; i++) {
+					vec3 lightDir = normalize(lightPositions[i]);
+					vec3 lightColor = lightColors[i];
+					float intensity = lightIntensities[i];
+					
+					// Diffuse
+					float diff = max(dot(normal, lightDir), 0.0);
+					vec3 diffuse = diff * lightColor * baseColor;
+					
+					// Specular
+					vec3 halfwayDir = normalize(lightDir + viewDir);
+					float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
+					vec3 specular = spec * lightColor * 0.5;
+					
+					// Fresnel
+					float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 5.0);
+					
+					// Combine with intensity
+					finalColor += (diffuse + specular + fresnel * lightColor * 0.2) * intensity;
+				}
+
+				// Add rim lighting
+				float rim = 1.0 - max(dot(normal, viewDir), 0.0);
+				rim = pow(rim, 3.0);
+				finalColor += rim * vec3(0.2, 0.3, 0.4) * 0.3;
+
+				return finalColor;
+			}
+
 			vec3 getSurfaceRayColor(vec3 origin, vec3 ray, vec3 waterColor) {
 				vec3 color;
 				float q = intersectSphere(origin, ray);
+				
 				if (q < 1.0e6) {
 					vec3 point = origin + ray * q;
-					float caustic = pow(max(0.0, dot(
-						normalize(refract(-lightPosition, vec3(0.0, 1.0, 0.0), iorAir / iorWater)),
-						normalize(point - sphereCenter)
-					)), 5.0);
-					color = waterColor * (0.5 + caustic * 0.5);
-				} else if (ray.y < 0.0) {
-					color = waterColor * 0.5;
+					vec3 normal = normalize(point - sphereCenter);
+					vec3 viewDir = -ray;
+					
+					// Use new lighting calculation
+					color = calculateLighting(normal, viewDir, waterColor);
+					
+					// Add caustics
+					float causticIntensity = 0.0;
+					for(int i = 2; i < 4; i++) { // Only use caustic lights
+						vec3 lightDir = normalize(lightPositions[i]);
+						causticIntensity += pow(max(0.0, dot(
+							normalize(refract(-lightDir, vec3(0.0, 1.0, 0.0), iorAir / iorWater)),
+							normal
+						)), 5.0) * lightIntensities[i];
+					}
+					
+					color += waterColor * causticIntensity * 0.5;
 				} else {
-					color = waterColor + vec3(pow(max(0.0, dot(lightPosition, ray)), 5000.0)) * 0.5;
+					color = waterColor * 0.3;
 				}
+				
 				return color;
 			}
 			
@@ -286,8 +349,7 @@
 				return R0 + (1.0 - R0) * pow(1.0 - cosTheta, 5.0);
 			}
 			
-			float caustics(vec3 pos) {
-				vec3 lightDir = normalize(lightPosition);
+			float caustics(vec3 pos, vec3 lightDir) {
 				vec3 normalizedPos = normalize(pos);
 				float causticPattern = sin(normalizedPos.x * 10.0 + time) * 
 									cos(normalizedPos.z * 10.0 + time * 0.7) * 
@@ -297,39 +359,39 @@
 			
 			void main() {
 				vec3 normal = normalize(vNormal);
-				
-				// Use world Y position for water level check instead of local height
 				float worldHeight = vWorldPosition.y;
 				
 				if (worldHeight < fluidLevel) {
-						float cosTheta = max(0.0, dot(normal, vViewDir));
-						
-						vec3 reflectedRay = reflect(vViewDir, normal);
-						vec3 refractedRay = refract(vViewDir, normal, iorAir / iorWater);
-						
-						float fresnelTerm = fresnel(cosTheta);
-						
-						vec3 reflectedColor = getSurfaceRayColor(vWorldPos, reflectedRay, fluidColor);
-						vec3 refractedColor = getSurfaceRayColor(vWorldPos, refractedRay, fluidColor);
-						
-						vec3 finalColor = mix(refractedColor, reflectedColor, fresnelTerm);
-						
-						// Add foam at water level using local height
-						float waterLevelDist = abs(worldHeight - fluidLevel);
-						float foam = 1.0 - smoothstep(0.0, 0.1, waterLevelDist);
-						
-						// Add dynamic waves to foam
-						float waveOffset = sin(vPosition.x * 5.0 + time * 2.0) * 0.05 + 
-										cos(vPosition.z * 5.0 + time * 1.5) * 0.05;
-						foam *= 1.0 + waveOffset;
-						
-						finalColor += lightColor * foam * 0.5;
-						
-						// Add subtle waves to transparency
-						float transparency = 0.9 + sin(vPosition.x * 3.0 + time) * 0.05 + 
-												cos(vPosition.z * 3.0 + time * 1.2) * 0.05;
-						
-						gl_FragColor = vec4(finalColor, transparency);
+					float cosTheta = max(0.0, dot(normal, vViewDir));
+					vec3 reflectedRay = reflect(vViewDir, normal);
+					vec3 refractedRay = refract(vViewDir, normal, iorAir / iorWater);
+					float fresnelTerm = fresnel(cosTheta);
+					
+					vec3 reflectedColor = getSurfaceRayColor(vWorldPos, reflectedRay, fluidColor);
+					vec3 refractedColor = getSurfaceRayColor(vWorldPos, refractedRay, fluidColor);
+					vec3 finalColor = mix(refractedColor, reflectedColor, fresnelTerm);
+					
+					// Add foam with multi-light contribution
+					float waterLevelDist = abs(worldHeight - fluidLevel);
+					float foam = 1.0 - smoothstep(0.0, 0.1, waterLevelDist);
+					float waveOffset = sin(vPosition.x * 5.0 + time * 2.0) * 0.05 + 
+									cos(vPosition.z * 5.0 + time * 1.5) * 0.05;
+					foam *= 1.0 + waveOffset;
+					
+					// Add light contribution to foam
+					vec3 foamLight = vec3(0.0);
+					for(int i = 0; i < 4; i++) {
+						vec3 lightDir = normalize(lightPositions[i]);
+						float diff = max(dot(normal, lightDir), 0.0);
+						foamLight += lightColors[i] * diff * lightIntensities[i];
+					}
+					
+					finalColor += foam * foamLight * 0.5;
+					
+					float transparency = 0.9 + sin(vPosition.x * 3.0 + time) * 0.05 + 
+									cos(vPosition.z * 3.0 + time * 1.2) * 0.05;
+					
+					gl_FragColor = vec4(finalColor, transparency);
 				} else {
 					gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
 				}
@@ -454,19 +516,53 @@
 
 	function initLights() {
 		const lights = {
-			ambient: new THREE.AmbientLight(0xffffff, 0.2),
-			directional: new THREE.DirectionalLight(0xffffff, 0.8),
-			caustic: new THREE.SpotLight(0x89cff0, 0.85),
-			rimLight: new THREE.DirectionalLight(0xadd8e6, 0.3)
+			// Hemisphere light for ambient illumination from sky and ground
+			hemisphere: new THREE.HemisphereLight(0x89cff0, 0x404040, 0.7),
+			
+			// Main directional lights for key lighting
+			mainLight: new THREE.DirectionalLight(0xffffff, 1.0),
+			secondaryLight: new THREE.DirectionalLight(0xffffff, 0.6),
+			
+			// Spot lights for caustics and water highlights
+			causticPrimary: new THREE.SpotLight(0x89cff0, 0.8),
+			causticSecondary: new THREE.SpotLight(0x89cff0, 0.6),
+			
+			// Rim lights for edge definition
+			rimLight1: new THREE.DirectionalLight(0xadd8e6, 0.4),
+			rimLight2: new THREE.DirectionalLight(0xadd8e6, 0.3)
 		};
 
-		lights.directional.position.set(2, 2, -1);
-		lights.caustic.position.set(2, 3, 2);
-		lights.caustic.angle = Math.PI / 3;
-		lights.caustic.penumbra = 0.4;
-		lights.caustic.decay = 1.5;
-		lights.caustic.distance = 15;
-		lights.rimLight.position.set(-1, 0.5, -1);
+		// Position main lights
+		lights.mainLight.position.set(2, 2, -1);
+		lights.secondaryLight.position.set(-2, 1, 2);
+
+		// Setup caustic lights
+		lights.causticPrimary.position.set(2, 3, 2);
+		lights.causticPrimary.angle = Math.PI / 3;
+		lights.causticPrimary.penumbra = 0.4;
+		lights.causticPrimary.decay = 1.5;
+		lights.causticPrimary.distance = 15;
+
+		lights.causticSecondary.position.set(-2, 2, -2);
+		lights.causticSecondary.angle = Math.PI / 4;
+		lights.causticSecondary.penumbra = 0.5;
+		lights.causticSecondary.decay = 1.8;
+		lights.causticSecondary.distance = 12;
+
+		// Position rim lights for edge highlighting
+		lights.rimLight1.position.set(-1, 0.5, -1);
+		lights.rimLight2.position.set(1, -0.5, 1);
+
+		// Add shadow capabilities
+		const shadowLights = [lights.mainLight, lights.secondaryLight];
+		shadowLights.forEach(light => {
+			light.castShadow = true;
+			light.shadow.mapSize.width = 1024;
+			light.shadow.mapSize.height = 1024;
+			light.shadow.camera.near = 0.1;
+			light.shadow.camera.far = 20;
+			light.shadow.bias = -0.001;
+		});
 
 		Object.values(lights).forEach((light) => scene.add(light));
 	}
@@ -547,14 +643,32 @@
 		innerMaterial.uniforms.heightField.value = heightFieldTexture;
 		innerMaterial.uniforms.iorAir.value = IOR_AIR;
 		innerMaterial.uniforms.iorWater.value = IOR_WATER;
-		innerMaterial.uniforms.lightPosition.value = new THREE.Vector3(2, 2, -1).normalize();
 		innerMaterial.uniforms.sphereCenter.value = new THREE.Vector3(0, 0, 0);
-		innerMaterial.uniforms.sphereRadius.value = 2.0;
+		innerMaterial.uniforms.sphereRadius.value = 1.95;
 		innerMaterial.uniforms.fluidLevel.value = FILL_START; // Start at bottom
 		innerMaterial.uniforms.fluidTexture.value = fluidTexture;
 		innerMaterial.uniforms.velocityTexture.value = velocityTexture;
 		innerMaterial.uniforms.temperature = { value: 0.5 };
 		innerMaterial.needsUpdate = true;
+		innerMaterial.uniforms.lightPositions = {
+			value: [
+				new THREE.Vector3(2, 2, -1).normalize(),
+				new THREE.Vector3(-2, 1, 2).normalize(),
+				new THREE.Vector3(2, 3, 2).normalize(),
+				new THREE.Vector3(-2, 2, -2).normalize()
+			]
+		};
+		innerMaterial.uniforms.lightColors = {
+			value: [
+				new THREE.Color(0xffffff),
+				new THREE.Color(0xffffff),
+				new THREE.Color(0x89cff0),
+				new THREE.Color(0x89cff0)
+			]
+		};
+		innerMaterial.uniforms.lightIntensities = {
+			value: [1.2, 0.8, 1.0, 0.8]
+		};
 	}
 
 	// Optimized resize handler
@@ -651,17 +765,25 @@
 		for (let i = 0; i < heightFieldSize; i++) {
 			for (let j = 0; j < heightFieldSize; j++) {
 				const idx = (i * heightFieldSize + j) * 4;
-
+				
 				// Sample audio frequencies in a circular pattern
 				const angle = (Math.PI * 2 * j) / heightFieldSize;
 				const radius = i / heightFieldSize;
-				const freqIndex = Math.floor((radius * frequencies.length) / 4);
+				
+				// Map angle and radius to frequency bins
+				const angularBin = Math.floor((angle / (Math.PI * 2)) * binSize);
+				const radialBin = Math.floor(radius * binSize);
+				
+				// Combine angular and radial components for final frequency index
+				const freqIndex = Math.min(
+					Math.floor(angularBin + radialBin * binSize),
+					frequencies.length - 1
+				);
 
 				// Calculate height based on audio frequency and distance from center
 				let height = frequencies[freqIndex] / 255.0;
 				height *= Math.exp(-radius * 3); // Fade out from center
 
-				// Store height in red channel
 				heightFieldData[idx] = height;
 				heightFieldData[idx + 1] = 0;
 				heightFieldData[idx + 2] = 0;
@@ -733,7 +855,7 @@
 			const fluidScale = 1.0 - Math.min(globeDeformation * 0.5, 0.7);
 
 			// Combine frequency and waveform for force with scaled influence
-			const forceStrength = (freqAvg * 80 + waveAvg * 20) * averageFrequency * fluidScale;
+			const forceStrength = (freqAvg * 120 + waveAvg * 30) * averageFrequency * fluidScale;
 			addForce(x, y, z, forceStrength);
 
 			// Add velocity with waveform influence
@@ -741,21 +863,21 @@
 				x,
 				y,
 				z,
-				cos * freqAvg * 40 * (1 + waveAvg) * fluidScale,
-				sin * freqAvg * 40 * (1 + waveAvg) * fluidScale,
-				(Math.random() - 0.5) * freqAvg * 15 * (1 + waveAvg) * fluidScale
+				cos * freqAvg * 60 * (1 + waveAvg) * fluidScale,
+				sin * freqAvg * 60 * (1 + waveAvg) * fluidScale,
+				(Math.random() - 0.5) * freqAvg * 25 * (1 + waveAvg) * fluidScale
 			);
 
 			// Temperature influence through force and velocity
 			if (freqAvg > 0.5) {
-				const tempForce = freqAvg * 0.1 * fluidScale;
+				const tempForce = freqAvg * 0.2 * fluidScale;
 				const x = cos * thirdN + halfN;
 				const y = sin * thirdN + halfN;
 				const z = halfN;
 
 				// Add stronger vertical force and temperature at high frequencies
-				addForce(x, y, z, tempForce * 50);
-				addVelocity(x, y, z, 0, tempForce * 20, 0);
+				addForce(x, y, z, tempForce * 75);
+				addVelocity(x, y, z, 0, tempForce * 30, 0);
 
 				// Optionally update global temperature based on audio intensity
 				if (innerMaterial instanceof THREE.ShaderMaterial) {
@@ -900,18 +1022,6 @@
 				mesh.material.dispose();
 			}
 		});
-
-		// Dispose of all textures
-		function cleanupTextures() {
-			[fluidTexture, velocityTexture, heightFieldTexture, cubeRenderTarget].forEach((texture) => {
-				if (!texture) return;
-				if ('image' in texture && texture.image) {
-					// Create empty buffer instead of null
-					texture.image.data = new Float32Array(0);
-				}
-				texture.dispose();
-			});
-		}
 
 		// Dispose of materials with proper cleanup of uniforms
 		[outerMaterial, innerMaterial].forEach((material) => {
