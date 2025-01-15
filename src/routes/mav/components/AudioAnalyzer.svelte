@@ -1,48 +1,48 @@
 <script lang="ts">
-    import { onDestroy, createEventDispatcher } from 'svelte';
-	import type { 
-		AudioData, 
-		AudioBands, 
-		WaveformAnalysis, 
+	import { onDestroy, createEventDispatcher } from 'svelte';
+	import type {
+		AudioData,
+		AudioBands,
+		WaveformAnalysis,
 		AudioSettings,
-		FrequencyBand 
+		FrequencyBand
 	} from '../lib/types';
 
-    const dispatch = createEventDispatcher<{
-        audioData: AudioData;
-        error: string;
-        stateChange: boolean;
-    }>();
+	const dispatch = createEventDispatcher<{
+		audioData: AudioData;
+		error: string;
+		stateChange: boolean;
+	}>();
 
-    // Enhanced configuration
-    const FREQUENCY_BANDS: Record<string, FrequencyBand> = {
-		bass: { 
-			low: 20, 
+	// Enhanced configuration
+	const FREQUENCY_BANDS: Record<string, FrequencyBand> = {
+		bass: {
+			low: 20,
 			high: 140,
 			centerFrequency: 80,
 			bandwidth: 120
 		},
-		midLow: { 
-			low: 140, 
+		midLow: {
+			low: 140,
 			high: 400,
 			centerFrequency: 270,
 			bandwidth: 260
 		},
-		midHigh: { 
-			low: 400, 
+		midHigh: {
+			low: 400,
 			high: 2600,
 			centerFrequency: 1500,
 			bandwidth: 2200
 		},
-		treble: { 
-			low: 2600, 
+		treble: {
+			low: 2600,
 			high: 16000,
 			centerFrequency: 9300,
 			bandwidth: 13400
 		}
 	} as const;
 
-    const SETTINGS: AudioSettings = {
+	const SETTINGS: AudioSettings = {
 		fftSize: 2048,
 		smoothingTimeConstant: 0.85,
 		minDecibels: -90,
@@ -56,16 +56,16 @@
 		bandSplitFrequencies: [140, 400, 2600] // Split points between bands
 	};
 
-    // Audio state
-    let audioContext = $state<AudioContext | null>(null);
-    let analyser = $state<AnalyserNode | null>(null);
-    let isProcessing = $state(false);
-    let animationFrameId = $state<number | null>(null);
-    let lastProcessTime = $state(0);
-    let peakLevels = $state<Float32Array>(new Float32Array(4));
-    let averageEnergy = $state(0);
+	// Audio state
+	let audioContext = $state<AudioContext | null>(null);
+	let analyser = $state<AnalyserNode | null>(null);
+	let isProcessing = $state(false);
+	let animationFrameId = $state<number | null>(null);
+	let lastProcessTime = $state(0);
+	let peakLevels = $state<Float32Array>(new Float32Array(4));
+	let averageEnergy = $state(0);
 
-    // Enhanced error handling
+	// Enhanced error handling
 	type AudioError = {
 		type: 'permission' | 'setup' | 'processing' | 'context';
 		message: string;
@@ -119,10 +119,10 @@
 
 		const rms = Math.sqrt(sum / timeData.length);
 		const crest = peak / rms;
-		
+
 		// Calculate spectral centroid (weighted average of frequencies)
 		const spectralCentroid = weightedFreqSum / spectralSum;
-		
+
 		// Calculate spectral flatness (geometric mean / arithmetic mean)
 		const geometricMean = Math.exp(
 			timeData.reduce((sum, val) => sum + Math.log(Math.abs(val) + 1e-6), 0) / timeData.length
@@ -143,12 +143,7 @@
 		frequencies: Float32Array,
 		band: FrequencyBand
 	): { energy: number; centerFrequency: number } {
-		const energy = getFrequencyBandEnergy(
-			frequencies,
-			SETTINGS.sampleRate,
-			band.low,
-			band.high
-		);
+		const energy = getFrequencyBandEnergy(frequencies, SETTINGS.sampleRate, band.low, band.high);
 
 		return {
 			energy,
@@ -156,90 +151,90 @@
 		};
 	}
 
-    // Improved audio setup
-    export async function startAudioAnalysis(): Promise<boolean> {
-        try {
-            if (!audioContext) {
-                audioContext = new AudioContext({ sampleRate: SETTINGS.sampleRate });
-            } else if (audioContext.state === 'suspended') {
-                await audioContext.resume();
-            }
+	// Improved audio setup
+	export async function startAudioAnalysis(): Promise<boolean> {
+		try {
+			if (!audioContext) {
+				audioContext = new AudioContext({ sampleRate: SETTINGS.sampleRate });
+			} else if (audioContext.state === 'suspended') {
+				await audioContext.resume();
+			}
 
-            const stream = await navigator.mediaDevices.getUserMedia({
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true,
-                    channelCount: 1
-                }
-            });
+			const stream = await navigator.mediaDevices.getUserMedia({
+				audio: {
+					echoCancellation: true,
+					noiseSuppression: true,
+					autoGainControl: true,
+					channelCount: 1
+				}
+			});
 
-            if (!analyser) {
-                analyser = audioContext.createAnalyser();
-                Object.assign(analyser, {
-                    fftSize: SETTINGS.fftSize,
-                    smoothingTimeConstant: SETTINGS.smoothingTimeConstant,
-                    minDecibels: SETTINGS.minDecibels,
-                    maxDecibels: SETTINGS.maxDecibels
-                });
-            }
+			if (!analyser) {
+				analyser = audioContext.createAnalyser();
+				Object.assign(analyser, {
+					fftSize: SETTINGS.fftSize,
+					smoothingTimeConstant: SETTINGS.smoothingTimeConstant,
+					minDecibels: SETTINGS.minDecibels,
+					maxDecibels: SETTINGS.maxDecibels
+				});
+			}
 
-            const source = audioContext.createMediaStreamSource(stream);
-            const gainNode = audioContext.createGain();
-            const filter = audioContext.createBiquadFilter();
+			const source = audioContext.createMediaStreamSource(stream);
+			const gainNode = audioContext.createGain();
+			const filter = audioContext.createBiquadFilter();
 
-            filter.type = 'highpass';
-            filter.frequency.value = 20;
-            gainNode.gain.value = SETTINGS.gain;
+			filter.type = 'highpass';
+			filter.frequency.value = 20;
+			gainNode.gain.value = SETTINGS.gain;
 
-            source.connect(filter).connect(gainNode).connect(analyser);
+			source.connect(filter).connect(gainNode).connect(analyser);
 
-            isProcessing = true;
-            dispatch('stateChange', true);
-            processAudio();
-            return true;
-        } catch (err) {
-            const error = {
-                type: err instanceof Error && err.name === 'NotAllowedError' ? 'permission' : 'setup',
-                message: err instanceof Error ? err.message : 'Audio setup failed',
-                details: err
-            };
-            console.error('Audio setup error:', error);
-            dispatch('error', error.message);
-            return false;
-        }
-    }
+			isProcessing = true;
+			dispatch('stateChange', true);
+			processAudio();
+			return true;
+		} catch (err) {
+			const error = {
+				type: err instanceof Error && err.name === 'NotAllowedError' ? 'permission' : 'setup',
+				message: err instanceof Error ? err.message : 'Audio setup failed',
+				details: err
+			};
+			console.error('Audio setup error:', error);
+			dispatch('error', error.message);
+			return false;
+		}
+	}
 
-    // Streamlined cleanup function
-    export function stopAudioAnalysis() {
-        isProcessing = false;
-        dispatch('stateChange', false);
+	// Streamlined cleanup function
+	export function stopAudioAnalysis() {
+		isProcessing = false;
+		dispatch('stateChange', false);
 
-        if (animationFrameId) {
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null;
-        }
+		if (animationFrameId) {
+			cancelAnimationFrame(animationFrameId);
+			animationFrameId = null;
+		}
 
-        if (audioContext?.state === 'running') {
-            audioContext.suspend().then(() => {
-                cleanupAudioState();
-            });
-        } else {
-            cleanupAudioState();
-        }
-    }
+		if (audioContext?.state === 'running') {
+			audioContext.suspend().then(() => {
+				cleanupAudioState();
+			});
+		} else {
+			cleanupAudioState();
+		}
+	}
 
-    function cleanupAudioState() {
-        if (audioContext) {
-            audioContext.close();
-            audioContext = null;
-        }
-        analyser = null;
-        peakLevels = new Float32Array(4);
-        averageEnergy = 0;
-    }
+	function cleanupAudioState() {
+		if (audioContext) {
+			audioContext.close();
+			audioContext = null;
+		}
+		analyser = null;
+		peakLevels = new Float32Array(4);
+		averageEnergy = 0;
+	}
 
-    // Enhanced audio processing
+	// Enhanced audio processing
 	function processAudio() {
 		if (!analyser || !isProcessing) return;
 
@@ -263,7 +258,7 @@
 				const frequencies = frequencyData.map((db) => Math.pow(10, db / 20));
 
 				// Analyze frequency bands
-				const bandAnalysis = Object.entries(FREQUENCY_BANDS).map(([name, band]) => 
+				const bandAnalysis = Object.entries(FREQUENCY_BANDS).map(([name, band]) =>
 					analyzeBand(frequencies, band)
 				);
 
@@ -289,8 +284,8 @@
 				const waveformAnalysis = analyzeWaveform(timeData);
 
 				// Calculate overall energy with frequency weighting
-				const newEnergy = (Object.values(bands) as number[])
-					.reduce((sum, energy, i) => {
+				const newEnergy =
+					(Object.values(bands) as number[]).reduce((sum, energy, i) => {
 						const weight = Math.pow(SETTINGS.energyDistribution, i);
 						return sum + energy * weight;
 					}, 0) / Object.keys(bands).length;
@@ -328,7 +323,7 @@
 		analyze(performance.now());
 	}
 
-    onDestroy(() => {
-        stopAudioAnalysis();
-    });
+	onDestroy(() => {
+		stopAudioAnalysis();
+	});
 </script>

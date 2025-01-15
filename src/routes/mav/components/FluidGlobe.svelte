@@ -64,9 +64,9 @@
 		config: { gridSize: N }
 	} = useFluidSimulation({
 		gridSize: TEXTURE_SIZE,
-		iterations: 4,
-		viscosity: 0.0008,
-		diffusion: 0.0001,
+		iterations: 2,
+		viscosity: 0.000001,
+		diffusion: 0.000001,
 		useWebGL: true
 	});
 
@@ -105,7 +105,7 @@
 			fluidTexture: { value: fluidTexture },
 			time: { value: 0 },
 			crystalColor: { value: CRYSTAL_COLOR },
-			baseOpacity: { value: 0.025 },
+			baseOpacity: { value: 0.25 },
 			refractionStrength: { value: 0.1 },
 			audioIntensity: { value: 0.5 },
 			audioDeformation: { value: new THREE.Vector3(0, 0, 0) }
@@ -176,7 +176,7 @@
 			iorWater: { value: 1.333 },
 			lightPosition: { value: new THREE.Vector3(2, 2, -1).normalize() },
 			sphereCenter: { value: new THREE.Vector3(0, 0, 0) },
-			sphereRadius: { value: 2.0 },
+			sphereRadius: { value: 1 },
 			fluidLevel: { value: -2.0 },
 			velocityTexture: { value: null }
 		},
@@ -322,7 +322,7 @@
 	let fillStartTime = 0;
 	const FILL_DURATION = 3000; // 3 seconds to fill
 	const FILL_START = -1.95; // Start at bottom of sphere
-	const FILL_END = 0.75; // Fill to near top
+	const FILL_END = 0.15; // Fill to near top
 
 	function updateFluidLevel(currentTime: number) {
 		if (fillStartTime === 0) {
@@ -358,7 +358,7 @@
 	function initRenderer() {
 		renderer = new THREE.WebGLRenderer({
 			antialias: true,
-			alpha: false,
+			alpha: true,
 			powerPreference: 'high-performance'
 		});
 		renderer.setClearColor(0x000510);
@@ -377,7 +377,7 @@
 
 	function initCamera() {
 		camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-		camera.position.z = 5;
+		camera.position.z = 10;
 	}
 
 	function initControls() {
@@ -386,15 +386,15 @@
 		controls.dampingFactor = isMobile ? 0.2 : 0.05;
 		controls.rotateSpeed = isMobile ? 1.0 : 0.8;
 		controls.zoomSpeed = isMobile ? 1.2 : 0.8;
-		controls.minDistance = 3;
+		controls.minDistance = 6;
 		controls.maxDistance = 10;
 		controls.autoRotate = !isMobile;
-		controls.autoRotateSpeed = 0.5;
+		controls.autoRotateSpeed = 0.75;
 	}
 
 	function initMeshes() {
 		const perfectSphereGeometry = new THREE.SphereGeometry(2, 64, 64);
-		const oceanGeometry = new THREE.IcosahedronGeometry(1.98, 2);
+		const oceanGeometry = new THREE.IcosahedronGeometry(1.95, 2);
 
 		cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256);
 		cubeCamera = new THREE.CubeCamera(1, 1000, cubeRenderTarget);
@@ -416,7 +416,7 @@
 		const lights = {
 			ambient: new THREE.AmbientLight(0xffffff, 0.2),
 			directional: new THREE.DirectionalLight(0xffffff, 0.8),
-			caustic: new THREE.SpotLight(0x89cff0, 0.6),
+			caustic: new THREE.SpotLight(0x89cff0, 0.85),
 			rimLight: new THREE.DirectionalLight(0xadd8e6, 0.3)
 		};
 
@@ -462,8 +462,6 @@
 
 	// Initialize Three.js scene with optimizations
 	function initThree() {
-		console.log('Initializing Three.js scene');
-
 		try {
 			// Check WebGL support and setup polyfill
 			const supported = isOESTextureFloatLinearSupported();
@@ -542,7 +540,7 @@
 		const velocityXValue = $velocityX;
 		const velocityYValue = $velocityY;
 		const velocityZValue = $velocityZ;
-		const temperatureValue = $temperature; 
+		const temperatureValue = $temperature;
 
 		// Update main fluid texture
 		for (let i = 0; i < N * N * N; i++) {
@@ -550,7 +548,7 @@
 			textureData[i4] = densityValue[i];
 			textureData[i4 + 1] = velocityXValue[i];
 			textureData[i4 + 2] = velocityYValue[i];
-			textureData[i4 + 3] = temperatureValue[i]; 
+			textureData[i4 + 3] = temperatureValue[i];
 		}
 
 		// Set texture data with correct typing
@@ -714,11 +712,11 @@
 				const x = cos * thirdN + halfN;
 				const y = sin * thirdN + halfN;
 				const z = halfN;
-				
+
 				// Add stronger vertical force and temperature at high frequencies
 				addForce(x, y, z, tempForce * 50);
 				addVelocity(x, y, z, 0, tempForce * 20, 0);
-				
+
 				// Optionally update global temperature based on audio intensity
 				if (innerMaterial instanceof THREE.ShaderMaterial) {
 					innerMaterial.uniforms.temperature.value = Math.min(1.0, averageFrequency / 255.0);
