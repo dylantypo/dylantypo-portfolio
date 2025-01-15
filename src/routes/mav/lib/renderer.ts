@@ -14,30 +14,44 @@ export class FluidRenderer {
 	private _temperatureData: Float32Array | null = null;
 	private temperatureTexture: WebGLTexture | null = null;
 	private uniformLocations: UniformLocations;
+    private textureA: WebGLTexture | null = null;
+    private textureB: WebGLTexture | null = null;
 	private textureSize: number = 0;
+    private dropShader: WebGLProgram | null = null;
+    private updateShader: WebGLProgram | null = null;
 
 	constructor() {
-		this.uniformLocations = {
-			compute: {
-				position: null,
-				uTexture: null,
-				uDeltaTime: null,
-				uTemperature: null,
-				texelSize: null,
-				uTime: null
-			},
-			normal: {
-				position: null,
-				uTexture: null,
-				texelSize: null
-			},
-			caustics: {
-				position: null,
-				uTexture: null,
-				uTime: null
-			}
-		};
-	}
+        this.uniformLocations = {
+            compute: {
+                position: null,
+                uTexture: null,
+                uDeltaTime: null,
+                uTemperature: null,
+                texelSize: null,
+                uTime: null
+            },
+            normal: {
+                position: null,
+                uTexture: null,
+                texelSize: null,
+                delta: null
+            },
+            caustics: {
+                position: null,
+                uTexture: null,
+                uTime: null
+            },
+            drop: {
+                center: null,
+                radius: null,
+                strength: null
+            },
+            update: {
+                delta: null,
+                texture: null
+            }
+        };
+    }
 
 	init(canvas: HTMLCanvasElement, gridSize: number): boolean {
 		try {
@@ -68,6 +82,12 @@ export class FluidRenderer {
 	isInitialized(): boolean {
 		return this.gl !== null && this.computeProgram !== null;
 	}
+
+    private swapTextures(): void {
+        const temp = this.textureA;
+        this.textureA = this.textureB;
+        this.textureB = temp;
+    }
 
 	private setupShaderPrograms(): void {
 		if (!this.gl) return;
@@ -107,12 +127,13 @@ export class FluidRenderer {
 
 		// Set up uniform locations for normal program
 		if (this.normalProgram) {
-			this.uniformLocations.normal = {
-				position: this.gl.getAttribLocation(this.normalProgram, 'position'),
-				uTexture: this.gl.getUniformLocation(this.normalProgram, 'uTexture'),
-				texelSize: this.gl.getUniformLocation(this.normalProgram, 'texelSize')
-			};
-		}
+            this.uniformLocations.normal = {
+                position: this.gl.getAttribLocation(this.normalProgram, 'position'),
+                uTexture: this.gl.getUniformLocation(this.normalProgram, 'uTexture'),
+                texelSize: this.gl.getUniformLocation(this.normalProgram, 'texelSize'),
+                delta: this.gl.getUniformLocation(this.normalProgram, 'delta')
+            };
+        }
 
 		// Set up uniform locations for caustics program
 		if (this.causticsProgram) {
@@ -251,13 +272,83 @@ export class FluidRenderer {
 		return texture;
 	}
 
-	public updateSimulation(buffers: FluidState, time: number): void {
-		if (!this.isInitialized()) return;
+    private renderToTexture(targetTexture: WebGLTexture): void {
+        if (!this.gl) return;
+    
+        const framebuffer = this.gl.createFramebuffer();
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, framebuffer);
+        this.gl.framebufferTexture2D(
+            this.gl.FRAMEBUFFER,
+            this.gl.COLOR_ATTACHMENT0,
+            this.gl.TEXTURE_2D,
+            targetTexture,
+            0
+        );
+    
+        // Check framebuffer status
+        if (this.gl.checkFramebufferStatus(this.gl.FRAMEBUFFER) !== this.gl.FRAMEBUFFER_COMPLETE) {
+            console.error('Framebuffer not complete');
+            return;
+        }
+    
+        this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+        this.gl.deleteFramebuffer(framebuffer);
+    }
+    
+    private updateWaterSimulation(): void {
+        if (!this.gl || !this.updateShader) return;
+    
+        this.gl.useProgram(this.updateShader);
+        this.gl.uniform2f(
+            this.uniformLocations.update.delta,
+            1.0 / this.textureSize,
+            1.0 / this.textureSize
+        );
+    
+        this.renderToTexture(this.textureB!);
+        this.swapTextures();
+    }
 
-		const gridSize = Math.cbrt(buffers.density.length);
-		this.updateTextures(buffers, gridSize);
-		this.render(gridSize, time);
-	}
+    private updateNormals(): void {
+        if (!this.gl || !this.normalProgram) return;
+    
+        this.gl.useProgram(this.normalProgram);
+        this.gl.uniform2f(
+            this.uniformLocations.normal.delta,
+            1.0 / this.textureSize,
+            1.0 / this.textureSize
+        );
+    
+        // Sample neighboring heights to calculate normals
+        this.renderToTexture(this.textureB!);
+        this.swapTextures();
+    }
+
+    public addDrop(x: number, y: number, radius: number, strength: number): void {
+        if (!this.gl || !this.dropShader) return;
+    
+        this.gl.useProgram(this.dropShader);
+        this.gl.uniform2f(this.uniformLocations.drop.center, x, y);
+        this.gl.uniform1f(this.uniformLocations.drop.radius, radius);
+        this.gl.uniform1f(this.uniformLocations.drop.strength, strength);
+    
+        this.renderToTexture(this.textureB!);
+        this.swapTextures();
+    }
+
+	public updateSimulation(buffers: FluidState, time: number): void {
+        if (!this.isInitialized()) return;
+        
+        const gridSize = Math.cbrt(buffers.density.length);
+        
+        // Update water physics
+        this.updateWaterSimulation();
+        // Update normal maps
+        this.updateNormals();
+        // Update main simulation
+        this.updateTextures(buffers, gridSize);
+        this.render(gridSize, time);
+    }
 
 	public render(gridSize: number, time: number): void {
 		if (!this.gl || !this.computeProgram || !this.velocityTexture || !this.temperatureTexture)

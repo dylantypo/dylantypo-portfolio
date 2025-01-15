@@ -22,12 +22,12 @@ export const DEFAULT_CONFIG: SimulationConfig = {
 	turbulenceFactor: 0.1,
 
 	// Water effects
-	wavelength: 4.0,
+	wavelength: 10.0,
 	damping: 0.985,
 	causticStrength: 0.75,
 	normalStrength: 1.0,
 	refractionRatio: 0.98,
-	foamThreshold: 0.65,
+	foamThreshold: 0.99,
 
 	// Optimization flags
 	useWebGL: true,

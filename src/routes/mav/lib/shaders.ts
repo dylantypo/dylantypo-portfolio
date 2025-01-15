@@ -100,12 +100,52 @@ export const CAUSTICS_SHADER = `
     }
 `;
 
+export const WATER_SHADERS = {
+    drop: `
+        const float PI = 3.141592653589793;
+        uniform sampler2D texture;
+        uniform vec2 center;
+        uniform float radius;
+        uniform float strength;
+        varying vec2 coord;
+        void main() {
+            vec4 info = texture2D(texture, coord);
+            float drop = max(0.0, 1.0 - length(center * 0.5 + 0.5 - coord) / radius);
+            drop = 0.5 - cos(drop * PI) * 0.5;
+            info.r += drop * strength;
+            gl_FragColor = info;
+        }
+    `,
+    update: `
+        uniform sampler2D texture;
+        uniform vec2 delta;
+        varying vec2 coord;
+        void main() {
+            vec4 info = texture2D(texture, coord);
+            
+            float average = (
+                texture2D(texture, coord - vec2(delta.x, 0.0)).r +
+                texture2D(texture, coord - vec2(0.0, delta.y)).r +
+                texture2D(texture, coord + vec2(delta.x, 0.0)).r +
+                texture2D(texture, coord + vec2(0.0, delta.y)).r
+            ) * 0.25;
+            
+            info.g += (average - info.r) * 2.0;
+            info.g *= 0.995; // Wave attenuation
+            info.r += info.g;
+            
+            gl_FragColor = info;
+        }
+    `
+};
+
 // Group shaders for easier access
 export const SHADERS = {
 	vertex: VERTEX_SHADER,
 	fragment: FRAGMENT_SHADER,
 	normal: NORMAL_SHADER,
-	caustics: CAUSTICS_SHADER
+	caustics: CAUSTICS_SHADER,
+    water: WATER_SHADERS
 } as const;
 
 // Types for shader uniforms

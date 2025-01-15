@@ -30,11 +30,24 @@ export interface TextureConfig {
 	unpackAlignment?: number;
 }
 
+export interface DropUniforms {
+    center: WebGLUniformLocation | null;
+    radius: WebGLUniformLocation | null;
+    strength: WebGLUniformLocation | null;
+}
+
+export interface UpdateUniforms {
+    delta: WebGLUniformLocation | null;
+    texture: WebGLUniformLocation | null;
+}
+
 // Organized Uniform Locations
 export interface UniformLocations {
 	compute: ComputeUniforms;
 	normal: NormalUniforms;
 	caustics: CausticUniforms;
+    drop: DropUniforms;
+    update: UpdateUniforms;
 }
 
 export interface ComputeUniforms {
@@ -50,6 +63,7 @@ export interface NormalUniforms {
 	position: number | null;
 	uTexture: WebGLUniformLocation | null;
 	texelSize: WebGLUniformLocation | null;
+    delta: WebGLUniformLocation | null;
 }
 
 export interface CausticUniforms {
