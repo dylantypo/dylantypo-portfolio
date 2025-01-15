@@ -53,9 +53,20 @@
 	const IOR_AIR = 1.0;
 	const IOR_WATER = 1.333;
 
-	const FLUID_COLOR = new THREE.Color(0x006994); // Deeper blue
-	const LIGHT_COLOR = new THREE.Color(0x89cff0); // Light blue for foam/surface
+	const FLUID_COLOR = new THREE.Color(0x3a8fbd); // Brighter blue-teal, more saturated
+	const LIGHT_COLOR = new THREE.Color(0x6fbcd1); // Lighter, more translucent blue-green
+	const FLUID_RADIUS = 1.95;
+
 	const CRYSTAL_COLOR = new THREE.Color(0xffffff); // Pure white for crystal
+	const CRYSTAL_OPACITY = 0.025;
+	const CRYSTAL_REFRACTION = 0.15;
+	const CRYSTAL_RADIUS = 2;
+
+	// Fluid fill animation parameters
+	let fillStartTime = 0;
+	const FILL_DURATION = 2500; // 2.5 seconds to fill
+	const FILL_START = -2.5; // Start at bottom of sphere
+	const FILL_END = -0.35; // Fill to near top
 
 	// Simulation setup
 	const {
@@ -123,8 +134,8 @@
 			fluidTexture: { value: fluidTexture },
 			time: { value: 0 },
 			crystalColor: { value: CRYSTAL_COLOR },
-			baseOpacity: { value: 0.25 },
-			refractionStrength: { value: 0.1 },
+			baseOpacity: { value: CRYSTAL_OPACITY },
+			refractionStrength: { value: CRYSTAL_REFRACTION },
 			audioIntensity: { value: 0.5 },
 			audioDeformation: { value: new THREE.Vector3(0, 0, 0) }
 		},
@@ -187,28 +198,32 @@
 		uniforms: {
 			fluidTexture: { value: fluidTexture },
 			time: { value: 0 },
-			fluidColor: { value: new THREE.Color(0x006994) }, // Deep blue
-			lightColor: { value: new THREE.Color(0x89cff0) }, // Light blue
+			fluidColor: { value: FLUID_COLOR }, // Deep blue
+			lightColor: { value: LIGHT_COLOR }, // Light blue
 			heightField: { value: null },
-			iorAir: { value: 1.0 },
-			iorWater: { value: 1.333 },
+			iorAir: { value: IOR_AIR },
+			iorWater: { value: IOR_WATER },
 			sphereCenter: { value: new THREE.Vector3(0, 0, 0) },
-			sphereRadius: { value: 1 },
-			fluidLevel: { value: -2.0 },
+			sphereRadius: { value: FLUID_RADIUS },
+			fluidLevel: { value: FILL_START },
 			velocityTexture: { value: null },
-			lightPositions: { value: [
-				new THREE.Vector3(2, 2, -1),
-				new THREE.Vector3(-2, 1, 2),
-				new THREE.Vector3(2, 3, 2),
-				new THREE.Vector3(-2, 2, -2)
-			]},
-			lightColors: { value: [
-				new THREE.Color(0xffffff),
-				new THREE.Color(0xffffff),
-				new THREE.Color(0x89cff0),
-				new THREE.Color(0x89cff0)
-			]},
-			lightIntensities: { value: [1.2, 0.8, 1.0, 0.8] },
+			lightPositions: {
+				value: [
+					new THREE.Vector3(0, 2, 2).normalize(), // Main light
+					new THREE.Vector3(-2, 1, -1).normalize(), // Secondary light
+					new THREE.Vector3(1, 2, 1).normalize(), // Caustic primary
+					new THREE.Vector3(-1, 1.5, -1).normalize() // Caustic secondary
+				]
+			},
+			lightColors: {
+				value: [
+					new THREE.Color(0xffffff).multiplyScalar(1.2),
+					new THREE.Color(0xffffff),
+					new THREE.Color(0x89cff0).multiplyScalar(1.1),
+					new THREE.Color(0x89cff0)
+				]
+			},
+			lightIntensities: { value: [1.2, 0.8, 1.0, 0.7] }
 		},
 		vertexShader: `
 			uniform float time;
@@ -218,14 +233,13 @@
 			varying vec3 vViewDir;
 			varying vec3 vWorldPos;
 			varying mat4 vModelMatrix;
-			varying vec3 vWorldPosition;
+			varying vec3 vViewPosition;
 			
 			void main() {
 				vUv = uv;
 				vNormal = normalize(normalMatrix * normal);
 				vPosition = position;
 				
-				// Calculate world position and add subtle waves
 				vec3 newPosition = position;
 				float wave = sin(position.x * 5.0 + time * 2.0) * 0.03 * 
 							smoothstep(-2.0, 1.0, position.y) +
@@ -235,12 +249,14 @@
 				newPosition.y += wave;
 				
 				vec4 worldPos = modelMatrix * vec4(newPosition, 1.0);
+				vec4 viewPos = viewMatrix * worldPos;  // Calculate view space position
+				
 				vWorldPos = worldPos.xyz;
-				vWorldPosition = worldPos.xyz;  // Store world position
+				vViewPosition = viewPos.xyz;  // Store view space position
 				vViewDir = normalize(cameraPosition - worldPos.xyz);
 				vModelMatrix = modelMatrix;
 				
-				gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
+				gl_Position = projectionMatrix * viewPos;
 			}`,
 		fragmentShader: `
 			uniform sampler2D fluidTexture;
@@ -262,7 +278,7 @@
 			varying vec3 vViewDir;
 			varying vec3 vWorldPos;
 			varying mat4 vModelMatrix;
-			varying vec3 vWorldPosition;
+			varying vec3 vViewPosition;
 			
 			float intersectSphere(vec3 origin, vec3 ray) {
 				vec3 toSphere = origin - sphereCenter;
@@ -280,8 +296,8 @@
 			vec3 calculateLighting(vec3 normal, vec3 viewDir, vec3 baseColor) {
 				vec3 finalColor = vec3(0.0);
 				
-				// Ambient contribution
-				vec3 ambient = baseColor * 0.3;
+				// Adjusted ambient contribution
+				vec3 ambient = baseColor * 0.2;  // Reduced ambient
 				finalColor += ambient;
 
 				// Calculate contribution from each light
@@ -290,26 +306,29 @@
 					vec3 lightColor = lightColors[i];
 					float intensity = lightIntensities[i];
 					
-					// Diffuse
+					// Enhanced diffuse with view-dependent falloff
 					float diff = max(dot(normal, lightDir), 0.0);
-					vec3 diffuse = diff * lightColor * baseColor;
+					float viewFactor = pow(max(dot(viewDir, lightDir), 0.0), 0.5);
+					vec3 diffuse = diff * lightColor * baseColor * mix(0.7, 1.0, viewFactor);
 					
-					// Specular
+					// Adjusted specular for water surface
 					vec3 halfwayDir = normalize(lightDir + viewDir);
-					float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
-					vec3 specular = spec * lightColor * 0.5;
+					float spec = pow(max(dot(normal, halfwayDir), 0.0), 64.0);  // Increased shininess
+					vec3 specular = spec * lightColor * 0.8;  // Increased specular intensity
 					
-					// Fresnel
-					float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 5.0);
+					// Enhanced fresnel effect
+					float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 4.0);
 					
-					// Combine with intensity
-					finalColor += (diffuse + specular + fresnel * lightColor * 0.2) * intensity;
+					// Combine with intensity and view-dependent factors
+					float viewDist = length(vViewPosition);
+					float distanceFalloff = 1.0 - smoothstep(0.0, 8.0, viewDist);
+					
+					finalColor += (diffuse + specular * fresnel) * intensity * mix(0.8, 1.0, distanceFalloff);
 				}
 
-				// Add rim lighting
-				float rim = 1.0 - max(dot(normal, viewDir), 0.0);
-				rim = pow(rim, 3.0);
-				finalColor += rim * vec3(0.2, 0.3, 0.4) * 0.3;
+				// Enhanced rim lighting
+				float rim = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.0);
+				finalColor += rim * vec3(0.2, 0.3, 0.4) * 0.4;
 
 				return finalColor;
 			}
@@ -346,7 +365,7 @@
 			
 			float fresnel(float cosTheta) {
 				float R0 = pow((iorAir - iorWater) / (iorAir + iorWater), 2.0);
-				return R0 + (1.0 - R0) * pow(1.0 - cosTheta, 5.0);
+				return R0 + (1.0 - R0) * pow(1.0 - cosTheta, 3.0);
 			}
 			
 			float caustics(vec3 pos, vec3 lightDir) {
@@ -359,9 +378,12 @@
 			
 			void main() {
 				vec3 normal = normalize(vNormal);
-				float worldHeight = vWorldPosition.y;
 				
-				if (worldHeight < fluidLevel) {
+				// Use view space Y coordinate for fluid level check
+				float viewHeight = vViewPosition.y;
+				
+				// Adjust fluid level check to view space
+				if (viewHeight < (fluidLevel + sin(vViewPosition.x * 0.5 + time) * 0.1)) {
 					float cosTheta = max(0.0, dot(normal, vViewDir));
 					vec3 reflectedRay = reflect(vViewDir, normal);
 					vec3 refractedRay = refract(vViewDir, normal, iorAir / iorWater);
@@ -369,16 +391,37 @@
 					
 					vec3 reflectedColor = getSurfaceRayColor(vWorldPos, reflectedRay, fluidColor);
 					vec3 refractedColor = getSurfaceRayColor(vWorldPos, refractedRay, fluidColor);
-					vec3 finalColor = mix(refractedColor, reflectedColor, fresnelTerm);
 					
-					// Add foam with multi-light contribution
-					float waterLevelDist = abs(worldHeight - fluidLevel);
+					// Adjust mix ratio to favor reflections while maintaining transparency
+					float reflectionStrength = mix(0.3, 0.7, fresnelTerm);
+					vec3 finalColor = mix(refractedColor, reflectedColor, reflectionStrength);
+					
+					// Add underwater depth effect
+					float depth = abs(viewHeight - fluidLevel);
+					float underwaterFactor = exp(-depth * 0.5);
+					finalColor = mix(fluidColor * 0.5, finalColor, underwaterFactor);
+					
+					// Enhance specular highlights
+					vec3 specularColor = vec3(0.0);
+					for(int i = 0; i < 4; i++) {
+						vec3 lightDir = normalize(lightPositions[i]);
+						vec3 halfwayDir = normalize(lightDir + vViewDir);
+						float spec = pow(max(dot(normal, halfwayDir), 0.0), 64.0);
+						specularColor += lightColors[i] * spec * lightIntensities[i] * 0.5;
+					}
+					finalColor += specularColor;
+					
+					// Add foam with adjusted transparency
+					float waterLevelDist = abs(viewHeight - fluidLevel);
 					float foam = 1.0 - smoothstep(0.0, 0.1, waterLevelDist);
-					float waveOffset = sin(vPosition.x * 5.0 + time * 2.0) * 0.05 + 
-									cos(vPosition.z * 5.0 + time * 1.5) * 0.05;
+					float waveOffset = sin(vViewPosition.x * 5.0 + time * 2.0) * 0.05 + 
+									cos(vViewPosition.z * 5.0 + time * 1.5) * 0.05;
 					foam *= 1.0 + waveOffset;
 					
-					// Add light contribution to foam
+					// View-dependent foam
+					float viewFoamFactor = 1.0 - abs(dot(normal, vec3(0.0, 1.0, 0.0)));
+					foam *= viewFoamFactor * 0.5;
+					
 					vec3 foamLight = vec3(0.0);
 					for(int i = 0; i < 4; i++) {
 						vec3 lightDir = normalize(lightPositions[i]);
@@ -388,8 +431,11 @@
 					
 					finalColor += foam * foamLight * 0.5;
 					
-					float transparency = 0.9 + sin(vPosition.x * 3.0 + time) * 0.05 + 
-									cos(vPosition.z * 3.0 + time * 1.2) * 0.05;
+					// View and depth-dependent transparency
+					float baseTransparency = 0.7;  // Increased base transparency
+					float depthFactor = exp(-depth * 0.3);  // Slower depth falloff
+					float viewFactor = pow(1.0 - abs(dot(normal, vViewDir)), 2.0);
+					float transparency = mix(baseTransparency, 0.95, viewFactor * depthFactor);
 					
 					gl_FragColor = vec4(finalColor, transparency);
 				} else {
@@ -400,12 +446,6 @@
 		side: THREE.BackSide,
 		blending: THREE.AdditiveBlending
 	});
-
-	// Fluid fill animation parameters
-	let fillStartTime = 0;
-	const FILL_DURATION = 3000; // 3 seconds to fill
-	const FILL_START = -1.95; // Start at bottom of sphere
-	const FILL_END = 0.15; // Fill to near top
 
 	function updateFluidLevel(currentTime: number) {
 		if (fillStartTime === 0) {
@@ -418,9 +458,13 @@
 		// Smoother easing function
 		const t = progress < 0.5 ? 4 * Math.pow(progress, 3) : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
-		const fluidLevel = FILL_START + (FILL_END - FILL_START) * t;
-		if (innerMaterial instanceof THREE.ShaderMaterial) {
-			innerMaterial.uniforms.fluidLevel.value = fluidLevel;
+		if (innerMaterial instanceof THREE.ShaderMaterial && camera) {
+			// Add subtle adjustment based on camera angle
+			const cameraAngle = Math.atan2(camera.position.z, camera.position.x);
+			const fluidAdjustment = Math.sin(cameraAngle) * 0.1;
+
+			innerMaterial.uniforms.fluidLevel.value =
+				FILL_START + (FILL_END - FILL_START) * t + fluidAdjustment;
 		}
 	}
 
@@ -442,9 +486,11 @@
 		renderer = new THREE.WebGLRenderer({
 			antialias: true,
 			alpha: true,
+			// premultipliedAlpha: false,
+			preserveDrawingBuffer: false,
 			powerPreference: 'high-performance'
 		});
-		renderer.setClearColor(0x000510);
+		renderer.setClearColor(0x000000, 0.1); // Set to transparent
 		renderer.setSize(window.innerWidth, window.innerHeight);
 		renderer.setPixelRatio(
 			isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2)
@@ -455,12 +501,12 @@
 
 	function initScene() {
 		scene = new THREE.Scene();
-		scene.background = new THREE.Color(0x000510);
+		scene.background = null;
 	}
 
 	function initCamera() {
 		camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-		camera.position.z = 10;
+		camera.position.z = 8;
 	}
 
 	function initControls() {
@@ -495,8 +541,8 @@
 	}
 
 	function initMeshes() {
-		const perfectSphereGeometry = new THREE.SphereGeometry(2, 64, 64);
-		const oceanGeometry = new THREE.IcosahedronGeometry(1.95, 2);
+		const perfectSphereGeometry = new THREE.SphereGeometry(CRYSTAL_RADIUS, 64, 64);
+		const oceanGeometry = new THREE.SphereGeometry(FLUID_RADIUS, 64, 64);
 
 		cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256);
 		cubeCamera = new THREE.CubeCamera(1, 1000, cubeRenderTarget);
@@ -510,6 +556,10 @@
 		innerGlobe.castShadow = true;
 		innerGlobe.receiveShadow = true;
 
+		// Proper rendering order
+		globe.renderOrder = 1;
+		innerGlobe.renderOrder = 2;
+
 		scene.add(globe);
 		scene.add(innerGlobe);
 	}
@@ -517,23 +567,23 @@
 	function initLights() {
 		const lights = {
 			// Hemisphere light for ambient illumination from sky and ground
-			hemisphere: new THREE.HemisphereLight(0x89cff0, 0x404040, 0.7),
-			
+			hemisphere: new THREE.HemisphereLight(0x89cff0, 0x404040, 0.5),
+
 			// Main directional lights for key lighting
-			mainLight: new THREE.DirectionalLight(0xffffff, 1.0),
-			secondaryLight: new THREE.DirectionalLight(0xffffff, 0.6),
-			
+			mainLight: new THREE.DirectionalLight(0xffffff, 0.85),
+			secondaryLight: new THREE.DirectionalLight(0xffffff, 0.5),
+
 			// Spot lights for caustics and water highlights
 			causticPrimary: new THREE.SpotLight(0x89cff0, 0.8),
 			causticSecondary: new THREE.SpotLight(0x89cff0, 0.6),
-			
+
 			// Rim lights for edge definition
 			rimLight1: new THREE.DirectionalLight(0xadd8e6, 0.4),
 			rimLight2: new THREE.DirectionalLight(0xadd8e6, 0.3)
 		};
 
 		// Position main lights
-		lights.mainLight.position.set(2, 2, -1);
+		lights.mainLight.position.set(0, 2, 2);
 		lights.secondaryLight.position.set(-2, 1, 2);
 
 		// Setup caustic lights
@@ -555,13 +605,13 @@
 
 		// Add shadow capabilities
 		const shadowLights = [lights.mainLight, lights.secondaryLight];
-		shadowLights.forEach(light => {
+		shadowLights.forEach((light) => {
 			light.castShadow = true;
 			light.shadow.mapSize.width = 1024;
 			light.shadow.mapSize.height = 1024;
 			light.shadow.camera.near = 0.1;
-			light.shadow.camera.far = 20;
-			light.shadow.bias = -0.001;
+			light.shadow.camera.far = 15;
+			light.shadow.bias = -0.0005;
 		});
 
 		Object.values(lights).forEach((light) => scene.add(light));
@@ -632,8 +682,8 @@
 		// Update outer material uniforms
 		outerMaterial.uniforms.time.value = 0;
 		outerMaterial.uniforms.crystalColor.value = CRYSTAL_COLOR;
-		outerMaterial.uniforms.baseOpacity.value = 0.05;
-		outerMaterial.uniforms.refractionStrength.value = 0.5;
+		outerMaterial.uniforms.baseOpacity.value = CRYSTAL_OPACITY;
+		outerMaterial.uniforms.refractionStrength.value = CRYSTAL_REFRACTION;
 		outerMaterial.needsUpdate = true;
 
 		// Update inner material uniforms
@@ -652,23 +702,28 @@
 		innerMaterial.needsUpdate = true;
 		innerMaterial.uniforms.lightPositions = {
 			value: [
-				new THREE.Vector3(2, 2, -1).normalize(),
-				new THREE.Vector3(-2, 1, 2).normalize(),
-				new THREE.Vector3(2, 3, 2).normalize(),
-				new THREE.Vector3(-2, 2, -2).normalize()
+				new THREE.Vector3(0, 2, 2).normalize(), // Main light
+				new THREE.Vector3(-2, 1, -1).normalize(), // Secondary light
+				new THREE.Vector3(1, 2, 1).normalize(), // Caustic primary
+				new THREE.Vector3(-1, 1.5, -1).normalize() // Caustic secondary
 			]
 		};
 		innerMaterial.uniforms.lightColors = {
 			value: [
+				new THREE.Color(0xffffff).multiplyScalar(1.2),
 				new THREE.Color(0xffffff),
-				new THREE.Color(0xffffff),
-				new THREE.Color(0x89cff0),
+				new THREE.Color(0x89cff0).multiplyScalar(1.1),
 				new THREE.Color(0x89cff0)
 			]
 		};
 		innerMaterial.uniforms.lightIntensities = {
-			value: [1.2, 0.8, 1.0, 0.8]
+			value: [1.2, 0.8, 1.0, 0.7]
 		};
+		innerMaterial.blending = THREE.CustomBlending;
+		innerMaterial.blendSrc = THREE.SrcAlphaFactor;
+		innerMaterial.blendDst = THREE.OneMinusSrcAlphaFactor;
+		innerMaterial.transparent = true;
+		innerMaterial.needsUpdate = true;
 	}
 
 	// Optimized resize handler
@@ -765,15 +820,15 @@
 		for (let i = 0; i < heightFieldSize; i++) {
 			for (let j = 0; j < heightFieldSize; j++) {
 				const idx = (i * heightFieldSize + j) * 4;
-				
+
 				// Sample audio frequencies in a circular pattern
 				const angle = (Math.PI * 2 * j) / heightFieldSize;
 				const radius = i / heightFieldSize;
-				
+
 				// Map angle and radius to frequency bins
 				const angularBin = Math.floor((angle / (Math.PI * 2)) * binSize);
 				const radialBin = Math.floor(radius * binSize);
-				
+
 				// Combine angular and radial components for final frequency index
 				const freqIndex = Math.min(
 					Math.floor(angularBin + radialBin * binSize),
@@ -1135,26 +1190,131 @@
 		top: 0;
 		left: 0;
 		overflow: hidden;
-		transform: translateZ(0);
-		will-change: transform;
-		backface-visibility: hidden;
-		perspective: 1000;
-		background: radial-gradient(circle at center, #000510 0%, #000000 100%);
 		touch-action: none;
 		-webkit-touch-callout: none;
 		-webkit-tap-highlight-color: transparent;
 		user-select: none;
+		background: 
+			/* Layered, offset deep blue gradient base with ocean tones */
+			radial-gradient(
+				ellipse at 30% 50%,
+				rgba(30, 96, 160, 0.4) 0%,
+				rgba(44, 130, 190, 0.6) 50%,
+				rgba(30, 96, 160, 0.2) 100%
+			),
+			radial-gradient(
+				ellipse at 70% 40%,
+				rgba(44, 130, 190, 0.3) 0%,
+				rgba(30, 96, 160, 0.2) 60%,
+				transparent 80%
+			),
+			/* Randomized soft light shafts */
+				repeating-linear-gradient(
+					-45deg,
+					rgba(44, 130, 190, 0.05) 0%,
+					rgba(58, 150, 210, 0.1) 10%,
+					rgba(30, 96, 160, 0.02) 20%,
+					rgba(58, 150, 210, 0.1) 30%,
+					rgba(44, 130, 190, 0.05) 40%
+				),
+			/* Wavy caustic light patterns */
+				radial-gradient(
+					ellipse at 50% 60%,
+					rgba(44, 200, 210, 0.07) 0%,
+					rgba(30, 150, 200, 0.05) 10%,
+					transparent 30%
+				),
+			radial-gradient(
+				ellipse at 20% 80%,
+				rgba(44, 200, 210, 0.05) 0%,
+				rgba(30, 150, 200, 0.03) 15%,
+				transparent 25%
+			);
+		background-size:
+			100%,
+			100%,
+			300% 300%,
+			400% 400%,
+			300% 300%;
+		background-position:
+			0 0,
+			0 0,
+			50% 50%,
+			25% 75%,
+			75% 25%;
+		animation:
+			oceanFlow 45s ease infinite,
+			causticShimmer 20s cubic-bezier(0.4, 0, 0.2, 1) infinite,
+			lightShafts 60s ease-in-out infinite;
+	}
+
+	@keyframes oceanFlow {
+		0%,
+		100% {
+			background-position:
+				0 0,
+				0 0,
+				50% 50%,
+				25% 75%,
+				75% 25%;
+		}
+		50% {
+			background-position:
+				50% 50%,
+				50% 50%,
+				30% 70%,
+				75% 25%,
+				20% 80%;
+		}
+	}
+
+	@keyframes causticShimmer {
+		0%,
+		100% {
+			background-size:
+				100%,
+				100%,
+				300% 300%,
+				400% 400%,
+				300% 300%;
+			opacity: 0.8;
+		}
+		25% {
+			background-size:
+				100%,
+				100%,
+				320% 320%,
+				420% 420%,
+				320% 320%;
+			opacity: 0.9;
+		}
+		50% {
+			background-size:
+				100%,
+				100%,
+				310% 310%,
+				430% 430%,
+				310% 310%;
+			opacity: 0.7;
+		}
+		75% {
+			background-size:
+				100%,
+				100%,
+				340% 340%,
+				440% 440%,
+				340% 340%;
+			opacity: 0.85;
+		}
 	}
 
 	/* Loading state */
 	.loading {
 		position: absolute;
 		inset: 0;
-		background: #000510;
 		opacity: 1;
 		transition: opacity 0.5s ease-out;
 		pointer-events: none;
-		z-index: 0;
 	}
 
 	.loading:not([style*='opacity: 1']) + :global(canvas) {
@@ -1168,8 +1328,7 @@
 
 	/* Canvas styling - using :global for canvas element */
 	:global(.container > canvas) {
-		opacity: 0;
-		transition: opacity 0.5s ease-in;
+		mix-blend-mode: luminosity;
 		width: 100% !important;
 		height: 100% !important;
 	}
@@ -1228,13 +1387,6 @@
 	@media (forced-colors: active) {
 		.container {
 			forced-color-adjust: none;
-		}
-	}
-
-	/* Dark mode optimization */
-	@media (prefers-color-scheme: dark) {
-		.container {
-			background: radial-gradient(circle at center, #000305 0%, #000000 100%);
 		}
 	}
 

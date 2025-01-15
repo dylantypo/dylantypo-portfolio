@@ -134,7 +134,6 @@
 	.container {
 		width: 100%;
 		height: 100vh;
-		background: #000510;
 		overflow: hidden;
 		position: relative;
 		transform-style: preserve-3d;
@@ -151,12 +150,12 @@
 	.scene-container {
 		position: absolute;
 		inset: 0;
-		z-index: 1;
+		z-index: 0;
 	}
 
 	.overlay-container {
 		position: relative;
-		z-index: 2;
+		z-index: 0;
 		pointer-events: none;
 	}
 
@@ -173,7 +172,7 @@
 		top: 20px;
 		left: 50%;
 		transform: translateX(-50%);
-		z-index: 2000;
+		z-index: 0;
 		padding: 1rem;
 		animation: slideIn 0.3s ease-out;
 	}

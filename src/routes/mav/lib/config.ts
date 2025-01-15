@@ -3,9 +3,9 @@ import type { SimulationConfig } from './types';
 
 export const DEFAULT_CONFIG: SimulationConfig = {
 	// Simulation parameters
-	gridSize: 256,
-	iterations: 6,
-	timeStep: 0.02,
+	gridSize: 128,
+	iterations: 8,
+	timeStep: 0.025,
 
 	// Physics parameters
 	viscosity: 0.0000001,
@@ -27,7 +27,7 @@ export const DEFAULT_CONFIG: SimulationConfig = {
 	causticStrength: 0.9,
 	normalStrength: 1.5,
 	refractionRatio: 0.95,
-	foamThreshold: 0.8,
+	foamThreshold: 0.5,
 
 	// Optimization flags
 	useWebGL: true,

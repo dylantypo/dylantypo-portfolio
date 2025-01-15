@@ -14,30 +14,29 @@ export class FluidPhysics {
 	constructor(config: Partial<SimulationConfig>) {
 		// Provide defaults for all required properties
 		const fullConfig = {
-			// Required core properties (from your existing config)
-			gridSize: config.gridSize ?? 64,
-			iterations: config.iterations ?? 4,
-			viscosity: config.viscosity ?? 0.000001,
-			diffusion: config.diffusion ?? 0.000001,
-			timeStep: config.timeStep ?? 1 / 60,
-			temperature: config.temperature ?? 0.5,
-			density: config.density ?? 1.0,
-			gravity: config.gravity ?? -9.81,
-			vorticityStrength: config.vorticityStrength ?? 0.15,
+			gridSize: config.gridSize ?? 128,
+			iterations: config.iterations ?? 8,
+			viscosity: config.viscosity ?? 0.0000001,
+			diffusion: config.diffusion ?? 0.0000001,
+			timeStep: config.timeStep ?? 0.025,
+			temperature: config.temperature ?? 0.4,
+			density: config.density ?? 0.008,
+			gravity: config.gravity ?? -12.0,
+			vorticityStrength: config.vorticityStrength ?? 0.3,
 
 			// Additional required properties with defaults
 			useWebGL: config.useWebGL ?? true,
 			useSpatialIndex: config.useSpatialIndex ?? false,
-			wavelength: config.wavelength ?? 4.0,
-			damping: config.damping ?? 0.985,
-			causticStrength: config.causticStrength ?? 0.75,
-			normalStrength: config.normalStrength ?? 1.0,
-			refractionRatio: config.refractionRatio ?? 0.98,
-			surfaceTension: config.surfaceTension ?? 0.072,
-			buoyancy: config.buoyancy ?? 9.81,
-			turbulenceFactor: config.turbulenceFactor ?? 0.1,
+			wavelength: config.wavelength ?? 15.0,
+			damping: config.damping ?? 0.95,
+			causticStrength: config.causticStrength ?? 0.9,
+			normalStrength: config.normalStrength ?? 1.5,
+			refractionRatio: config.refractionRatio ?? 0.95,
+			surfaceTension: config.surfaceTension ?? 0.15,
+			buoyancy: config.buoyancy ?? 15.0,
+			turbulenceFactor: config.turbulenceFactor ?? 0.25,
 			foamThreshold: config.foamThreshold ?? 0.5,
-			vorticityConfinement: config.vorticityConfinement ?? 0.3
+			vorticityConfinement: config.vorticityConfinement ?? 0.5
 		} as const;
 
 		this.gridSize = fullConfig.gridSize;
