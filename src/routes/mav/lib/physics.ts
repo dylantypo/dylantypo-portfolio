@@ -1,4 +1,5 @@
 import type { FluidState, SimulationConfig } from './types';
+import * as THREE from 'three';
 export class FluidPhysics {
 	private readonly gridSize: number;
 	private readonly iterations: number;
@@ -10,16 +11,44 @@ export class FluidPhysics {
 	private readonly gravity: number;
 	private readonly vorticityStrength: number;
 
-	constructor(config: SimulationConfig) {
-		this.gridSize = config.gridSize;
-		this.iterations = config.iterations;
-		this.viscosity = config.viscosity;
-		this.diffusion = config.diffusion;
-		this.timeStep = config.timeStep;
-		this.temperature = config.temperature;
-		this.densityCoef = config.density;
-		this.gravity = config.gravity;
-		this.vorticityStrength = config.vorticityStrength;
+	constructor(config: Partial<SimulationConfig>) {
+		// Provide defaults for all required properties
+		const fullConfig = {
+			// Required core properties (from your existing config)
+			gridSize: config.gridSize ?? 64,
+			iterations: config.iterations ?? 4,
+			viscosity: config.viscosity ?? 0.000001,
+			diffusion: config.diffusion ?? 0.000001,
+			timeStep: config.timeStep ?? 1 / 60,
+			temperature: config.temperature ?? 0.5,
+			density: config.density ?? 1.0,
+			gravity: config.gravity ?? -9.81,
+			vorticityStrength: config.vorticityStrength ?? 0.15,
+
+			// Additional required properties with defaults
+			useWebGL: config.useWebGL ?? true,
+			useSpatialIndex: config.useSpatialIndex ?? false,
+			wavelength: config.wavelength ?? 4.0,
+			damping: config.damping ?? 0.985,
+			causticStrength: config.causticStrength ?? 0.75,
+			normalStrength: config.normalStrength ?? 1.0,
+			refractionRatio: config.refractionRatio ?? 0.98,
+			surfaceTension: config.surfaceTension ?? 0.072,
+			buoyancy: config.buoyancy ?? 9.81,
+			turbulenceFactor: config.turbulenceFactor ?? 0.1,
+			foamThreshold: config.foamThreshold ?? 0.5,
+			vorticityConfinement: config.vorticityConfinement ?? 0.3
+		} as const;
+
+		this.gridSize = fullConfig.gridSize;
+		this.iterations = fullConfig.iterations;
+		this.viscosity = fullConfig.viscosity;
+		this.diffusion = fullConfig.diffusion;
+		this.timeStep = fullConfig.timeStep;
+		this.temperature = fullConfig.temperature;
+		this.densityCoef = fullConfig.density;
+		this.gravity = fullConfig.gravity;
+		this.vorticityStrength = fullConfig.vorticityStrength;
 	}
 
 	private idx(x: number, y: number, z: number): number {
@@ -332,6 +361,61 @@ export class FluidPhysics {
 					const targetHeight = dens[index];
 					const delta = (targetHeight - height) * 0.1;
 					pressure[index] = height + delta;
+				}
+			}
+		}
+	}
+
+	applyRotationalForces(
+		velocX: Float32Array,
+		velocY: Float32Array,
+		velocZ: Float32Array,
+		angularVelocity: THREE.Vector3,
+		rotation: THREE.Euler
+	): void {
+		const gridCenter = Math.floor(this.gridSize / 2);
+		const frictionCoeff = 0.98;
+		const rotationScale = 0.5;
+
+		// Create rotation matrix from provided rotation
+		const rotationMatrix = new THREE.Matrix4().makeRotationFromEuler(rotation);
+		const inverseRotation = new THREE.Matrix4().copy(rotationMatrix).invert();
+
+		for (let i = 1; i < this.gridSize - 1; i++) {
+			for (let j = 1; j < this.gridSize - 1; j++) {
+				for (let k = 1; k < this.gridSize - 1; k++) {
+					const index = this.idx(i, j, k);
+
+					// Calculate position relative to center in local space
+					const relX = (i - gridCenter) / gridCenter;
+					const relY = (j - gridCenter) / gridCenter;
+					const relZ = (k - gridCenter) / gridCenter;
+
+					// Convert to world space
+					const localPos = new THREE.Vector3(relX, relY, relZ);
+					const worldPos = localPos.applyMatrix4(rotationMatrix);
+
+					// Calculate tangential velocity in world space
+					const targetVelocX =
+						(angularVelocity.y * worldPos.z - angularVelocity.z * worldPos.y) * rotationScale;
+					const targetVelocY =
+						(angularVelocity.z * worldPos.x - angularVelocity.x * worldPos.z) * rotationScale;
+					const targetVelocZ =
+						(angularVelocity.x * worldPos.y - angularVelocity.y * worldPos.x) * rotationScale;
+
+					// Convert velocity back to local space
+					const worldVel = new THREE.Vector3(targetVelocX, targetVelocY, targetVelocZ);
+					const localVel = worldVel.applyMatrix4(inverseRotation);
+
+					// Apply forces with friction
+					velocX[index] += (localVel.x - velocX[index]) * (1 - frictionCoeff) * this.timeStep;
+					velocY[index] += (localVel.y - velocY[index]) * (1 - frictionCoeff) * this.timeStep;
+					velocZ[index] += (localVel.z - velocZ[index]) * (1 - frictionCoeff) * this.timeStep;
+
+					// Add gravity in world space
+					const gravity = -9.81 * this.timeStep;
+					const worldGravity = new THREE.Vector3(0, gravity, 0).applyMatrix4(inverseRotation);
+					velocY[index] += worldGravity.y;
 				}
 			}
 		}
