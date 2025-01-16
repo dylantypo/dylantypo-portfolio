@@ -35,8 +35,8 @@
 	let cubeRenderTarget: THREE.WebGLCubeRenderTarget;
 
 	// Performance optimizations
-	const TEXTURE_SIZE = 16;
-	const RAF_THROTTLE = 1000 / 60; // 60 FPS cap
+	const TEXTURE_SIZE = 6;
+	const RAF_THROTTLE = 1 / 60; // 60 FPS cap
 	let lastRAFTime = 0;
 	let isMobile = $state(false);
 	let lastTouchEnd = 0;
@@ -56,18 +56,20 @@
 
 	const FLUID_COLOR = new THREE.Color(0x3a8fbd); // Brighter blue-teal, more saturated
 	const LIGHT_COLOR = new THREE.Color(0x6fbcd1); // Lighter, more translucent blue-green
-	const FLUID_RADIUS = 1.95;
+	const FLUID_RADIUS = 1.999;
 
 	const CRYSTAL_COLOR = new THREE.Color(0xffffff); // Pure white for crystal
 	const CRYSTAL_OPACITY = 0.025;
-	const CRYSTAL_REFRACTION = 0.15;
+	const CRYSTAL_REFRACTION = 0.55;
 	const CRYSTAL_RADIUS = 2;
+
+	const sphereCenter = new THREE.Vector3(0, 0, 0);
 
 	// Fluid fill animation parameters
 	let fillStartTime = 0;
-	const FILL_DURATION = 2500; // 2.5 seconds to fill
-	const FILL_START = -2.5; // Start at bottom of sphere
-	const FILL_END = -0.35; // Fill to near top
+	const FILL_DURATION = 3000; // 3 seconds to fill
+	const FILL_START = -0.9 * FLUID_RADIUS; // Start at bottom of sphere
+	const FILL_END = -0.15 * FLUID_RADIUS; // Fill to near top
 
 	// Simulation setup
 	const {
@@ -82,22 +84,11 @@
 		config: { gridSize: N }
 	} = useFluidSimulation({
 		gridSize: TEXTURE_SIZE,
-		iterations: 6,
-		viscosity: 0.0000001,
-		diffusion: 0.0000001,
 		useWebGL: true
 	});
 
 	const physics = new FluidPhysics({
-		gridSize: TEXTURE_SIZE,
-		iterations: 6,
-		viscosity: 0.0000001,
-		diffusion: 0.0000001,
-		timeStep: 1 / 60,
-		temperature: 0.4,
-		density: 0.008,
-		gravity: -12.0,
-		vorticityStrength: 0.3
+		gridSize: TEXTURE_SIZE
 	});
 
 	const textureConfig = {
@@ -189,7 +180,7 @@
 			}
 		`,
 		transparent: true,
-		side: THREE.DoubleSide,
+		side: THREE.FrontSide,
 		depthWrite: false,
 		blending: THREE.AdditiveBlending
 	});
@@ -204,27 +195,31 @@
 			heightField: { value: null },
 			iorAir: { value: IOR_AIR },
 			iorWater: { value: IOR_WATER },
-			sphereCenter: { value: new THREE.Vector3(0, 0, 0) },
+			sphereCenter: { value: sphereCenter },
 			sphereRadius: { value: FLUID_RADIUS },
 			fluidLevel: { value: FILL_START },
 			velocityTexture: { value: null },
+			surfaceTension: { value: DEFAULT_CONFIG.surfaceTension },
+			damping: { value: DEFAULT_CONFIG.damping },
+			buoyancy: { value: DEFAULT_CONFIG.buoyancy },
+			vorticityStrength: { value: DEFAULT_CONFIG.vorticityStrength },
 			lightPositions: {
 				value: [
-					new THREE.Vector3(0, 2, 2).normalize(), // Main light
-					new THREE.Vector3(-2, 1, -1).normalize(), // Secondary light
-					new THREE.Vector3(1, 2, 1).normalize(), // Caustic primary
-					new THREE.Vector3(-1, 1.5, -1).normalize() // Caustic secondary
+					new THREE.Vector3(0, 3, 2).normalize(), // Main light
+					new THREE.Vector3(-2, 2, 1).normalize(), // Secondary light
+					new THREE.Vector3(2, 4, 2).normalize(), // Caustic primary
+					new THREE.Vector3(-2, 3, -2).normalize() // Caustic secondary
 				]
 			},
 			lightColors: {
 				value: [
-					new THREE.Color(0xffffff).multiplyScalar(1.2),
-					new THREE.Color(0xffffff),
-					new THREE.Color(0x89cff0).multiplyScalar(1.1),
-					new THREE.Color(0x89cff0)
+					new THREE.Color(0xffffff).multiplyScalar(0.7),   // Reduced intensity
+					new THREE.Color(0xffffff).multiplyScalar(0.4),   // Reduced
+					new THREE.Color(0x6bb5ff).multiplyScalar(1.2),   // Changed color and boosted
+					new THREE.Color(0x89cff0).multiplyScalar(1.1)    // Kept same
 				]
 			},
-			lightIntensities: { value: [1.2, 0.8, 1.0, 0.7] }
+			lightIntensities: { value: [0.7, 0.4, 0.9, 0.7] }
 		},
 		vertexShader: `
 			uniform float time;
@@ -371,10 +366,14 @@
 			
 			float caustics(vec3 pos, vec3 lightDir) {
 				vec3 normalizedPos = normalize(pos);
-				float causticPattern = sin(normalizedPos.x * 10.0 + time) * 
-									cos(normalizedPos.z * 10.0 + time * 0.7) * 
-									sin(normalizedPos.y * 8.0 + time * 1.3);
-				return pow(max(0.0, causticPattern), 3.0) * 0.5;
+				// Create overlapping sine waves with different frequencies and phases
+				float causticPattern = 
+					sin(normalizedPos.x * 5.0 + normalizedPos.z * 4.0 + time * 1.2) * 
+					sin(normalizedPos.z * 4.0 + normalizedPos.x * 3.0 + time) + 
+					sin(normalizedPos.x * 3.0 - normalizedPos.z * 5.0 + time * 0.8) * 
+					sin(normalizedPos.z * 6.0 + normalizedPos.x * 2.0 + time * 1.5) * 0.5;
+				
+				return pow(max(0.0, causticPattern), 2.0) * 0.3; // Softer caustics
 			}
 			
 			void main() {
@@ -433,7 +432,7 @@
 					finalColor += foam * foamLight * 0.5;
 					
 					// View and depth-dependent transparency
-					float baseTransparency = 0.7;  // Increased base transparency
+					float baseTransparency = 0.5;  // Increased base transparency
 					float depthFactor = exp(-depth * 0.3);  // Slower depth falloff
 					float viewFactor = pow(1.0 - abs(dot(normal, vViewDir)), 2.0);
 					float transparency = mix(baseTransparency, 0.95, viewFactor * depthFactor);
@@ -452,20 +451,114 @@
 		if (fillStartTime === 0) {
 			fillStartTime = currentTime;
 		}
-
 		const elapsed = currentTime - fillStartTime;
 		const progress = Math.min(elapsed / FILL_DURATION, 1.0);
-
-		// Smoother easing function
 		const t = progress < 0.5 ? 4 * Math.pow(progress, 3) : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
 		if (innerMaterial instanceof THREE.ShaderMaterial && camera) {
-			// Add subtle adjustment based on camera angle
-			const cameraAngle = Math.atan2(camera.position.z, camera.position.x);
-			const fluidAdjustment = Math.sin(cameraAngle) * 0.1;
+			const baseFluidLevel = FILL_START + (FILL_END - FILL_START) * t;
 
-			innerMaterial.uniforms.fluidLevel.value =
-				FILL_START + (FILL_END - FILL_START) * t + fluidAdjustment;
+			// Get camera-relative position
+			const localCameraPosition = new THREE.Vector3();
+			localCameraPosition.copy(camera.position);
+			if (globe) {
+				const inverseMatrix = new THREE.Matrix4();
+				inverseMatrix.copy(globe.matrixWorld).invert();
+				localCameraPosition.applyMatrix4(inverseMatrix);
+			}
+
+			// Calculate fluid level adjustments
+			const upVector = new THREE.Vector3(0, 1, 0);
+			const cameraAngle = localCameraPosition.angleTo(upVector);
+			const tiltAdjustment = Math.sin(cameraAngle) * 0.15;
+			const heightAdjustment = (localCameraPosition.y / 10) * 0.1;
+
+			// Update fluid level uniform
+			const finalFluidLevel = Math.max(
+				FILL_START,
+				Math.min(FILL_END, baseFluidLevel + tiltAdjustment + heightAdjustment)
+			);
+			innerMaterial.uniforms.fluidLevel.value = finalFluidLevel;
+		}
+
+		return t; // Return progress for use in updateFluidBoundaries
+	}
+
+	function updateFluidBoundaries() {
+		const radius = FLUID_RADIUS;
+		const { surfaceTension, damping, vorticityStrength } = DEFAULT_CONFIG;
+		const currentTime = performance.now();
+
+		// Get fill progress from updateFluidLevel
+		const t = updateFluidLevel(currentTime);
+
+		// Update fluid forces
+		for (let i = 0; i < N; i++) {
+			for (let j = 0; j < N; j++) {
+				for (let k = 0; k < N; k++) {
+					const pos = new THREE.Vector3(
+						(i / N - 0.5) * radius * 2,
+						(j / N - 0.5) * radius * 2,
+						(k / N - 0.5) * radius * 2
+					);
+
+					const dist = pos.length();
+					if (dist > radius * 0.8) {
+						const normal = pos.clone().normalize();
+						const strength = (dist - radius * 0.8) / (radius * 0.2);
+
+						const densityValue = $density[i + j * N + k * N * N];
+						if (densityValue > 0.1) {
+							// Surface tension for droplet formation
+							const tensionForce = surfaceTension * strength * densityValue * t; // Scale with fill progress
+							addForce(i, j, k, -tensionForce);
+
+							// Vorticity and curl
+							const vortexStrength = vorticityStrength * (1.0 - strength);
+							const curl = new THREE.Vector3(
+								(Math.random() - 0.5) * vortexStrength,
+								(Math.random() - 0.5) * vortexStrength,
+								(Math.random() - 0.5) * vortexStrength
+							);
+
+							addVelocity(
+								i,
+								j,
+								k,
+								curl.x - normal.x * strength * damping,
+								curl.y - normal.y * strength * damping,
+								curl.z - normal.z * strength * damping
+							);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	function initializeFluid() {
+		// Initialize base fluid level
+		const halfN = N / 2;
+		const quarterN = N / 4;
+
+		for (let i = 0; i < N; i++) {
+			for (let j = 0; j < N / 2; j++) {
+				// Fill bottom half initially
+				for (let k = 0; k < N; k++) {
+					const idx = i + j * N + k * N * N;
+					$density[idx] = 1.0;
+					// Add some initial movement
+					$velocityX[idx] = (Math.random() - 0.5) * 0.1;
+					$velocityY[idx] = Math.abs(Math.random()) * 0.1;
+					$velocityZ[idx] = (Math.random() - 0.5) * 0.1;
+				}
+			}
+		}
+
+		// Add some initial forces
+		for (let i = 0; i < 4; i++) {
+			const angle = (i / 4) * Math.PI * 2;
+			addForce(halfN + Math.cos(angle) * quarterN, N / 4, halfN + Math.sin(angle) * quarterN, 1.0);
 		}
 	}
 
@@ -490,7 +583,7 @@
 			preserveDrawingBuffer: false,
 			powerPreference: 'high-performance'
 		});
-		renderer.setClearColor(0x000000, 0.1); // Set to transparent
+		renderer.setClearColor(0x000000, 0.15); // Set to transparent
 		renderer.setSize(window.innerWidth, window.innerHeight);
 		renderer.setPixelRatio(
 			isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2)
@@ -567,41 +660,41 @@
 	function initLights() {
 		const lights = {
 			// Hemisphere light for ambient illumination from sky and ground
-			hemisphere: new THREE.HemisphereLight(0x89cff0, 0x404040, 0.5),
+			hemisphere: new THREE.HemisphereLight(0x89cff0, 0x404040, 0.3),
 
 			// Main directional lights for key lighting
-			mainLight: new THREE.DirectionalLight(0xffffff, 0.85),
-			secondaryLight: new THREE.DirectionalLight(0xffffff, 0.5),
+			mainLight: new THREE.DirectionalLight(0xffffff, 0.7),
+			secondaryLight: new THREE.DirectionalLight(0xffffff, 0.4),
 
 			// Spot lights for caustics and water highlights
-			causticPrimary: new THREE.SpotLight(0x89cff0, 0.8),
-			causticSecondary: new THREE.SpotLight(0x89cff0, 0.6),
+			causticPrimary: new THREE.SpotLight(0x89cff0, 0.5),
+			causticSecondary: new THREE.SpotLight(0x89cff0, 0.4),
 
 			// Rim lights for edge definition
-			rimLight1: new THREE.DirectionalLight(0xadd8e6, 0.4),
-			rimLight2: new THREE.DirectionalLight(0xadd8e6, 0.3)
+			rimLight1: new THREE.DirectionalLight(0xadd8e6, 0.3),
+			rimLight2: new THREE.DirectionalLight(0xadd8e6, 0.2)
 		};
 
 		// Position main lights
-		lights.mainLight.position.set(0, 2, 2);
-		lights.secondaryLight.position.set(-2, 1, 2);
+		lights.mainLight.position.set(0, 3, 2);
+		lights.secondaryLight.position.set(-2, 2, 1);
 
 		// Setup caustic lights
-		lights.causticPrimary.position.set(2, 3, 2);
-		lights.causticPrimary.angle = Math.PI / 3;
-		lights.causticPrimary.penumbra = 0.4;
-		lights.causticPrimary.decay = 1.5;
-		lights.causticPrimary.distance = 15;
+		lights.causticPrimary.position.set(2, 4, 2);
+		lights.causticPrimary.angle = Math.PI / 2;
+		lights.causticPrimary.penumbra = 0.9;
+		lights.causticPrimary.decay = 1.1;
+		lights.causticPrimary.distance = 20;
 
-		lights.causticSecondary.position.set(-2, 2, -2);
-		lights.causticSecondary.angle = Math.PI / 4;
-		lights.causticSecondary.penumbra = 0.5;
-		lights.causticSecondary.decay = 1.8;
-		lights.causticSecondary.distance = 12;
+		lights.causticSecondary.position.set(-2, 3, -2);
+		lights.causticSecondary.angle = Math.PI / 2.2;
+		lights.causticSecondary.penumbra = 0.85;
+		lights.causticSecondary.decay = 1.2;
+		lights.causticSecondary.distance = 18;
 
 		// Position rim lights for edge highlighting
-		lights.rimLight1.position.set(-1, 0.5, -1);
-		lights.rimLight2.position.set(1, -0.5, 1);
+		lights.rimLight1.position.set(-1, 1, -1);
+		lights.rimLight2.position.set(1, 0, 1);
 
 		// Add shadow capabilities
 		const shadowLights = [lights.mainLight, lights.secondaryLight];
@@ -670,6 +763,7 @@
 			initShaderUniforms(); // New function to initialize uniforms
 			initLights();
 			setupEventListeners();
+			initializeFluid();
 
 			isInitialized = true;
 		} catch (error) {
@@ -702,22 +796,22 @@
 		innerMaterial.needsUpdate = true;
 		innerMaterial.uniforms.lightPositions = {
 			value: [
-				new THREE.Vector3(0, 2, 2).normalize(), // Main light
-				new THREE.Vector3(-2, 1, -1).normalize(), // Secondary light
-				new THREE.Vector3(1, 2, 1).normalize(), // Caustic primary
-				new THREE.Vector3(-1, 1.5, -1).normalize() // Caustic secondary
+				new THREE.Vector3(0, 3, 2).normalize(),    // Changed
+				new THREE.Vector3(-2, 2, 1).normalize(),   // Changed
+				new THREE.Vector3(2, 4, 2).normalize(),    // Changed to match caustic lights
+				new THREE.Vector3(-2, 3, -2).normalize()   // Changed to match caustic lights
 			]
 		};
 		innerMaterial.uniforms.lightColors = {
 			value: [
-				new THREE.Color(0xffffff).multiplyScalar(1.2),
-				new THREE.Color(0xffffff),
-				new THREE.Color(0x89cff0).multiplyScalar(1.1),
-				new THREE.Color(0x89cff0)
+				new THREE.Color(0xffffff).multiplyScalar(0.7),   // Reduced intensity
+				new THREE.Color(0xffffff).multiplyScalar(0.4),   // Reduced
+				new THREE.Color(0x6bb5ff).multiplyScalar(1.2),   // Changed color and boosted
+				new THREE.Color(0x89cff0).multiplyScalar(1.1)    // Kept same
 			]
 		};
 		innerMaterial.uniforms.lightIntensities = {
-			value: [1.2, 0.8, 1.0, 0.7]
+			value: [0.7, 0.4, 0.9, 0.7]
 		};
 		innerMaterial.blending = THREE.CustomBlending;
 		innerMaterial.blendSrc = THREE.SrcAlphaFactor;
@@ -913,6 +1007,32 @@
 			const forceStrength = (freqAvg * 120 + waveAvg * 30) * averageFrequency * fluidScale;
 			addForce(x, y, z, forceStrength);
 
+			// Add splashing behavior (add this right after addForce line in processAudio)
+			if (forceStrength > 0.6) {
+				const splashRadius = Math.min(N / 4, Math.floor(forceStrength * 5));
+				for (let sx = -splashRadius; sx <= splashRadius; sx++) {
+					for (let sz = -splashRadius; sz <= splashRadius; sz++) {
+						const dist = Math.sqrt(sx * sx + sz * sz);
+						if (dist <= splashRadius) {
+							const splash = forceStrength * (1 - dist / splashRadius);
+							const splashX = Math.floor(x + sx);
+							const splashZ = Math.floor(z + sz);
+							if (splashX >= 0 && splashX < N && splashZ >= 0 && splashZ < N) {
+								addForce(splashX, y + Math.random() * 2, splashZ, splash * 0.5);
+								addVelocity(
+									splashX,
+									y + Math.random() * 2,
+									splashZ,
+									(Math.random() - 0.5) * splash * 20,
+									splash * 30,
+									(Math.random() - 0.5) * splash * 20
+								);
+							}
+						}
+					}
+				}
+			}
+
 			// Add velocity with waveform influence
 			addVelocity(
 				x,
@@ -963,9 +1083,7 @@
 
 			// Update both materials with time and ensure proper phasing
 			outerMaterial.uniforms.time.value = timeInSeconds;
-			innerMaterial.uniforms.time.value = timeInSeconds * 0.8; // Slightly slower for inner fluid
-
-			updateFluidLevel(currentTime);
+			innerMaterial.uniforms.time.value = timeInSeconds * 0.5; // Slightly slower for inner fluid
 
 			// Update scene
 			cubeCamera.position.copy(globe.position);
@@ -988,6 +1106,12 @@
 				);
 			}
 
+			// Update fluid boundaries and forces
+			updateFluidBoundaries();
+			if (innerMaterial instanceof THREE.ShaderMaterial && innerMaterial.uniforms.vorticityStrength) {
+				innerMaterial.uniforms.vorticityStrength.value = DEFAULT_CONFIG.vorticityStrength;
+			}
+
 			// Update simulation and textures
 			updateSimulation();
 			updateFluidTexture();
@@ -996,6 +1120,27 @@
 			if (isAudioActive && globe) {
 				const deformation = outerMaterial.uniforms.audioDeformation.value;
 				globe.scale.set(1 + deformation.x * 0.1, 1 + deformation.y * 0.1, 1 + deformation.z * 0.1);
+			}
+
+			// Constant Motion
+			const halfN = N / 2;
+			const quarterN = N / 4;
+
+			// Add gentle swirling motion
+			for (let i = 0; i < 4; i++) {
+				const angle = (i / 4) * Math.PI * 2 + timeInSeconds;
+				const x = halfN + Math.cos(angle) * quarterN;
+				const z = halfN + Math.sin(angle) * quarterN;
+
+				addForce(x, quarterN, z, 0.1);
+				addVelocity(
+					x,
+					quarterN,
+					z,
+					Math.cos(angle) * 0.5,
+					Math.sin(timeInSeconds) * 0.2,
+					Math.sin(angle) * 0.5
+				);
 			}
 
 			// Render
