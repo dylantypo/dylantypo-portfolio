@@ -3,8 +3,8 @@ import type { SimulationConfig } from './types';
 
 export const DEFAULT_CONFIG: SimulationConfig = {
 	// Simulation parameters
-	gridSize: 16,
-	iterations: 16,
+	gridSize: 64,
+	iterations: 6,
 	timeStep: 1/60,
 
 	// Physics parameters
