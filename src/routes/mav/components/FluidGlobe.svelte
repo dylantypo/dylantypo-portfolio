@@ -127,31 +127,20 @@
 			time: { value: 0 },
 			crystalColor: { value: CRYSTAL_COLOR },
 			baseOpacity: { value: CRYSTAL_OPACITY },
-			refractionStrength: { value: CRYSTAL_REFRACTION },
-			audioIntensity: { value: 0.5 },
-			audioDeformation: { value: new THREE.Vector3(0, 0, 0) }
+			refractionStrength: { value: CRYSTAL_REFRACTION }
 		},
 		vertexShader: `
 			uniform float time;
-			uniform float audioIntensity;
-			uniform vec3 audioDeformation;
 			varying vec3 vPosition;
 			varying vec3 vNormal;
 			varying vec3 vViewDir;
 			
 			void main() {
-				// Apply audio-driven deformation
-				vec3 pos = position;
-				float deformationAmount = audioIntensity * 0.2;
-				pos += normal * (sin(position.y * 10.0 + time) * audioDeformation.x +
-							cos(position.x * 8.0 + time * 0.7) * audioDeformation.y +
-							sin(position.z * 12.0 + time * 1.3) * audioDeformation.z) * deformationAmount;
-				
-				vPosition = pos;
+				vPosition = position;
 				vNormal = normalize(normalMatrix * normal);
-				vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
+				vec4 worldPosition = modelMatrix * vec4(position, 1.0);
 				vViewDir = normalize(cameraPosition - worldPosition.xyz);
-				gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+				gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 			}
 		`,
 		fragmentShader: `
@@ -443,8 +432,10 @@
 				}
 			}`,
 		transparent: true,
-		side: THREE.BackSide,
-		blending: THREE.AdditiveBlending
+		side: THREE.DoubleSide,
+		blending: THREE.CustomBlending,
+		blendSrc: THREE.SrcAlphaFactor,
+		blendDst: THREE.OneMinusSrcAlphaFactor
 	});
 
 	function updateFluidLevel(currentTime: number) {
@@ -635,7 +626,7 @@
 
 	function initMeshes() {
 		const perfectSphereGeometry = new THREE.SphereGeometry(CRYSTAL_RADIUS, 64, 64);
-		const oceanGeometry = new THREE.SphereGeometry(FLUID_RADIUS, 64, 64);
+		const oceanGeometry = new THREE.SphereGeometry(FLUID_RADIUS, 128, 128);
 
 		cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256);
 		cubeCamera = new THREE.CubeCamera(1, 1000, cubeRenderTarget);
@@ -955,19 +946,33 @@
 
 		const { frequencies, waveform, averageFrequency } = audioData;
 
-		// Process audio for the outer globe deformation
-		const bassFreq = frequencies.slice(0, 10).reduce((a: number, b: number) => a + b, 0) / 10;
-		const midFreq = frequencies.slice(10, 30).reduce((a: number, b: number) => a + b, 0) / 20;
-		const highFreq =
-			frequencies.slice(30).reduce((a: number, b: number) => a + b, 0) / (frequencies.length - 30);
-
-		// Update globe deformation based on audio
-		outerMaterial.uniforms.audioIntensity.value = averageFrequency;
-		outerMaterial.uniforms.audioDeformation.value.set(
-			(bassFreq / 255) * 0.1,
-			(midFreq / 255) * 0.05,
-			(highFreq / 255) * 0.025
+		// Enhanced frequency analysis for color manipulation
+		const bassFreq = frequencies.slice(0, 10).reduce((a: number, b: number) => a + b, 0) / 2550; // 0-1
+		const midFreq = frequencies.slice(10, 30).reduce((a: number, b: number) => a + b, 0) / 5100; // 0-1
+		const highFreq = frequencies.slice(30).reduce((a: number, b: number) => a + b, 0) / 
+			((frequencies.length - 30) * 255); // 0-1
+		
+		// Create dynamic colors based on audio characteristics
+		const baseHue = (bassFreq * 360) % 360;
+		const fluidSaturation = 0.5 + midFreq * 0.5;  // 0.5 - 1.0
+		const fluidLightness = 0.3 + highFreq * 0.3;  // 0.3 - 0.6
+		
+		// Create complementary colors for fluid and crystal
+		const fluidColor = new THREE.Color().setHSL(baseHue / 360, fluidSaturation, fluidLightness);
+		const crystalColor = new THREE.Color().setHSL(
+			((baseHue + 180) % 360) / 360, 
+			fluidSaturation * 0.5,  // Less saturated
+			0.7 + highFreq * 0.2    // Brighter
 		);
+
+		// Update material colors
+		if (innerMaterial instanceof THREE.ShaderMaterial) {
+			innerMaterial.uniforms.fluidColor.value = fluidColor;
+			innerMaterial.uniforms.lightColor.value.lerp(fluidColor, highFreq * 0.5);
+		}
+		if (outerMaterial instanceof THREE.ShaderMaterial) {
+			outerMaterial.uniforms.crystalColor.value = crystalColor;
+		}
 
 		// Process audio for fluid simulation
 		const binSize = frequencies.length / 4;
@@ -999,22 +1004,23 @@
 			const y = sin * thirdN + halfN;
 			const z = halfN;
 
-			// Scale down fluid forces when globe deformation is high
-			const globeDeformation = outerMaterial.uniforms.audioIntensity.value;
-			const fluidScale = 1.0 - Math.min(globeDeformation * 0.5, 0.7);
+			// Use frequency characteristics for force scaling
+			const fluidScale = Math.min(1.0, 0.3 + bassFreq * 0.7);
 
 			// Combine frequency and waveform for force with scaled influence
 			const forceStrength = (freqAvg * 120 + waveAvg * 30) * averageFrequency * fluidScale;
 			addForce(x, y, z, forceStrength);
 
-			// Add splashing behavior (add this right after addForce line in processAudio)
+			// Enhanced splashing behavior based on high frequencies
 			if (forceStrength > 0.6) {
 				const splashRadius = Math.min(N / 4, Math.floor(forceStrength * 5));
+				const splashIntensity = highFreq * 1.5 + 0.5; // Scale splash based on high frequencies
+				
 				for (let sx = -splashRadius; sx <= splashRadius; sx++) {
 					for (let sz = -splashRadius; sz <= splashRadius; sz++) {
 						const dist = Math.sqrt(sx * sx + sz * sz);
 						if (dist <= splashRadius) {
-							const splash = forceStrength * (1 - dist / splashRadius);
+							const splash = forceStrength * (1 - dist / splashRadius) * splashIntensity;
 							const splashX = Math.floor(x + sx);
 							const splashZ = Math.floor(z + sz);
 							if (splashX >= 0 && splashX < N && splashZ >= 0 && splashZ < N) {
@@ -1054,9 +1060,10 @@
 				addForce(x, y, z, tempForce * 75);
 				addVelocity(x, y, z, 0, tempForce * 30, 0);
 
-				// Optionally update global temperature based on audio intensity
+				// Update temperature based on audio intensity with color influence
 				if (innerMaterial instanceof THREE.ShaderMaterial) {
-					innerMaterial.uniforms.temperature.value = Math.min(1.0, averageFrequency / 255.0);
+					innerMaterial.uniforms.temperature.value = 
+						Math.min(1.0, (averageFrequency / 255.0) * (1 + highFreq * 0.5));
 				}
 			}
 		}
@@ -1115,12 +1122,6 @@
 			// Update simulation and textures
 			updateSimulation();
 			updateFluidTexture();
-
-			// Apply secondary deformations based on audio
-			if (isAudioActive && globe) {
-				const deformation = outerMaterial.uniforms.audioDeformation.value;
-				globe.scale.set(1 + deformation.x * 0.1, 1 + deformation.y * 0.1, 1 + deformation.z * 0.1);
-			}
 
 			// Constant Motion
 			const halfN = N / 2;
