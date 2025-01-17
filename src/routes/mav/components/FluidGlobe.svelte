@@ -50,20 +50,14 @@
 	let rotationVelocity = new THREE.Vector3();
 	let lastUpdateTime = performance.now();
 
-	// Constants for fluid simulation
-	const IOR_AIR = 1.0;
-	const IOR_WATER = 1.333;
-
 	const FLUID_COLOR = new THREE.Color(0x3a8fbd); // Brighter blue-teal, more saturated
 	const LIGHT_COLOR = new THREE.Color(0x6fbcd1); // Lighter, more translucent blue-green
 	const FLUID_RADIUS = 1.999;
 
 	const CRYSTAL_COLOR = new THREE.Color(0xffffff); // Pure white for crystal
-	const CRYSTAL_OPACITY = 0.025;
+	const CRYSTAL_OPACITY = 0.005;
 	const CRYSTAL_REFRACTION = 0.55;
 	const CRYSTAL_RADIUS = 2;
-
-	const sphereCenter = new THREE.Vector3(0, 0, 0);
 
 	// Fluid fill animation parameters
 	let fillStartTime = 0;
@@ -77,7 +71,6 @@
 		velocityX,
 		velocityY,
 		velocityZ,
-		temperature,
 		updateSimulation,
 		addForce,
 		addVelocity,
@@ -91,39 +84,9 @@
 		gridSize: TEXTURE_SIZE
 	});
 
-	const textureConfig = {
-		size: N,
-		format: THREE.RGBAFormat,
-		type: THREE.FloatType,
-		minFilter: THREE.LinearFilter,
-		magFilter: THREE.LinearFilter
-	};
-
-	// Create optimized fluid texture
-	const fluidTexture = new THREE.DataTexture(
-		new Float32Array(N * N * N * 4),
-		N,
-		N * N,
-		THREE.RGBAFormat,
-		THREE.FloatType
-	);
-	fluidTexture.minFilter = textureConfig.minFilter;
-	fluidTexture.magFilter = textureConfig.magFilter;
-
-	const velocityTexture = new THREE.DataTexture(
-		new Float32Array(N * N * 4),
-		N,
-		N,
-		THREE.RGBAFormat,
-		THREE.FloatType
-	);
-	velocityTexture.minFilter = THREE.LinearFilter;
-	velocityTexture.magFilter = THREE.LinearFilter;
-
 	// Enhanced outer shell material
 	const outerMaterial = new THREE.ShaderMaterial({
 		uniforms: {
-			fluidTexture: { value: fluidTexture },
 			time: { value: 0 },
 			crystalColor: { value: CRYSTAL_COLOR },
 			baseOpacity: { value: CRYSTAL_OPACITY },
@@ -169,7 +132,7 @@
 			}
 		`,
 		transparent: true,
-		side: THREE.FrontSide,
+		side: THREE.DoubleSide,
 		depthWrite: false,
 		blending: THREE.AdditiveBlending
 	});
@@ -177,262 +140,109 @@
 	// Inner sphere material for fluid visualization
 	const innerMaterial = new THREE.ShaderMaterial({
 		uniforms: {
-			fluidTexture: { value: fluidTexture },
 			time: { value: 0 },
-			fluidColor: { value: FLUID_COLOR }, // Deep blue
-			lightColor: { value: LIGHT_COLOR }, // Light blue
-			heightField: { value: null },
-			iorAir: { value: IOR_AIR },
-			iorWater: { value: IOR_WATER },
-			sphereCenter: { value: sphereCenter },
-			sphereRadius: { value: FLUID_RADIUS },
+			fluidColor: { value: FLUID_COLOR },
+			lightColor: { value: LIGHT_COLOR },
 			fluidLevel: { value: FILL_START },
-			velocityTexture: { value: null },
-			surfaceTension: { value: DEFAULT_CONFIG.surfaceTension },
-			damping: { value: DEFAULT_CONFIG.damping },
-			buoyancy: { value: DEFAULT_CONFIG.buoyancy },
-			vorticityStrength: { value: DEFAULT_CONFIG.vorticityStrength },
 			lightPositions: {
 				value: [
-					new THREE.Vector3(0, 3, 2).normalize(), // Main light
-					new THREE.Vector3(-2, 2, 1).normalize(), // Secondary light
-					new THREE.Vector3(2, 4, 2).normalize(), // Caustic primary
-					new THREE.Vector3(-2, 3, -2).normalize() // Caustic secondary
+					new THREE.Vector3(0, 3, 2).normalize(),  // Main light from top-front
+					new THREE.Vector3(-2, 2, -1).normalize() // Secondary from side
 				]
 			},
 			lightColors: {
 				value: [
-					new THREE.Color(0xffffff).multiplyScalar(0.7),   // Reduced intensity
-					new THREE.Color(0xffffff).multiplyScalar(0.4),   // Reduced
-					new THREE.Color(0x6bb5ff).multiplyScalar(1.2),   // Changed color and boosted
-					new THREE.Color(0x89cff0).multiplyScalar(1.1)    // Kept same
+					new THREE.Color(0xffffff).multiplyScalar(0.9),  // Increased brightness
+					new THREE.Color(0x89cff0).multiplyScalar(0.6)   // Added blue tint
 				]
 			},
-			lightIntensities: { value: [0.7, 0.4, 0.9, 0.7] }
+			lightIntensities: { value: [0.9, 0.6] },
+			// Adding audio-reactive uniforms using existing data
+			audioEnergy: { value: 0.0 },
+			waveAmplitude: { value: 0.0 }
 		},
 		vertexShader: `
 			uniform float time;
+			uniform float audioEnergy;
+			uniform float waveAmplitude;
 			varying vec3 vPosition;
 			varying vec3 vNormal;
-			varying vec2 vUv;
 			varying vec3 vViewDir;
-			varying vec3 vWorldPos;
-			varying mat4 vModelMatrix;
-			varying vec3 vViewPosition;
 			
 			void main() {
-				vUv = uv;
-				vNormal = normalize(normalMatrix * normal);
 				vPosition = position;
-				
-				vec3 newPosition = position;
-				float wave = sin(position.x * 5.0 + time * 2.0) * 0.03 * 
-							smoothstep(-2.0, 1.0, position.y) +
-							cos(position.z * 5.0 + time * 1.5) * 0.03 * 
-							smoothstep(-2.0, 1.0, position.y);
-							
-				newPosition.y += wave;
-				
-				vec4 worldPos = modelMatrix * vec4(newPosition, 1.0);
-				vec4 viewPos = viewMatrix * worldPos;  // Calculate view space position
-				
-				vWorldPos = worldPos.xyz;
-				vViewPosition = viewPos.xyz;  // Store view space position
+				vNormal = normalize(normalMatrix * normal);
+				vec4 worldPos = modelMatrix * vec4(position, 1.0);
 				vViewDir = normalize(cameraPosition - worldPos.xyz);
-				vModelMatrix = modelMatrix;
 				
-				gl_Position = projectionMatrix * viewPos;
-			}`,
+				// Enhanced wave motion using audio
+				vec3 pos = position;
+				float wave = sin(position.x * 5.0 + time * 2.0) * 0.03 * 
+							smoothstep(-2.0, 1.0, position.y) * (1.0 + audioEnergy) +
+							cos(position.z * 5.0 + time * 1.5) * 0.03 * 
+							smoothstep(-2.0, 1.0, position.y) * waveAmplitude;
+				pos.y += wave;
+				
+				gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+			}
+		`,
 		fragmentShader: `
-			uniform sampler2D fluidTexture;
 			uniform float time;
 			uniform vec3 fluidColor;
 			uniform vec3 lightColor;
-			uniform float iorAir;
-			uniform float iorWater;
-			uniform vec3 sphereCenter;
-			uniform float sphereRadius;
 			uniform float fluidLevel;
-			uniform vec3 lightPositions[4];
-			uniform vec3 lightColors[4];
-			uniform float lightIntensities[4];
+			uniform vec3 lightPositions[2];
+			uniform vec3 lightColors[2];
+			uniform float lightIntensities[2];
+			uniform float audioEnergy;
+			uniform float waveAmplitude;
 			
 			varying vec3 vPosition;
 			varying vec3 vNormal;
-			varying vec2 vUv;
 			varying vec3 vViewDir;
-			varying vec3 vWorldPos;
-			varying mat4 vModelMatrix;
-			varying vec3 vViewPosition;
-			
-			float intersectSphere(vec3 origin, vec3 ray) {
-				vec3 toSphere = origin - sphereCenter;
-				float a = dot(ray, ray);
-				float b = 2.0 * dot(toSphere, ray);
-				float c = dot(toSphere, toSphere) - sphereRadius * sphereRadius;
-				float discriminant = b*b - 4.0*a*c;
-				if (discriminant > 0.0) {
-					float t = (-b - sqrt(discriminant)) / (2.0 * a);
-					if (t > 0.0) return t;
-				}
-				return 1.0e6;
-			}
-
-			vec3 calculateLighting(vec3 normal, vec3 viewDir, vec3 baseColor) {
-				vec3 finalColor = vec3(0.0);
-				
-				// Adjusted ambient contribution
-				vec3 ambient = baseColor * 0.2;  // Reduced ambient
-				finalColor += ambient;
-
-				// Calculate contribution from each light
-				for(int i = 0; i < 4; i++) {
-					vec3 lightDir = normalize(lightPositions[i]);
-					vec3 lightColor = lightColors[i];
-					float intensity = lightIntensities[i];
-					
-					// Enhanced diffuse with view-dependent falloff
-					float diff = max(dot(normal, lightDir), 0.0);
-					float viewFactor = pow(max(dot(viewDir, lightDir), 0.0), 0.5);
-					vec3 diffuse = diff * lightColor * baseColor * mix(0.7, 1.0, viewFactor);
-					
-					// Adjusted specular for water surface
-					vec3 halfwayDir = normalize(lightDir + viewDir);
-					float spec = pow(max(dot(normal, halfwayDir), 0.0), 64.0);  // Increased shininess
-					vec3 specular = spec * lightColor * 0.8;  // Increased specular intensity
-					
-					// Enhanced fresnel effect
-					float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 4.0);
-					
-					// Combine with intensity and view-dependent factors
-					float viewDist = length(vViewPosition);
-					float distanceFalloff = 1.0 - smoothstep(0.0, 8.0, viewDist);
-					
-					finalColor += (diffuse + specular * fresnel) * intensity * mix(0.8, 1.0, distanceFalloff);
-				}
-
-				// Enhanced rim lighting
-				float rim = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.0);
-				finalColor += rim * vec3(0.2, 0.3, 0.4) * 0.4;
-
-				return finalColor;
-			}
-
-			vec3 getSurfaceRayColor(vec3 origin, vec3 ray, vec3 waterColor) {
-				vec3 color;
-				float q = intersectSphere(origin, ray);
-				
-				if (q < 1.0e6) {
-					vec3 point = origin + ray * q;
-					vec3 normal = normalize(point - sphereCenter);
-					vec3 viewDir = -ray;
-					
-					// Use new lighting calculation
-					color = calculateLighting(normal, viewDir, waterColor);
-					
-					// Add caustics
-					float causticIntensity = 0.0;
-					for(int i = 2; i < 4; i++) { // Only use caustic lights
-						vec3 lightDir = normalize(lightPositions[i]);
-						causticIntensity += pow(max(0.0, dot(
-							normalize(refract(-lightDir, vec3(0.0, 1.0, 0.0), iorAir / iorWater)),
-							normal
-						)), 5.0) * lightIntensities[i];
-					}
-					
-					color += waterColor * causticIntensity * 0.5;
-				} else {
-					color = waterColor * 0.3;
-				}
-				
-				return color;
-			}
-			
-			float fresnel(float cosTheta) {
-				float R0 = pow((iorAir - iorWater) / (iorAir + iorWater), 2.0);
-				return R0 + (1.0 - R0) * pow(1.0 - cosTheta, 3.0);
-			}
-			
-			float caustics(vec3 pos, vec3 lightDir) {
-				vec3 normalizedPos = normalize(pos);
-				// Create overlapping sine waves with different frequencies and phases
-				float causticPattern = 
-					sin(normalizedPos.x * 5.0 + normalizedPos.z * 4.0 + time * 1.2) * 
-					sin(normalizedPos.z * 4.0 + normalizedPos.x * 3.0 + time) + 
-					sin(normalizedPos.x * 3.0 - normalizedPos.z * 5.0 + time * 0.8) * 
-					sin(normalizedPos.z * 6.0 + normalizedPos.x * 2.0 + time * 1.5) * 0.5;
-				
-				return pow(max(0.0, causticPattern), 2.0) * 0.3; // Softer caustics
-			}
 			
 			void main() {
 				vec3 normal = normalize(vNormal);
+				float height = vPosition.y;
+				float waterMask = smoothstep(fluidLevel - 0.1, fluidLevel + 0.1, height);
 				
-				// Use view space Y coordinate for fluid level check
-				float viewHeight = vViewPosition.y;
+				// Enhanced wave pattern with audio reactivity
+				float wave = sin(vPosition.x * 5.0 + time + audioEnergy) * 0.5 + 
+							cos(vPosition.z * 5.0 + time * 1.2 + waveAmplitude) * 0.5;
 				
-				// Adjust fluid level check to view space
-				if (viewHeight < (fluidLevel + sin(vViewPosition.x * 0.5 + time) * 0.1)) {
-					float cosTheta = max(0.0, dot(normal, vViewDir));
-					vec3 reflectedRay = reflect(vViewDir, normal);
-					vec3 refractedRay = refract(vViewDir, normal, iorAir / iorWater);
-					float fresnelTerm = fresnel(cosTheta);
-					
-					vec3 reflectedColor = getSurfaceRayColor(vWorldPos, reflectedRay, fluidColor);
-					vec3 refractedColor = getSurfaceRayColor(vWorldPos, refractedRay, fluidColor);
-					
-					// Adjust mix ratio to favor reflections while maintaining transparency
-					float reflectionStrength = mix(0.3, 0.7, fresnelTerm);
-					vec3 finalColor = mix(refractedColor, reflectedColor, reflectionStrength);
-					
-					// Add underwater depth effect
-					float depth = abs(viewHeight - fluidLevel);
-					float underwaterFactor = exp(-depth * 0.5);
-					finalColor = mix(fluidColor * 0.5, finalColor, underwaterFactor);
-					
-					// Enhance specular highlights
-					vec3 specularColor = vec3(0.0);
-					for(int i = 0; i < 4; i++) {
-						vec3 lightDir = normalize(lightPositions[i]);
-						vec3 halfwayDir = normalize(lightDir + vViewDir);
-						float spec = pow(max(dot(normal, halfwayDir), 0.0), 64.0);
-						specularColor += lightColors[i] * spec * lightIntensities[i] * 0.5;
-					}
-					finalColor += specularColor;
-					
-					// Add foam with adjusted transparency
-					float waterLevelDist = abs(viewHeight - fluidLevel);
-					float foam = 1.0 - smoothstep(0.0, 0.1, waterLevelDist);
-					float waveOffset = sin(vViewPosition.x * 5.0 + time * 2.0) * 0.05 + 
-									cos(vViewPosition.z * 5.0 + time * 1.5) * 0.05;
-					foam *= 1.0 + waveOffset;
-					
-					// View-dependent foam
-					float viewFoamFactor = 1.0 - abs(dot(normal, vec3(0.0, 1.0, 0.0)));
-					foam *= viewFoamFactor * 0.5;
-					
-					vec3 foamLight = vec3(0.0);
-					for(int i = 0; i < 4; i++) {
-						vec3 lightDir = normalize(lightPositions[i]);
-						float diff = max(dot(normal, lightDir), 0.0);
-						foamLight += lightColors[i] * diff * lightIntensities[i];
-					}
-					
-					finalColor += foam * foamLight * 0.5;
-					
-					// View and depth-dependent transparency
-					float baseTransparency = 0.5;  // Increased base transparency
-					float depthFactor = exp(-depth * 0.3);  // Slower depth falloff
-					float viewFactor = pow(1.0 - abs(dot(normal, vViewDir)), 2.0);
-					float transparency = mix(baseTransparency, 0.95, viewFactor * depthFactor);
-					
-					gl_FragColor = vec4(finalColor, transparency);
-				} else {
-					gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+				// Enhanced fresnel with audio reactivity
+				float fresnel = pow(1.0 - max(dot(normal, vViewDir), 0.0), 3.0) * (1.0 + audioEnergy * 0.5);
+				
+				vec3 baseColor = fluidColor * (0.7 + wave * 0.3 + audioEnergy * 0.2);
+				vec3 finalColor = baseColor * 0.3; // Ambient
+				
+				// Enhanced lighting with audio reactivity
+				for(int i = 0; i < 2; i++) {
+					vec3 lightDir = normalize(lightPositions[i]);
+					float diff = max(dot(normal, lightDir), 0.0);
+					// Add specular highlight
+					vec3 halfDir = normalize(lightDir + vViewDir);
+					float spec = pow(max(dot(normal, halfDir), 0.0), 32.0);
+					float intensity = lightIntensities[i] * (1.0 + audioEnergy * 0.3);
+					finalColor += baseColor * lightColors[i] * (diff * 0.8 + spec * 0.4) * intensity;
 				}
-			}`,
+
+				// Enhance rim lighting
+				float rim = pow(1.0 - max(dot(normal, vViewDir), 0.0), 2.0);
+				finalColor += rim * vec3(0.3, 0.4, 0.5) * (0.3 + audioEnergy * 0.2);
+				
+				// Enhanced foam with audio reactivity
+				float foam = 1.0 - smoothstep(0.0, 0.1 + audioEnergy * 0.05, abs(height - fluidLevel));
+				finalColor += foam * vec3(1.0) * (0.2 + waveAmplitude * 0.1);
+				
+				float opacity = (1.0 - waterMask) * (0.6 + fresnel * 0.3 + foam * 0.1);
+				
+				gl_FragColor = vec4(finalColor, opacity);
+			}
+		`,
 		transparent: true,
-		side: THREE.DoubleSide,
+		side: THREE.FrontSide,
+		depthWrite: false,
 		blending: THREE.CustomBlending,
 		blendSrc: THREE.SrcAlphaFactor,
 		blendDst: THREE.OneMinusSrcAlphaFactor
@@ -574,7 +384,7 @@
 			preserveDrawingBuffer: false,
 			powerPreference: 'high-performance'
 		});
-		renderer.setClearColor(0x000000, 0.15); // Set to transparent
+		renderer.setClearColor(0x000000, 0); // Set to transparent
 		renderer.setSize(window.innerWidth, window.innerHeight);
 		renderer.setPixelRatio(
 			isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2)
@@ -604,6 +414,37 @@
 		controls.autoRotate = !isMobile;
 		controls.autoRotateSpeed = 0.75;
 
+		controls.addEventListener('end', (e) => {
+			if (controls.target.lengthSq() > 0.1) {  // If target has moved away from center
+				const startTarget = controls.target.clone();
+				const endTarget = new THREE.Vector3(0, 0, 0);  // Reset position
+				const duration = 1000; // 1 second transition
+				
+				const startPos = camera.position.clone();
+				const endPos = camera.position.clone().sub(startTarget);  // Keep same relative position
+				
+				let progress = 0;
+				const animate = () => {
+					progress = Math.min(progress + 0.02, 1);  // Increment by 0.02 each frame
+					
+					// Ease function (cubic)
+					const t = progress < 0.5 ? 
+						4 * progress * progress * progress : 
+						1 - Math.pow(-2 * progress + 2, 3) / 2;
+					
+					// Interpolate target and camera position
+					controls.target.lerpVectors(startTarget, endTarget, t);
+					camera.position.lerpVectors(startPos, endPos, t);
+					
+					if (progress < 1) {
+						requestAnimationFrame(animate);
+					}
+				};
+				
+				animate();
+			}
+		});
+
 		// Add rotation tracking
 		controls.addEventListener('change', () => {
 			if (!globe) return;
@@ -625,25 +466,27 @@
 	}
 
 	function initMeshes() {
+		// Create base geometries
 		const perfectSphereGeometry = new THREE.SphereGeometry(CRYSTAL_RADIUS, 64, 64);
-		const oceanGeometry = new THREE.SphereGeometry(FLUID_RADIUS, 128, 128);
+		const oceanGeometry = new THREE.SphereGeometry(FLUID_RADIUS, 64, 64); // Reduced segments since we're doing simpler rendering
 
+		// Create reflection camera setup
 		cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256);
 		cubeCamera = new THREE.CubeCamera(1, 1000, cubeRenderTarget);
 		scene.add(cubeCamera);
 
+		// Create meshes
 		globe = new THREE.Mesh(perfectSphereGeometry, outerMaterial);
 		innerGlobe = new THREE.Mesh(oceanGeometry, innerMaterial);
 
-		globe.castShadow = true;
-		globe.receiveShadow = true;
-		innerGlobe.castShadow = true;
-		innerGlobe.receiveShadow = true;
+		// Configure both meshes for proper rendering
+		globe.renderOrder = 0; // Render outer shell first
+		innerGlobe.renderOrder = 1; // Then render water
 
-		// Proper rendering order
-		globe.renderOrder = 1;
-		innerGlobe.renderOrder = 2;
+		globe.frustumCulled = false; // Always render the outer shell
+		innerGlobe.frustumCulled = false; // Always render the water
 
+		// Add to scene in correct order
 		scene.add(globe);
 		scene.add(innerGlobe);
 	}
@@ -751,7 +594,6 @@
 			initCamera();
 			initControls();
 			initMeshes();
-			initShaderUniforms(); // New function to initialize uniforms
 			initLights();
 			setupEventListeners();
 			initializeFluid();
@@ -761,54 +603,6 @@
 			console.error('Failed to initialize WebGL:', error);
 			showError('Failed to initialize 3D visualization');
 		}
-	}
-
-	function initShaderUniforms() {
-		// Update outer material uniforms
-		outerMaterial.uniforms.time.value = 0;
-		outerMaterial.uniforms.crystalColor.value = CRYSTAL_COLOR;
-		outerMaterial.uniforms.baseOpacity.value = CRYSTAL_OPACITY;
-		outerMaterial.uniforms.refractionStrength.value = CRYSTAL_REFRACTION;
-		outerMaterial.needsUpdate = true;
-
-		// Update inner material uniforms
-		innerMaterial.uniforms.time.value = 0;
-		innerMaterial.uniforms.fluidColor.value = FLUID_COLOR;
-		innerMaterial.uniforms.lightColor.value = LIGHT_COLOR;
-		innerMaterial.uniforms.heightField.value = heightFieldTexture;
-		innerMaterial.uniforms.iorAir.value = IOR_AIR;
-		innerMaterial.uniforms.iorWater.value = IOR_WATER;
-		innerMaterial.uniforms.sphereCenter.value = new THREE.Vector3(0, 0, 0);
-		innerMaterial.uniforms.sphereRadius.value = 1.95;
-		innerMaterial.uniforms.fluidLevel.value = FILL_START; // Start at bottom
-		innerMaterial.uniforms.fluidTexture.value = fluidTexture;
-		innerMaterial.uniforms.velocityTexture.value = velocityTexture;
-		innerMaterial.uniforms.temperature = { value: 0.5 };
-		innerMaterial.needsUpdate = true;
-		innerMaterial.uniforms.lightPositions = {
-			value: [
-				new THREE.Vector3(0, 3, 2).normalize(),    // Changed
-				new THREE.Vector3(-2, 2, 1).normalize(),   // Changed
-				new THREE.Vector3(2, 4, 2).normalize(),    // Changed to match caustic lights
-				new THREE.Vector3(-2, 3, -2).normalize()   // Changed to match caustic lights
-			]
-		};
-		innerMaterial.uniforms.lightColors = {
-			value: [
-				new THREE.Color(0xffffff).multiplyScalar(0.7),   // Reduced intensity
-				new THREE.Color(0xffffff).multiplyScalar(0.4),   // Reduced
-				new THREE.Color(0x6bb5ff).multiplyScalar(1.2),   // Changed color and boosted
-				new THREE.Color(0x89cff0).multiplyScalar(1.1)    // Kept same
-			]
-		};
-		innerMaterial.uniforms.lightIntensities = {
-			value: [0.7, 0.4, 0.9, 0.7]
-		};
-		innerMaterial.blending = THREE.CustomBlending;
-		innerMaterial.blendSrc = THREE.SrcAlphaFactor;
-		innerMaterial.blendDst = THREE.OneMinusSrcAlphaFactor;
-		innerMaterial.transparent = true;
-		innerMaterial.needsUpdate = true;
 	}
 
 	// Optimized resize handler
@@ -823,116 +617,6 @@
 		renderer.setPixelRatio(
 			isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2)
 		);
-	}
-
-	// Efficient texture update
-	const textureData = new Float32Array(N * N * N * 4);
-	function updateFluidTexture() {
-		if (!fluidTexture || !velocityTexture) return;
-
-		const densityValue = $density;
-		const velocityXValue = $velocityX;
-		const velocityYValue = $velocityY;
-		const velocityZValue = $velocityZ;
-		const temperatureValue = $temperature;
-
-		// Update main fluid texture
-		for (let i = 0; i < N * N * N; i++) {
-			const i4 = i * 4;
-			textureData[i4] = densityValue[i];
-			textureData[i4 + 1] = velocityXValue[i];
-			textureData[i4 + 2] = velocityYValue[i];
-			textureData[i4 + 3] = temperatureValue[i];
-		}
-
-		// Set texture data with correct typing
-		fluidTexture.image = {
-			data: textureData,
-			width: N,
-			height: N * N
-		};
-		fluidTexture.needsUpdate = true;
-
-		// Update velocity texture with proper typing
-		const velocityData = new Float32Array(N * N * 4);
-		for (let i = 0; i < N * N; i++) {
-			const i4 = i * 4;
-			velocityData[i4] = velocityXValue[i];
-			velocityData[i4 + 1] = velocityYValue[i];
-			velocityData[i4 + 2] = velocityZValue[i];
-			velocityData[i4 + 3] = 1.0;
-		}
-
-		velocityTexture.image = {
-			data: velocityData,
-			width: N,
-			height: N
-		};
-		velocityTexture.needsUpdate = true;
-
-		if (innerMaterial instanceof THREE.ShaderMaterial) {
-			innerMaterial.uniforms.velocityTexture.value = velocityTexture;
-		}
-	}
-
-	const heightFieldSize = 64;
-	const heightFieldData = new Float32Array(heightFieldSize * heightFieldSize * 4);
-	const heightFieldTexture = new THREE.DataTexture(
-		heightFieldData,
-		heightFieldSize,
-		heightFieldSize,
-		THREE.RGBAFormat,
-		THREE.FloatType
-	);
-
-	// Set texture data with correct typing
-	heightFieldTexture.image = {
-		data: heightFieldData,
-		width: heightFieldSize,
-		height: heightFieldSize
-	};
-	heightFieldTexture.minFilter = THREE.LinearFilter;
-	heightFieldTexture.magFilter = THREE.LinearFilter;
-	heightFieldTexture.needsUpdate = true;
-
-	// Update heightfield based on audio data
-	function updateHeightField() {
-		if (!audioData?.frequencies) return;
-
-		const { frequencies } = audioData;
-		const binSize = frequencies.length / heightFieldSize;
-
-		for (let i = 0; i < heightFieldSize; i++) {
-			for (let j = 0; j < heightFieldSize; j++) {
-				const idx = (i * heightFieldSize + j) * 4;
-
-				// Sample audio frequencies in a circular pattern
-				const angle = (Math.PI * 2 * j) / heightFieldSize;
-				const radius = i / heightFieldSize;
-
-				// Map angle and radius to frequency bins
-				const angularBin = Math.floor((angle / (Math.PI * 2)) * binSize);
-				const radialBin = Math.floor(radius * binSize);
-
-				// Combine angular and radial components for final frequency index
-				const freqIndex = Math.min(
-					Math.floor(angularBin + radialBin * binSize),
-					frequencies.length - 1
-				);
-
-				// Calculate height based on audio frequency and distance from center
-				let height = frequencies[freqIndex] / 255.0;
-				height *= Math.exp(-radius * 3); // Fade out from center
-
-				heightFieldData[idx] = height;
-				heightFieldData[idx + 1] = 0;
-				heightFieldData[idx + 2] = 0;
-				heightFieldData[idx + 3] = 1;
-			}
-		}
-
-		heightFieldTexture.needsUpdate = true;
-		innerMaterial.uniforms.heightField.value = heightFieldTexture;
 	}
 
 	// Enhanced audio processing with better fluid interaction
@@ -957,21 +641,32 @@
 		const fluidSaturation = 0.5 + midFreq * 0.5;  // 0.5 - 1.0
 		const fluidLightness = 0.3 + highFreq * 0.3;  // 0.3 - 0.6
 		
-		// Create complementary colors for fluid and crystal
-		const fluidColor = new THREE.Color().setHSL(baseHue / 360, fluidSaturation, fluidLightness);
-		const crystalColor = new THREE.Color().setHSL(
+		// Create complementary colors with smoother transitions
+		const targetFluidColor = new THREE.Color().setHSL(baseHue / 360, fluidSaturation, fluidLightness);
+		const targetCrystalColor = new THREE.Color().setHSL(
 			((baseHue + 180) % 360) / 360, 
 			fluidSaturation * 0.5,  // Less saturated
 			0.7 + highFreq * 0.2    // Brighter
 		);
 
-		// Update material colors
+		// Update material colors with smooth transitions
 		if (innerMaterial instanceof THREE.ShaderMaterial) {
-			innerMaterial.uniforms.fluidColor.value = fluidColor;
-			innerMaterial.uniforms.lightColor.value.lerp(fluidColor, highFreq * 0.5);
+			// Smooth color transition
+			innerMaterial.uniforms.fluidColor.value.lerp(targetFluidColor, 0.1);
+			innerMaterial.uniforms.lightColor.value.lerp(targetFluidColor, highFreq * 0.3);
+			
+			// Update audio-reactive uniforms
+			innerMaterial.uniforms.audioEnergy.value = (bassFreq + midFreq + highFreq) / 3;
+			innerMaterial.uniforms.waveAmplitude.value = Math.max(...waveform) / 255;
+			
+			// Enhanced light intensities based on frequencies
+			innerMaterial.uniforms.lightIntensities.value = [
+				0.7 + bassFreq * 0.3,
+				0.4 + midFreq * 0.2
+			];
 		}
 		if (outerMaterial instanceof THREE.ShaderMaterial) {
-			outerMaterial.uniforms.crystalColor.value = crystalColor;
+			outerMaterial.uniforms.crystalColor.value.lerp(targetCrystalColor, 0.1);
 		}
 
 		// Process audio for fluid simulation
@@ -1099,7 +794,6 @@
 			// Process updates
 			if (hasAudioPermission) {
 				processAudio();
-				updateHeightField();
 			}
 
 			if (globe && rotationVelocity.lengthSq() > 0.001) {
@@ -1119,9 +813,8 @@
 				innerMaterial.uniforms.vorticityStrength.value = DEFAULT_CONFIG.vorticityStrength;
 			}
 
-			// Update simulation and textures
+			// Update simulation
 			updateSimulation();
-			updateFluidTexture();
 
 			// Constant Motion
 			const halfN = N / 2;
