@@ -28,6 +28,7 @@
             description: "Cloud infrastructure and database management",
             subskills: [
                 { name: "AWS Services", years: 3 },
+                { name: "Splunk/SPL", years: 1 },
                 { name: "SQL/PostgreSQL", years: 4 },
                 { name: "Snowflake", years: 1 },
                 { name: "Excel VBA", years: 5 }
