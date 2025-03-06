@@ -164,13 +164,13 @@
         border-radius: 0.5rem;
         padding: var(--spacing-base);
         cursor: pointer;
-        background-color: rgba(171, 209, 198, 0.05);
+        background-color: var(--color-fill);
         transition: all var(--transition-speed) ease;
         font-family: var(--font-family-base);
     }
 
     .legend-item:hover {
-        background-color: rgba(249, 188, 96, 0.1);
+        background-color: var(--color-hover);
     }
 
     .legend-item:focus-visible {
@@ -179,7 +179,7 @@
     }
 
     .legend-item.active {
-        background-color: rgba(249, 188, 96, 0.15);
+        background-color: rgba(255, 255, 255, 0.15);
     }
 
     .legend-header {
@@ -204,7 +204,7 @@
 
     .expand-icon {
         font-size: 2vmin;
-        color: var(--color-text-secondary);
+        color: var(--color-text-primary);
     }
 
     .skill-details {
@@ -213,7 +213,7 @@
     }
 
     .description {
-        color: var(--color-text-secondary);
+        color: var(--color-text-primary);
         font-size: 2.5vmin;
         margin-bottom: var(--spacing-base);
     }
@@ -227,7 +227,7 @@
     }
 
     .subskill {
-        background-color: rgba(0, 70, 67, 0.3);
+        background-color: var(--color-fill);
         padding: 0.75rem;
         border-radius: 0.25rem;
     }
@@ -244,13 +244,13 @@
     }
 
     .proficiency {
-        color: var(--color-text-secondary);
+        color: var(--color-text-primary);
         font-size: 1.8vmin;
     }
 
     .progress-bar {
         height: 4px;
-        background-color: rgba(171, 209, 198, 0.1);
+        background-color: var(--color-fill);
         border-radius: 2px;
         overflow: hidden;
     }

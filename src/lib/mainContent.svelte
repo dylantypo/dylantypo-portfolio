@@ -217,7 +217,7 @@
         line-height: 1.25;
         font-weight: 600;
         padding: 0 max(20vw, 2rem);
-        color: var(--color-text-secondary);
+        color: var(--color-text-primary);
         max-width: 100%;
         transform-style: preserve-3d;
         perspective: 2000px;

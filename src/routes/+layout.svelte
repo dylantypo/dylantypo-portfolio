@@ -12,11 +12,13 @@
 <style>
     :root {
         /* Color System */
-        --color-primary: #004643;
-        --color-secondary: #f9bc60;
-        --color-text-primary: #e8e4e6;
-        --color-text-secondary: #abd1c6;
+        --color-primary: #18181b;
+        --color-secondary: #14b8a6;
+        --color-text-primary: #ffffff;
+        --color-text-secondary: #27272a;
         --color-background: var(--color-primary);
+        --color-hover: rgba(255, 255, 255, 0.15);
+        --color-fill: rgba(175, 175, 175, 0.055);
         --color-focus: var(--color-secondary);
         
         /* Typography */

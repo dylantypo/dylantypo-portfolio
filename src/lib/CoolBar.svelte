@@ -148,7 +148,7 @@
                   border-radius 1s var(--transition-ease), 
                   opacity 1s, 
                   transform var(--transition-speed);
-        color: var(--color-primary);
+        color: var(--color-background);
         display: flex;
         justify-content: center;
         align-items: center;

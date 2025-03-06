@@ -197,7 +197,7 @@
         align-items: center;
         justify-content: flex-start;
         position: relative;
-        background-color: rgba(171, 209, 198, 0.05);
+        background-color: var(--color-fill);
         transition: color var(--transition-speed);
         border: none;
         margin: 0;
@@ -280,7 +280,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(249, 188, 96, 0.1);
+        background: var(--color-hover);
         transform-origin: center; 
         transform: scaleY(0);
         transition: transform var(--transition-speed) ease-in-out, 
@@ -299,7 +299,7 @@
         }
 
         button.job:hover .description {
-            color: var(--color-text-secondary);
+            color: var(--color-text-primary);
         }
     }
 
@@ -315,7 +315,7 @@
         }
 
         button.job[aria-expanded="true"] .description {
-            color: var(--color-text-secondary);
+            color: var(--color-text-primary);
         }
     }
 

@@ -123,7 +123,7 @@
         transition: height 0.6s var(--transition-ease), 
                   border-radius 1s var(--transition-ease), 
                   opacity 1s;
-        color: var(--color-primary);
+        color: var(--color-background);
         display: flex;
         justify-content: center;
         align-items: center;

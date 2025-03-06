@@ -161,7 +161,7 @@
 
         // Initialize scene
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color('#004643');
+        scene.background = new THREE.Color('#18181b');
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer();
         const labelRenderer = new CSS2DRenderer();
@@ -328,8 +328,7 @@
         // Create globe
         const globe = new Globe()
             .showAtmosphere(true)
-            .atmosphereAltitude(0.15)
-            .atmosphereColor('rgb(171, 209, 198)')
+            .atmosphereAltitude(0.1)
             .globeImageUrl('/geo/2_no_clouds_4k.jpg')
             .bumpImageUrl('/geo/elev_bump_4k.jpg')
             .pointsData(labData)
@@ -825,7 +824,7 @@
         height: 100dvh;     /* Dynamic viewport height */
         height: calc(var(--vh, 1vh) * 100); /* Fallback */
         overflow: hidden;
-        background-color: var(--color-background);
+        background-color: var(--color-primary);
         will-change: transform;
         touch-action: pan-y;
         -webkit-overflow-scrolling: touch;

@@ -24,27 +24,10 @@
         font-display: swap;
     }
 
-    /* Hide scrollbar for webkit browsers */
-    :global(::-webkit-scrollbar) {
-        display: none;
-    }
-
-    /* Hide scrollbar for non-webkit browsers */
-    :global(html) {
-        scrollbar-width: none;
-    }
-
-    :global(body) {
-        width: 100vw;
-        height: 100%;
-        margin: 0;
-        padding: 0;
-    }
-
     /* Global body styling */
     main {
         font-family: 'KenneyFuture', sans-serif;
-        background-color: #004643;
+        background-color: var(--color-background);
         width: 100%;
         height: 100%;
         margin: 0;
@@ -58,7 +41,7 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background-color: #f9bc60;
+        background-color: var(--color-secondary);
     }
 
     .message button {
@@ -68,7 +51,7 @@
         align-items: center;
         font-family: 'KenneyFuture';
         width: inherit;
-        color: #e8e4e6;
+        color: var(--color-text-primary);
         background-color: transparent;
         border: none;
     }
