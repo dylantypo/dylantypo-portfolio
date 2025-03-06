@@ -311,7 +311,7 @@
 
         button.job[aria-expanded="true"] .background {
             transform: scaleY(1);
-            background: rgba(249, 188, 96, 0.1); /* Explicit background */
+            background: var(--color-hover);
         }
 
         button.job[aria-expanded="true"] .description {
