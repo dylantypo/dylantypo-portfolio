@@ -951,7 +951,7 @@
         flex-direction: column;
         align-items: center;
         gap: 0.5rem;
-        background-color: rgba(249, 188, 96, 0.1);
+        background-color: var(--color-fill);
         padding: 0.75rem 1.5rem;
         border-radius: 2rem;
         backdrop-filter: blur(4px);
@@ -1058,7 +1058,7 @@
         transform: translateY(-50%);
         width: 4px;
         height: 100px;
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: var(--color-fill);
         border-radius: 2px;
         z-index: var(--z-index-overlay);
         pointer-events: none;
