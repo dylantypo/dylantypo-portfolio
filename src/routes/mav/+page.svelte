@@ -3,10 +3,10 @@
 	import { browser } from '$app/environment';
 
 	// Configuration constants - easy to adjust
-	const MAX_BUBBLE_SIZE = 120; // Maximum bubble size before popping
+	const MAX_BUBBLE_SIZE = 350; // Maximum bubble size before popping
 	const MIN_BUBBLE_SIZE = 5;   // Starting size for new bubbles
-	const BASE_BUBBLE_SIZE = 40; // Size after inflation
-	const INFLATION_SPEED = 0.15; // How quickly bubbles inflate (0-1)
+	const BASE_BUBBLE_SIZE = 55; // Base reference size (now dynamically adjusted)
+	const INFLATION_SPEED = 0.25; // How quickly bubbles inflate (0-1)
 	const MAX_BUBBLES = 50;      // Maximum number of bubbles
 	const BUBBLE_SPAWN_INTERVAL_NO_AUDIO = 2000; // ms between spawns without audio
 	const BUBBLE_RESPONSE_FACTOR = 0.4;  // How responsive bubbles are to audio (0-1)
@@ -72,7 +72,11 @@
 				case BubbleState.ACTIVE:
 					// Respond to audio and check for max size
 					if (audioValue > 0) {
-						this.targetRadius = this.baseRadius * (1 + audioValue * BUBBLE_RESPONSE_FACTOR);
+						// Make the response more subtle since base size already reflects audio
+						this.targetRadius = this.baseRadius * (1 + audioValue * BUBBLE_RESPONSE_FACTOR * 0.5);
+					} else {
+						// Slowly return to base size when no audio
+						this.targetRadius = this.baseRadius;
 					}
 					
 					// Apply slight wobble
@@ -226,6 +230,26 @@
 		'#2196f3'  // Treble (blue)
 	];
 
+	// Function to generate color variations
+	function getColorVariation(baseColor: string, amount: number = 15): string {
+		// Convert hex to RGB
+		const r = parseInt(baseColor.substring(1, 3), 16);
+		const g = parseInt(baseColor.substring(3, 5), 16);
+		const b = parseInt(baseColor.substring(5, 7), 16);
+		
+		// Generate random variations within amount range
+		const rVariation = Math.max(0, Math.min(255, r + (Math.random() * 2 - 1) * amount));
+		const gVariation = Math.max(0, Math.min(255, g + (Math.random() * 2 - 1) * amount));
+		const bVariation = Math.max(0, Math.min(255, b + (Math.random() * 2 - 1) * amount));
+		
+		// Convert back to hex with padding
+		const rHex = Math.floor(rVariation).toString(16).padStart(2, '0');
+		const gHex = Math.floor(gVariation).toString(16).padStart(2, '0');
+		const bHex = Math.floor(bVariation).toString(16).padStart(2, '0');
+		
+		return `#${rHex}${gHex}${bHex}`;
+	}
+
 	// State variables
 	let canvas = $state<HTMLCanvasElement | null>(null);
 	let ctx = $state<CanvasRenderingContext2D | null>(null);
@@ -370,9 +394,31 @@
 		}
 		
 		const band = Math.floor(Math.random() * 3);
-		const radius = size > 0 ? size : BASE_BUBBLE_SIZE * (0.7 + Math.random() * 0.6);
 		
-		bubbles.push(new Bubble(x, y, radius, COLORS[band], band));
+		// Calculate dynamic base size using audio levels
+		let dynamicBaseSize = BASE_BUBBLE_SIZE;
+		
+		if (hasAudio && audioValues.length > 0) {
+			// Use the specific band for this bubble
+			const bandValue = audioValues[band] || 0;
+			
+			// Scale base size based on audio levels
+			dynamicBaseSize = BASE_BUBBLE_SIZE * (0.8 + bandValue * 1.5);
+			
+			// Add some randomness to the scaling
+			const randomFactor = 0.7 + Math.random() * 0.6;
+			dynamicBaseSize *= randomFactor;
+		} else {
+			// When no audio, use original randomization
+			dynamicBaseSize *= (0.7 + Math.random() * 0.6);
+		}
+		
+		// If size was explicitly provided, use that instead
+		const radius = size > 0 ? size : dynamicBaseSize;
+		
+		const baseColor = COLORS[band];
+		const colorVariation = getColorVariation(baseColor);
+		bubbles.push(new Bubble(x, y, radius, colorVariation, band));
 	}
 
 	// Process audio data
@@ -649,13 +695,6 @@
 </div>
 
 <style>
-	:global(body) {
-		margin: 0;
-		padding: 0;
-		overflow: hidden;
-		background-color: #000;
-	}
-	
 	.container {
 		width: 100%;
 		height: 100vh;
@@ -677,16 +716,17 @@
 		left: 50%;
 		transform: translateX(-50%);
 		z-index: 10;
-		background: rgba(0, 0, 0, 0.5);
+		background: var(--color-fill);
 		padding: 15px;
 		border-radius: 10px;
 		text-align: center;
+		font-family: var(--font-family);
 	}
 	
 	button {
-		background: rgba(80, 120, 255, 0.3);
-		color: white;
-		border: 1px solid rgba(100, 180, 255, 0.5);
+		background: var(--color-text-secondary);
+		color: var(--color-text-primary);
+		border: 1px solid var(--color-secondary);
 		border-radius: 20px;
 		padding: 8px 15px;
 		font-size: 16px;
@@ -695,14 +735,13 @@
 	}
 	
 	button:hover {
-		background: rgba(100, 150, 255, 0.4);
-		box-shadow: 0 0 15px rgba(100, 180, 255, 0.5);
+		background: var(--color-hover);
+		box-shadow: 0 0 15px var(--color-secondary);
 	}
 	
 	.info {
-		color: white;
+		color: var(--color-text-primary);
 		margin: 10px 0 0;
-		font-family: sans-serif;
 		font-size: 14px;
 	}
 </style>
