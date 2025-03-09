@@ -161,7 +161,7 @@
 <style>
     #content {
         color: var(--color-text-primary); 
-        user-select: none;
+        user-select: text;
     }
 
     #footer-content {
