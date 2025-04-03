@@ -153,7 +153,11 @@
             onkeydown={handleKeydown}
             aria-label="View contact information"
         >
-            <img src="favicon.png" alt="Stylized avatar headshot created by Midjourney">
+            <img 
+                src="profile.webp" 
+                width="200" 
+                height="200" 
+                alt="Stylized avatar headshot created by Midjourney">
         </button>
     </footer>
 </main>

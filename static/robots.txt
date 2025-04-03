@@ -1,0 +1,9 @@
+# https://www.dylanposner.com/robots.txt
+User-agent: *
+Allow: /
+
+# Disallow heavy resource folders if needed
+# Disallow: /geo/
+
+# Sitemap location (if you have one)
+Sitemap: https://www.dylanposner.com/sitemap.xml
