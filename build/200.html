@@ -2,36 +2,50 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#004643">
+        
+        <!-- Performance Optimizations -->
+        <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+        <link rel="preconnect" href="https://rsms.me" crossorigin>
+        <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/webfonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+        <link rel="preload" href="/Kenney%20Future.ttf" as="font" type="font/ttf" crossorigin>
+        
+        <!-- Critical CSS -->
+        <style>
+            :root {
+                --color-primary: #004643;
+                --color-background: #004643;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: var(--color-background);
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            }
+        </style>
         
         <!-- Core Meta Tags -->
         <title>Dylan Posner | Data Scientist</title>
         <meta name="title" content="Dylan Posner | Data Scientist">
-        <meta property="og:title" content="Dylan Posner - Data Scientist">
         <meta name="author" content="Dylan Posner">
         <meta name="description" content="Data science expert with 5 years experience, blending creativity and innovation to enhance data-driven decision making.">
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="canonical" href="https://dylanposner.com" />
         
-        <!-- Open Graph / Facebook -->
-        <meta property="og:type" content="profile">
-        <meta property="og:url" content="https://dylanposner.com">
-        <meta property="og:description" content="Data science expert with 5 years experience, blending creativity and innovation to enhance data-driven decision making.">
-        <meta property="og:site_name" content="Dylan Posner Portfolio">
-        <meta property="profile:first_name" content="Dylan">
-        <meta property="profile:last_name" content="Posner">
-
-        <!-- Reading Mode Specific -->
-        <meta name="displaydate" content="2025-01-10"> <!-- For Edge -->
-        <link rel="author" href="https://dylanposner.com"> <!-- For Mozilla -->
+        <!-- Deferred/Non-Critical CSS -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" media="print" onload="this.media='all'" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" media="print" onload="this.media='all'" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" media="print" onload="this.media='all'" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://rsms.me/inter/inter.css" media="print" onload="this.media='all'">
         
-        <!-- Primary CDN Links -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" crossorigin="anonymous">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" crossorigin="anonymous">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" crossorigin="anonymous">
-        <link href="https://rsms.me/inter/inter.css" rel="stylesheet">
-		<link rel="icon" href="/favicon.ico" />
-		
-        <!-- Viewport & Theme -->
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0" />
-        <meta name="theme-color" content="#004643">
+        <!-- Fallback for disabled JavaScript -->
+        <noscript>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" crossorigin="anonymous">
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" crossorigin="anonymous">
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" crossorigin="anonymous">
+            <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+        </noscript>
 
         <!-- IOS Meta Tags -->
         <meta name="mobile-web-app-capable" content="yes">
@@ -39,17 +53,27 @@
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-title" content="Dylan Posner">
 
-        <!-- Bing Verification -->
-        <meta name="msvalidate.01" content="D5221F0F4DF353FEF4690B6AAF24CF49" />
-
-        <!-- SEO Metadata -->
-		<link rel="canonical" href="https://dylanposner.com" />
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="profile">
+        <meta property="og:url" content="https://dylanposner.com">
+        <meta property="og:title" content="Dylan Posner - Data Scientist">
+        <meta property="og:description" content="Data science expert with 5 years experience, blending creativity and innovation to enhance data-driven decision making.">
+        <meta property="og:site_name" content="Dylan Posner Portfolio">
+        <meta property="profile:first_name" content="Dylan">
+        <meta property="profile:last_name" content="Posner">
 
         <!-- Twitter -->
 		<meta name="twitter:card" content="summary_large_image">
 		<meta name="twitter:site" content="@superdopedylan">
 		<meta name="twitter:title" content="Dylan Posner | Data Science Professional">
 		<meta name="twitter:description" content="Dylan Posner: A data science professional with almost half a decade of diverse experience.">
+
+        <!-- Reading Mode Specific -->
+        <meta name="displaydate" content="2025-01-10">
+        <link rel="author" href="https://dylanposner.com">
+
+        <!-- Bing Verification -->
+        <meta name="msvalidate.01" content="D5221F0F4DF353FEF4690B6AAF24CF49" />
 
         <!-- Schema Markup -->
 		<script type="application/ld+json">
@@ -69,34 +93,27 @@
         </script>
 
 		
-		<link rel="modulepreload" href="/_app/immutable/entry/start.CL4mByZd.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/BQuEdyTT.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/BKGJO9WC.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/DcCg_LKi.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/EP-eKYqQ.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/BVCbPxyo.js">
-		<link rel="modulepreload" href="/_app/immutable/entry/app.DMH2hW9N.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/CmsKOCeN.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/DJN_L4Tl.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/Bh1aSk7W.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/BLzi_w-X.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/C79kfP6e.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/DbSv-rM-.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/BYg2HLVF.js">
+		<link href="/_app/immutable/assets/globe.DD4HCvFd.css" rel="stylesheet">
+		<link rel="modulepreload" href="/_app/immutable/entry/start.DiuTIFXn.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/Crv8Gj3q.js">
+		<link rel="modulepreload" href="/_app/immutable/entry/app.Uc4lFVZ6.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/wyAq1MOk.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/Dpx5_lQM.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/_QG_dCsS.js">
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div id="svelte" style="display: contents">
 			<script>
 				{
-					__sveltekit_1uzuftr = {
+					__sveltekit_fnoutw = {
 						base: ""
 					};
 
 					const element = document.currentScript.parentElement;
 
 					Promise.all([
-						import("/_app/immutable/entry/start.CL4mByZd.js"),
-						import("/_app/immutable/entry/app.DMH2hW9N.js")
+						import("/_app/immutable/entry/start.DiuTIFXn.js"),
+						import("/_app/immutable/entry/app.Uc4lFVZ6.js")
 					]).then(([kit, app]) => {
 						kit.start(app, element);
 					});

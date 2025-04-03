@@ -189,6 +189,32 @@
             // First, remove the placeholder
             container.innerHTML = '';
             container.appendChild(instructions); // Re-add instructions
+
+            // Set priority for loading
+            if ('connection' in navigator) {
+            const connection = navigator.connection as any;
+            if (connection && (connection.saveData || connection.effectiveType === '2g' || connection.effectiveType === '3g')) {
+                // For low-end devices/connections, use even lower resolution
+                devicePixelCategory = 'low';
+            }
+            }
+
+            // Optimize for main thread performance
+            const optimizeRendering = () => {
+            // Reduce quality on slow devices
+            if (devicePixelCategory === 'low') {
+                renderer.setPixelRatio(1.0);
+                // Use lower polygon count for mobile
+                const simplifiedCloudsGeometry = new THREE.SphereGeometry(
+                globe.getGlobeRadius() * (1 + CLOUDS_ALT),
+                30,
+                30 
+                );
+                Clouds.geometry = simplifiedCloudsGeometry;
+            }
+            };
+
+            optimizeRendering();
         
             // Add pointer event handling
             container.style.touchAction = 'none';
@@ -470,7 +496,7 @@
             // Enhance globe appearance
             const globeMaterial = globe.globeMaterial() as THREE.MeshPhongMaterial;
             if (globeMaterial instanceof THREE.MeshPhongMaterial) {
-                new THREE.TextureLoader().load('//unpkg.com/three-globe/example/img/earth-water.png', texture => {
+                new THREE.TextureLoader().load('/geo/earth-water.webp', texture => {
                     globeMaterial.specularMap = texture;
                     globeMaterial.specular = new THREE.Color('grey');
                     globeMaterial.shininess = 100;
