@@ -192,29 +192,27 @@
 
             // Set priority for loading
             if ('connection' in navigator) {
-            const connection = navigator.connection as any;
-            if (connection && (connection.saveData || connection.effectiveType === '2g' || connection.effectiveType === '3g')) {
-                // For low-end devices/connections, use even lower resolution
-                devicePixelCategory = 'low';
-            }
+                const connection = navigator.connection as any;
+                if (connection && (connection.saveData || connection.effectiveType === '2g' || connection.effectiveType === '3g')) {
+                    // For low-end devices/connections, use even lower resolution
+                    devicePixelCategory = 'low';
+                }
             }
 
             // Optimize for main thread performance
             const optimizeRendering = () => {
-            // Reduce quality on slow devices
-            if (devicePixelCategory === 'low') {
-                renderer.setPixelRatio(1.0);
-                // Use lower polygon count for mobile
-                const simplifiedCloudsGeometry = new THREE.SphereGeometry(
-                globe.getGlobeRadius() * (1 + CLOUDS_ALT),
-                30,
-                30 
-                );
-                Clouds.geometry = simplifiedCloudsGeometry;
-            }
+                // Reduce quality on slow devices
+                if (devicePixelCategory === 'low') {
+                    renderer.setPixelRatio(1.0);
+                    // Use lower polygon count for mobile
+                    const simplifiedCloudsGeometry = new THREE.SphereGeometry(
+                        globe.getGlobeRadius() * (1 + CLOUDS_ALT),
+                        50,
+                        50
+                    );
+                    Clouds.geometry = simplifiedCloudsGeometry;
+                }
             };
-
-            optimizeRendering();
         
             // Add pointer event handling
             container.style.touchAction = 'none';
@@ -507,7 +505,8 @@
             const tiltAngle = (Math.PI / 6) * -1;
             globe.setRotationFromAxisAngle(tiltAxis, tiltAngle);
 
-            
+            optimizeRendering();
+
             const calculateIdealDistance = (isMobile: boolean) => {
                 const baseFactor = 1.95;
                 const mobileAdjustment = isMobile ? 3 : 1.5;
