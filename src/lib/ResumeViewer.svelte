@@ -118,7 +118,7 @@
 	/* 🆕 Add OpenDyslexic font face */
 	@font-face {
 		font-family: 'OpenDyslexicMono';
-		src: url('/dyslexiafont/OpenDyslexicMono-Regular.otf') format('opentype');
+		src: url('/fonts/OpenDyslexicMono-Regular.otf') format('opentype');
 		font-display: swap;
 	}
 
@@ -208,6 +208,11 @@
 			sans-serif;
 		line-height: 1.25;
 		font-size: var(--font-size-base);
+	}
+
+	:global(.resume-content div[align='center'] p) {
+		word-break: break-word;
+		font-size: 1em;
 	}
 
 	:global(.resume-content.dyslexia-mode) {
@@ -493,7 +498,7 @@
 
 		/* 🎯 Consistent typography - desktop sizing */
 		:global(.resume-content h1) {
-			font-size: 14pt !important;
+			font-size: 18pt !important;
 			line-height: 1.1 !important;
 			margin: 0 0 8pt 0 !important;
 			color: black !important;
@@ -501,7 +506,7 @@
 		}
 
 		:global(.resume-content h2) {
-			font-size: 12pt !important;
+			font-size: 14pt !important;
 			line-height: 1.1 !important;
 			margin: 10pt 0 4pt 0 !important;
 			color: black !important;
@@ -509,7 +514,7 @@
 		}
 
 		:global(.resume-content h3) {
-			font-size: 11pt !important;
+			font-size: 12pt !important;
 			line-height: 1.1 !important;
 			margin: 5pt 0 3pt 0 !important;
 			color: black !important;
@@ -517,7 +522,7 @@
 		}
 
 		:global(.resume-content p) {
-			font-size: 11pt !important;
+			font-size: 12pt !important;
 			line-height: 1.2 !important;
 			margin: 0 0 4pt 0 !important;
 			color: black !important;
@@ -530,7 +535,7 @@
 		}
 
 		:global(.resume-content li) {
-			font-size: 11pt !important;
+			font-size: 12pt !important;
 			line-height: 1.2 !important;
 			margin: 0 0 2pt 0 !important;
 			color: black !important;
@@ -562,14 +567,14 @@
 			left: 0;
 			right: 0;
 			top: auto;
-			background: rgba(0, 0, 0, 0.9);
-			backdrop-filter: blur(10px);
+			background: linear-gradient(180deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 1) 100%);
+			backdrop-filter: blur(2px);
 			justify-content: center;
 			flex-wrap: wrap;
 		}
 
 		.outer-container {
-			padding-bottom: 6rem;
+			padding-bottom: 7.5rem;
 		}
 
 		.resume-scroll-container {
