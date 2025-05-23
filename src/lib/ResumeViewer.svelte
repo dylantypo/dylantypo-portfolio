@@ -289,7 +289,7 @@
       }
 
       .resume-content {
-          padding: 0.75in !important; /* Slightly smaller margins for more content */
+          padding: 0.5in !important; /* Slightly smaller margins for more content */
           border: none !important;
           border-radius: 0 !important;
           font-size: 11pt !important;
@@ -404,7 +404,7 @@
       /* Optimized page setup */
       @page {
           size: 8.5in 11in;
-          margin: 0.5in; /* Browser will handle this */
+          margin: 0.25in; /* Browser will handle this */
       }
 
       /* Force consistent measurements */
