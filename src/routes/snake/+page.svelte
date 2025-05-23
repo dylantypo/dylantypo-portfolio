@@ -1,718 +1,778 @@
 <script lang="ts">
-    import { onDestroy, onMount } from 'svelte';
-    import { browser } from '$app/environment';
+	import { onDestroy, onMount } from 'svelte';
+	import { browser } from '$app/environment';
 
-    // Constants
-    const INITIAL_SNAKE_LENGTH = 5;
-    const NUM_CELLS = 24;
-    const MIN_TAIL_SIZE = 0.35;
+	// Constants
+	const INITIAL_SNAKE_LENGTH = 5;
+	const NUM_CELLS = 24;
+	const MIN_TAIL_SIZE = 0.35;
 
-    type Segment = {
-        x: number,
-        y: number,
-        age: number,
-        id: number
-    };
+	type Segment = {
+		x: number;
+		y: number;
+		age: number;
+		id: number;
+	};
 
+	// Game State and Controls
+	enum GameState {
+		INIT,
+		THEME_SELECTION,
+		DIFFICULTY_SELECTION,
+		PLAYING
+	}
+	let currentState = $state(GameState.INIT);
+	let CELL_SIZE = $state(0);
+	let GRID_WIDTH = $state(0);
+	let GRID_HEIGHT = $state(0);
+	let snakeBody = $state<Segment[]>([]);
+	let snakeDirection = $state({ x: 1, y: 0 });
+	let nextSnakeDirection = $state<{ x: number; y: number } | null>(null);
+	let score = $state(0);
+	let munch = $state(0);
+	let total_food = $state(0);
+	let difficulty_value = $state(0);
+	let growthQueue = $state(0);
+	let isGameOver = $state(false);
+	let difficultyMultiplier = $state(1);
+	let initialIntervalSpeed: number;
+	let gameInterval: number | undefined;
+	let foodPosition = $state<{ x: number; y: number } | undefined>(undefined);
+	let startTouchX: number;
+	let startTouchY: number;
 
-    // Game State and Controls
-    enum GameState {
-        INIT,
-        THEME_SELECTION,
-        DIFFICULTY_SELECTION,
-        PLAYING
-    }
-    let currentState = $state(GameState.INIT);
-    let CELL_SIZE = $state(0);
-    let GRID_WIDTH = $state(0);
-    let GRID_HEIGHT = $state(0);
-    let snakeBody = $state<Segment[]>([]);
-    let snakeDirection = $state({ x: 1, y: 0 });
-    let nextSnakeDirection = $state<{ x: number, y: number } | null>(null);
-    let score = $state(0);
-    let munch = $state(0);
-    let total_food = $state(0);
-    let difficulty_value = $state(0);
-    let growthQueue = $state(0);
-    let isGameOver = $state(false);
-    let difficultyMultiplier = $state(1);
-    let initialIntervalSpeed: number;
-    let gameInterval: number | undefined;
-    let foodPosition = $state<{ x: number, y: number } | undefined>(undefined);
-    let startTouchX: number;
-    let startTouchY: number;
+	// Themes and Difficulties
+	type ThemeKey = 'classic' | 'retro' | 'aquatic' | 'desert' | 'night';
+	let themes = {
+		classic: {
+			snakeColor: '#E4B363',
+			foodColor: '#EF6461',
+			backgroundColor: '#E8E9EB'
+		},
+		retro: {
+			snakeColor: '#00FF00',
+			foodColor: '#FF0000',
+			backgroundColor: '#1E1E1E'
+		},
+		aquatic: {
+			snakeColor: '#285238',
+			foodColor: '#FAD848',
+			backgroundColor: '#4A90D9'
+		},
+		desert: {
+			snakeColor: '#264653',
+			foodColor: '#F4A261',
+			backgroundColor: '#E9C46A'
+		},
+		night: {
+			snakeColor: '#E63946',
+			foodColor: '#F1FAEE',
+			backgroundColor: '#1F1F3D'
+		}
+	};
+	let currentTheme = $state(themes.classic);
+	let themeKeys: ThemeKey[] = Object.keys(themes) as ThemeKey[];
+	const difficulties = ['Easy', 'Medium', 'Hard'];
+	let selectedDifficulty = $state('');
 
-    // Themes and Difficulties
-    type ThemeKey = 'classic' | 'retro' | 'aquatic' | 'desert' | 'night';
-    let themes = {
-            classic: {
-                snakeColor: "#E4B363",
-                foodColor: "#EF6461",
-                backgroundColor: "#E8E9EB",
-            },
-            retro: {
-                snakeColor: "#00FF00",
-                foodColor: "#FF0000",
-                backgroundColor: "#1E1E1E",
-            },
-            aquatic: {
-                snakeColor: "#285238",
-                foodColor: "#FAD848",
-                backgroundColor: "#4A90D9",
-            },
-            desert: {
-                snakeColor: "#264653",
-                foodColor: "#F4A261",
-                backgroundColor: "#E9C46A",
-            },
-            night: {
-                snakeColor: "#E63946",
-                foodColor: "#F1FAEE",
-                backgroundColor: "#1F1F3D",
-            }
-        };
-    let currentTheme = $state(themes.classic);
-    let themeKeys: ThemeKey[] = Object.keys(themes) as ThemeKey[];
-    const difficulties = ["Easy", "Medium", "Hard"];
-    let selectedDifficulty = $state("");
+	// Audio and Other
+	let clickSound: HTMLAudioElement;
+	let munchSound: HTMLAudioElement;
+	let backgroundMusic: HTMLAudioElement;
+	let highScore = $state(0);
+	let isSoundOn = $state(false);
 
-    // Audio and Other
-    let clickSound: HTMLAudioElement;
-    let munchSound: HTMLAudioElement;
-    let backgroundMusic: HTMLAudioElement;
-    let highScore = $state(0);
-    let isSoundOn = $state(false);
+	function isLocalStorageAvailable() {
+		try {
+			localStorage.setItem('test', 'test');
+			localStorage.removeItem('test');
+			return true;
+		} catch (e) {
+			console.log(e);
+			return false;
+		}
+	}
 
-    function isLocalStorageAvailable() {
-        try {
-            localStorage.setItem('test', 'test');
-            localStorage.removeItem('test');
-            return true;
-        } catch (e) {
-            console.log(e)
-            return false;
-        }
-    }
+	function toggleSound() {
+		isSoundOn = !isSoundOn;
+		if (isSoundOn) {
+			// Initialize sounds if they haven't been already
+			munchSound = munchSound || new Audio('/snake-assets/munch.wav');
+			clickSound = clickSound || new Audio('/snake-assets/mouse-click.wav');
+			backgroundMusic = backgroundMusic || new Audio('/snake-assets/snake_song.wav');
 
-    function toggleSound() {
-        isSoundOn = !isSoundOn;
-        if (isSoundOn) {
-            // Initialize sounds if they haven't been already
-            munchSound = munchSound || new Audio("/snake-assets/munch.wav");
-            clickSound = clickSound || new Audio("/snake-assets/mouse-click.wav");
-            backgroundMusic = backgroundMusic || new Audio("/snake-assets/snake_song.wav");
+			// Play the background music
+			backgroundMusic.play().catch((error) => console.error('Background music play error:', error));
 
-            // Play the background music
-            backgroundMusic.play().catch(error => console.error("Background music play error:", error));
+			// Unmute all sounds
+			munchSound.muted = false;
+			clickSound.muted = false;
+			backgroundMusic.muted = false;
+		} else {
+			// Pause and mute all sounds
+			munchSound && (munchSound.muted = true);
+			clickSound && (clickSound.muted = true);
+			if (backgroundMusic) {
+				backgroundMusic.muted = true;
+				backgroundMusic.pause();
+			}
+		}
+	}
 
-            // Unmute all sounds
-            munchSound.muted = false;
-            clickSound.muted = false;
-            backgroundMusic.muted = false;
-        } else {
-            // Pause and mute all sounds
-            munchSound && (munchSound.muted = true);
-            clickSound && (clickSound.muted = true);
-            if (backgroundMusic) {
-                backgroundMusic.muted = true;
-                backgroundMusic.pause();
-            }
-        }
-    }
+	// the linear interpolation (often abbreviated as lerp)
+	function lerp(a: number, b: number, t: number): number {
+		return a + t * (b - a);
+	}
 
+	// The function to calculate the scale factor for a given segment index
+	function getScaleFactor(age: number): number {
+		const t = age / snakeBody[snakeBody.length - 1].age;
+		return lerp(1, MIN_TAIL_SIZE, t);
+	}
 
-    // the linear interpolation (often abbreviated as lerp)
-    function lerp(a: number, b: number, t: number): number {
-        return a + t * (b - a);
-    }
+	// Function to compute adjusted size and offsets
+	function getAdjustedSizeAndOffsets(index: number): {
+		adjustedSize: number;
+		offsetX: number;
+		offsetY: number;
+	} {
+		const scaleFactor = getScaleFactor(index);
+		const adjustedSize = CELL_SIZE * scaleFactor;
+		const offsetX = (CELL_SIZE - adjustedSize) / 2;
+		const offsetY = (CELL_SIZE - adjustedSize) / 2;
+		return { adjustedSize, offsetX, offsetY };
+	}
 
-    // The function to calculate the scale factor for a given segment index
-    function getScaleFactor(age: number): number {
-        const t = age / (snakeBody[snakeBody.length - 1].age);
-        return lerp(1, MIN_TAIL_SIZE, t);
-    }
+	function manhattanDistance(p1: { x: number; y: number }, p2: { x: number; y: number }): number {
+		if (!p1 || !p2) return 0;
+		return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
+	}
 
-    // Function to compute adjusted size and offsets
-    function getAdjustedSizeAndOffsets(index: number): { adjustedSize: number; offsetX: number; offsetY: number } {
-        const scaleFactor = getScaleFactor(index);
-        const adjustedSize = CELL_SIZE * scaleFactor;
-        const offsetX = (CELL_SIZE - adjustedSize) / 2;
-        const offsetY = (CELL_SIZE - adjustedSize) / 2;
-        return { adjustedSize, offsetX, offsetY };
-    }
+	// Utility functions and core game logic.
+	function generateFoodPosition(): { x: number; y: number } {
+		let position: { x: any; y: any };
+		const MIN_DISTANCE_FROM_SNAKE = 6;
 
-    function manhattanDistance(p1: {x: number, y: number}, p2: {x: number, y: number}): number {
-        if (!p1 || !p2) return 0;
-        return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
-    }
+		do {
+			position = {
+				x: Math.floor(Math.random() * GRID_WIDTH),
+				y: Math.floor(Math.random() * GRID_HEIGHT)
+			};
+		} while (
+			snakeBody.some((segment) => segment.x === position.x && segment.y === position.y) ||
+			manhattanDistance(position, snakeBody[0]) < MIN_DISTANCE_FROM_SNAKE
+		);
 
-    // Utility functions and core game logic.
-    function generateFoodPosition(): { x: number, y: number } {
-        let position: { x: any; y: any; };
-        const MIN_DISTANCE_FROM_SNAKE = 6;
+		return position;
+	}
 
-        do {
-            position = {
-                x: Math.floor(Math.random() * GRID_WIDTH),
-                y: Math.floor(Math.random() * GRID_HEIGHT)
-            };
-        } while (
-            snakeBody.some(segment => segment.x === position.x && segment.y === position.y) ||
-            (manhattanDistance(position, snakeBody[0]) < MIN_DISTANCE_FROM_SNAKE)
-        );
+	function isEqualDirection(
+		dir1: { x: number; y: number },
+		dir2: { x: number; y: number }
+	): boolean {
+		return dir1.x === dir2.x && dir1.y === dir2.y;
+	}
 
-        return position;
-    }
+	function invertDirection(dir: { x: number; y: number }): { x: number; y: number } {
+		return { x: -dir.x, y: -dir.y };
+	}
 
-    function isEqualDirection(dir1: { x: number, y: number }, dir2: { x: number, y: number }): boolean {
-        return dir1.x === dir2.x && dir1.y === dir2.y;
-    }
+	function handleKeydown(event: KeyboardEvent) {
+		// console.log("Key Pressed")
+		let newDirection;
+		switch (event.key) {
+			case 'ArrowUp':
+			case 'w':
+				newDirection = { x: 0, y: -1 };
+				break;
+			case 'ArrowDown':
+			case 's':
+				newDirection = { x: 0, y: 1 };
+				break;
+			case 'ArrowLeft':
+			case 'a':
+				newDirection = { x: -1, y: 0 };
+				break;
+			case 'ArrowRight':
+			case 'd':
+				newDirection = { x: 1, y: 0 };
+				break;
+			case 'q':
+			case 'Escape':
+				resetGame();
+				currentState = GameState.INIT;
+				break;
+		}
+		if (newDirection && !isEqualDirection(invertDirection(snakeDirection), newDirection)) {
+			// console.log("Setting next direction:", newDirection);
+			nextSnakeDirection = newDirection;
+		}
+	}
 
-    function invertDirection(dir: { x: number, y: number }): { x: number, y: number } {
-        return { x: -dir.x, y: -dir.y };
-    }
+	function handleButtonClick() {
+		if (isSoundOn) {
+			clickSound.play().catch((error) => console.error('Click sound play error:', error));
+		}
+	}
 
-    function handleKeydown(event: KeyboardEvent) {
-        // console.log("Key Pressed")
-        let newDirection;
-        switch (event.key) {
-            case 'ArrowUp':
-            case 'w':
-                newDirection = { x: 0, y: -1 };
-                break;
-            case 'ArrowDown':
-            case 's':
-                newDirection = { x: 0, y: 1 };
-                break;
-            case 'ArrowLeft':
-            case 'a':
-                newDirection = { x: -1, y: 0 };
-                break;
-            case 'ArrowRight':
-            case 'd':
-                newDirection = { x: 1, y: 0 };
-                break;
-            case 'q':
-            case 'Escape':
-                resetGame();
-                currentState = GameState.INIT;
-                break;
-        }
-        if (newDirection && !isEqualDirection(invertDirection(snakeDirection), newDirection)) {
-            // console.log("Setting next direction:", newDirection);
-            nextSnakeDirection = newDirection;
-        }
-    }
+	// Touch Controls
+	function handleTouchStart(event: TouchEvent) {
+		startTouchX = event.touches[0].clientX;
+		startTouchY = event.touches[0].clientY;
+	}
 
-    function handleButtonClick() {
-        if (isSoundOn) {
-            clickSound.play().catch(error => console.error("Click sound play error:", error));
-        }
-    }
+	function handleTouchMove(event: TouchEvent) {
+		let newDirection;
+		if (!startTouchX || !startTouchY) {
+			return;
+		}
 
-    // Touch Controls
-    function handleTouchStart(event: TouchEvent) {
-        startTouchX = event.touches[0].clientX;
-        startTouchY = event.touches[0].clientY;
-    }
+		const xDiff = startTouchX - event.touches[0].clientX;
+		const yDiff = startTouchY - event.touches[0].clientY;
 
-    function handleTouchMove(event: TouchEvent) {
-        let newDirection;
-        if (!startTouchX || !startTouchY) {
-            return;
-        }
+		// Reset start touch coordinates for the next move
+		startTouchX = 0;
+		startTouchY = 0;
 
-        const xDiff = startTouchX - event.touches[0].clientX;
-        const yDiff = startTouchY - event.touches[0].clientY;
+		// Determine swipe direction
+		if (Math.abs(xDiff) > Math.abs(yDiff)) {
+			// Horizontal swipe
+			if (xDiff > 0) newDirection = { x: -1, y: 0 };
+			else newDirection = { x: 1, y: 0 };
+		} else {
+			// Vertical swipe
+			if (yDiff > 0) newDirection = { x: 0, y: -1 };
+			else newDirection = { x: 0, y: 1 };
+		}
 
-        // Reset start touch coordinates for the next move
-        startTouchX = 0;
-        startTouchY = 0;
+		if (newDirection && !isEqualDirection(invertDirection(snakeDirection), newDirection)) {
+			// console.log("Setting next direction:", newDirection);
+			nextSnakeDirection = newDirection;
+		}
+	}
 
-        // Determine swipe direction
-        if (Math.abs(xDiff) > Math.abs(yDiff)) { // Horizontal swipe
-            if (xDiff > 0) newDirection = { x: -1, y: 0 };
-            else newDirection = { x: 1, y: 0 };
-        } else { // Vertical swipe
-            if (yDiff > 0) newDirection = { x: 0, y: -1 };
-            else newDirection = { x: 0, y: 1 };
-        }
+	function resetGame() {
+		const startX = Math.floor(GRID_WIDTH * 0.5);
+		const startY = Math.floor(GRID_HEIGHT * 0.5);
+		const timestamp = Date.now();
+		const possibleDirections = [
+			{ x: 0, y: -1 }, // up
+			{ x: 0, y: 1 }, // down
+			{ x: -1, y: 0 }, // left
+			{ x: 1, y: 0 } // right
+		];
+		snakeDirection = possibleDirections[Math.floor(Math.random() * possibleDirections.length)];
 
-        if (newDirection && !isEqualDirection(invertDirection(snakeDirection), newDirection)) {
-            // console.log("Setting next direction:", newDirection);
-            nextSnakeDirection = newDirection;
-        }
-    }
+		// Depending on the initial direction, set the initial snake body
+		if (snakeDirection.y === -1) {
+			snakeBody = Array.from({ length: INITIAL_SNAKE_LENGTH }).map((_, index) => {
+				return { x: startX, y: startY + index, age: index, id: timestamp + index };
+			});
+		} else if (snakeDirection.y === 1) {
+			snakeBody = Array.from({ length: INITIAL_SNAKE_LENGTH }).map((_, index) => {
+				return { x: startX, y: startY - index, age: index, id: timestamp + index };
+			});
+		} else if (snakeDirection.x === -1) {
+			snakeBody = Array.from({ length: INITIAL_SNAKE_LENGTH }).map((_, index) => {
+				return { x: startX + index, y: startY, age: index, id: timestamp + index };
+			});
+		} else if (snakeDirection.x === 1) {
+			snakeBody = Array.from({ length: INITIAL_SNAKE_LENGTH }).map((_, index) => {
+				return { x: startX - index, y: startY, age: index, id: timestamp + index };
+			});
+		}
 
-    function resetGame() {
-        const startX = Math.floor(GRID_WIDTH * 0.5);
-        const startY = Math.floor(GRID_HEIGHT * 0.5);
-        const timestamp = Date.now();
-        const possibleDirections = [
-            { x: 0, y: -1 },  // up
-            { x: 0, y: 1 },   // down
-            { x: -1, y: 0 },  // left
-            { x: 1, y: 0 }    // right
-        ];
-        snakeDirection = possibleDirections[Math.floor(Math.random() * possibleDirections.length)];
+		score = 0;
+		munch = 0;
+		total_food = 0;
+		difficulty_value = 0;
+		isGameOver = false;
+		gameInterval && clearInterval(gameInterval);
+		foodPosition = generateFoodPosition();
+		if (backgroundMusic) {
+			backgroundMusic.volume = 0.35;
+			backgroundMusic.loop = true;
+			backgroundMusic.playbackRate = 1;
+		}
+		if (isLocalStorageAvailable()) {
+			highScore = parseInt(localStorage.getItem('snakeHighScore') || '0');
+		}
+	}
 
-        // Depending on the initial direction, set the initial snake body
-        if (snakeDirection.y === -1) {
-            snakeBody = Array.from({ length: INITIAL_SNAKE_LENGTH }).map((_, index) => {
-                return { x: startX, y: startY + index, age: index, id: timestamp + index };
-            });
-        } else if (snakeDirection.y === 1) {
-            snakeBody = Array.from({ length: INITIAL_SNAKE_LENGTH }).map((_, index) => {
-                return { x: startX, y: startY - index, age: index, id: timestamp + index };
-            });
-        } else if (snakeDirection.x === -1) {
-            snakeBody = Array.from({ length: INITIAL_SNAKE_LENGTH }).map((_, index) => {
-                return { x: startX + index, y: startY, age: index, id: timestamp + index };
-            });
-        } else if (snakeDirection.x === 1) {
-            snakeBody = Array.from({ length: INITIAL_SNAKE_LENGTH }).map((_, index) => {
-                return { x: startX - index, y: startY, age: index, id: timestamp + index };
-            });
-        }
+	function startGame(intervalSpeed: number) {
+		// Start the game loop.
+		gameInterval = setInterval(() => {
+			if (nextSnakeDirection) {
+				if (!isEqualDirection(invertDirection(snakeDirection), nextSnakeDirection)) {
+					snakeDirection = nextSnakeDirection;
+				}
+				nextSnakeDirection = null; // Reset after using it
+			}
 
-        score = 0;
-        munch = 0;
-        total_food = 0;
-        difficulty_value = 0;
-        isGameOver = false;
-        gameInterval && clearInterval(gameInterval);
-        foodPosition = generateFoodPosition();
-        if (backgroundMusic) {
-            backgroundMusic.volume = 0.35;
-            backgroundMusic.loop = true;
-            backgroundMusic.playbackRate = 1;
-        }
-        if (isLocalStorageAvailable()) {
-            highScore = parseInt(localStorage.getItem("snakeHighScore") || "0");
-        }
-    }
+			// Update snake's position
+			const head = Object.assign({}, snakeBody[0]);
+			head.x += snakeDirection.x;
+			head.y += snakeDirection.y;
 
-    function startGame(intervalSpeed: number) {
-        // Start the game loop.
-        gameInterval = setInterval(() => {
-            if (nextSnakeDirection) {
-                if (!isEqualDirection(invertDirection(snakeDirection), nextSnakeDirection)) {
-                    snakeDirection = nextSnakeDirection;
-                }
-                nextSnakeDirection = null;  // Reset after using it
-            }
+			// Check for collision with walls or itself
+			if (
+				head.x < 0 ||
+				head.x > GRID_WIDTH - 1 ||
+				head.y < 0 ||
+				head.y > GRID_HEIGHT - 1 ||
+				snakeBody.slice(1).some((segment) => segment.x === head.x && segment.y === head.y)
+			) {
+				isGameOver = true;
+				const dynamicMultiplier = initialIntervalSpeed / intervalSpeed;
+				score *= difficultyMultiplier * dynamicMultiplier;
+				clearInterval(gameInterval); // Clear the game loop
+				return;
+			}
 
-            // Update snake's position
-            const head = Object.assign({}, snakeBody[0]);
-            head.x += snakeDirection.x;
-            head.y += snakeDirection.y;
+			snakeBody = [
+				{ x: head.x, y: head.y, age: 0, id: Date.now() },
+				...snakeBody.slice(0, -1).map((segment, index) => {
+					return { ...segment, age: segment.age + 1 };
+				})
+			];
 
-            // Check for collision with walls or itself
-            if (
-                head.x < 0 || head.x > GRID_WIDTH - 1 ||
-                head.y < 0 || head.y > GRID_HEIGHT - 1 ||
-                snakeBody.slice(1).some(segment => segment.x === head.x && segment.y === head.y)
-            ) {
-                isGameOver = true;
-                const dynamicMultiplier = initialIntervalSpeed / intervalSpeed;
-                score *= difficultyMultiplier * dynamicMultiplier;
-                clearInterval(gameInterval);  // Clear the game loop
-                return;
-            }
+			// Grow snake smoothly based on growthQueue
+			if (growthQueue > 0) {
+				snakeBody.push({
+					...snakeBody[snakeBody.length - 1],
+					age: snakeBody[snakeBody.length - 1].age + 1,
+					id: Date.now() + Math.random()
+				});
+				growthQueue--;
+			}
 
-            snakeBody = [
-                { x: head.x, y: head.y, age: 0, id: Date.now() },
-                ...snakeBody.slice(0, -1).map((segment, index) => {
-                    return { ...segment, age: segment.age + 1 };
-                })
-            ];
+			// Check if snake ate the food
+			if (foodPosition && head.x === foodPosition.x && head.y === foodPosition.y) {
+				if (isSoundOn) {
+					munchSound.play().catch((error) => console.error('Munch sound play error:', error));
+				}
 
-            // Grow snake smoothly based on growthQueue
-            if (growthQueue > 0) {
-                snakeBody.push({ ...snakeBody[snakeBody.length - 1], age: snakeBody[snakeBody.length - 1].age + 1, id: Date.now() + Math.random() });
-                growthQueue--;
-            }
+				score += 10; // Each food is worth 10 points
 
-            // Check if snake ate the food
-            if (foodPosition && head.x === foodPosition.x && head.y === foodPosition.y) {
-                if (isSoundOn) {
-                    munchSound.play().catch(error => console.error("Munch sound play error:", error));
-                }
+				// Scoring logic
+				if (munch === 9) {
+					// Changed this to 9 since we'll increment munch after this block
+					difficulty_value += 10;
+					score += Math.round((snakeBody.length - INITIAL_SNAKE_LENGTH) * 2.5); // Double score bonus every 10 foods
+					munch = 0; // Reset munch
 
-                score += 10; // Each food is worth 10 points
-                
-                // Scoring logic
-                if (munch === 9) { // Changed this to 9 since we'll increment munch after this block
-                    difficulty_value += 10;
-                    score += Math.round((snakeBody.length - INITIAL_SNAKE_LENGTH) * 2.5); // Double score bonus every 10 foods
-                    munch = 0; // Reset munch
+					if (backgroundMusic) {
+						backgroundMusic.playbackRate += 0.01;
+					}
+				} else {
+					difficulty_value += 5;
+					score += Math.round((snakeBody.length - INITIAL_SNAKE_LENGTH) * 1.25); // Normal score increase
 
-                    if (backgroundMusic) {
-                        backgroundMusic.playbackRate += 0.01;
-                    }
-                } else {
-                    difficulty_value += 5;
-                    score += Math.round((snakeBody.length - INITIAL_SNAKE_LENGTH) * 1.25); // Normal score increase
+					if (backgroundMusic) {
+						backgroundMusic.playbackRate += 0.005;
+					}
+				}
+				total_food += 1;
+				munch += 1;
 
-                    if (backgroundMusic) {
-                        backgroundMusic.playbackRate += 0.005;
-                    }
-                }
-                total_food += 1;
-                munch += 1;
+				// Grow snake based on INITIAL_SNAKE_LENGTH
+				// Instead of directly growing the snake, we add to the growth queue
+				growthQueue += INITIAL_SNAKE_LENGTH - 2;
 
-                // Grow snake based on INITIAL_SNAKE_LENGTH
-                // Instead of directly growing the snake, we add to the growth queue
-                growthQueue += INITIAL_SNAKE_LENGTH - 2;
+				// Generate new food position
+				foodPosition = generateFoodPosition();
+			}
 
-                // Generate new food position
-                foodPosition = generateFoodPosition();
-            }
+			// Check for game over and update high score
+			if (isGameOver) {
+				clearInterval(gameInterval); // Clear the game loop
+				updateHighScore();
+				return;
+			}
+		}, intervalSpeed - difficulty_value) as unknown as number;
+	}
 
-            // Check for game over and update high score
-            if (isGameOver) {
-                clearInterval(gameInterval);  // Clear the game loop
-                updateHighScore();
-                return;
-            }
-        }, intervalSpeed - difficulty_value) as unknown as number;
-    }
+	function stopGame() {
+		// console.log("Manually stopping the game.");
+		// Stop the game loop.
+		clearInterval(gameInterval);
+	}
 
-    function stopGame() {
-        // console.log("Manually stopping the game.");
-        // Stop the game loop.
-        clearInterval(gameInterval);
-    }
+	function updateHighScore() {
+		if (score > highScore) {
+			highScore = score;
+			if (isLocalStorageAvailable()) {
+				localStorage.setItem('snakeHighScore', highScore.toString());
+				let snakeHS = localStorage.getItem('snakeHighScore');
+				console.log('Current Snake High Score: ', snakeHS);
+			}
+		}
+	}
 
-    function updateHighScore() {
-        if (score > highScore) {
-            highScore = score;
-            if (isLocalStorageAvailable()) {
-                localStorage.setItem("snakeHighScore", highScore.toString());
-                let snakeHS = localStorage.getItem("snakeHighScore");
-                console.log("Current Snake High Score: ", snakeHS);
-            }
-        }
-    }
+	function handleResize() {
+		CELL_SIZE = Math.min(window.innerWidth, window.innerHeight) / NUM_CELLS;
+		GRID_WIDTH = Math.floor(window.innerWidth / CELL_SIZE);
+		GRID_HEIGHT = Math.floor(window.innerHeight / CELL_SIZE);
+	}
 
-    function handleResize() {
-        CELL_SIZE = Math.min(window.innerWidth, window.innerHeight) / NUM_CELLS;
-        GRID_WIDTH = Math.floor(window.innerWidth / CELL_SIZE);
-        GRID_HEIGHT = Math.floor(window.innerHeight / CELL_SIZE);
-    }
-    
-    function handleRestart() {
-        resetGame();
-        currentState = GameState.INIT;
-    }
+	function handleRestart() {
+		resetGame();
+		currentState = GameState.INIT;
+	}
 
-    function selectTheme(theme: ThemeKey) {
-        currentTheme = themes[theme];
-        currentState = GameState.DIFFICULTY_SELECTION;
-    }
+	function selectTheme(theme: ThemeKey) {
+		currentTheme = themes[theme];
+		currentState = GameState.DIFFICULTY_SELECTION;
+	}
 
-    function selectDifficulty(difficulty: string) {
-        selectedDifficulty = difficulty;
-        // Adjust game speed based on difficulty. This is just a basic example.
-        let intervalSpeed: number = 10;
-        switch (difficulty) {
-            case "Easy": intervalSpeed = 150; break;
-            case "Medium": intervalSpeed = 100; difficultyMultiplier = 1.5; break;
-            case "Hard": intervalSpeed = 50; difficultyMultiplier = 2; break;
-        }
-        
-        // Trying to adjust the difficulty based on screen size
-        const speedModifier = CELL_SIZE / NUM_CELLS
-        intervalSpeed += speedModifier;
+	function selectDifficulty(difficulty: string) {
+		selectedDifficulty = difficulty;
+		// Adjust game speed based on difficulty. This is just a basic example.
+		let intervalSpeed: number = 10;
+		switch (difficulty) {
+			case 'Easy':
+				intervalSpeed = 150;
+				break;
+			case 'Medium':
+				intervalSpeed = 100;
+				difficultyMultiplier = 1.5;
+				break;
+			case 'Hard':
+				intervalSpeed = 50;
+				difficultyMultiplier = 2;
+				break;
+		}
 
-        initialIntervalSpeed = intervalSpeed;  // Store the initial interval speed
+		// Trying to adjust the difficulty based on screen size
+		const speedModifier = CELL_SIZE / NUM_CELLS;
+		intervalSpeed += speedModifier;
 
-        // Set your game interval speed here, then start the game.
-        currentState = GameState.PLAYING;
-        startGame(intervalSpeed);
-    }
+		initialIntervalSpeed = intervalSpeed; // Store the initial interval speed
 
-    // --- Component Lifecycle ---
-    onMount(() => {
-        if (browser) {
-            CELL_SIZE = Math.min(window.innerWidth, window.innerHeight) / NUM_CELLS;
-            GRID_WIDTH = Math.floor(window.innerWidth / CELL_SIZE);
-            GRID_HEIGHT = Math.floor(window.innerHeight / CELL_SIZE);
+		// Set your game interval speed here, then start the game.
+		currentState = GameState.PLAYING;
+		startGame(intervalSpeed);
+	}
 
-            resetGame();
-            handleResize();
-        }
-    });
+	// --- Component Lifecycle ---
+	onMount(() => {
+		if (browser) {
+			CELL_SIZE = Math.min(window.innerWidth, window.innerHeight) / NUM_CELLS;
+			GRID_WIDTH = Math.floor(window.innerWidth / CELL_SIZE);
+			GRID_HEIGHT = Math.floor(window.innerHeight / CELL_SIZE);
 
-    $effect(() => {
-        if (browser) {
-            document.addEventListener('touchstart', handleTouchStart, false);
-            document.addEventListener('touchmove', handleTouchMove, false);
-            window.addEventListener('resize', handleResize);
+			resetGame();
+			handleResize();
+		}
+	});
 
-            return () => {
-                document.removeEventListener('touchstart', handleTouchStart, false);
-                document.removeEventListener('touchmove', handleTouchMove, false);
-                window.removeEventListener('resize', handleResize);
-            };
-        }
-    });
+	$effect(() => {
+		if (browser) {
+			document.addEventListener('touchstart', handleTouchStart, false);
+			document.addEventListener('touchmove', handleTouchMove, false);
+			window.addEventListener('resize', handleResize);
 
-    // Cleanup on component destroy
-    onDestroy(() => {
-        stopGame();
-        if (backgroundMusic) {
-            backgroundMusic.pause();
-        }
-    });
+			return () => {
+				document.removeEventListener('touchstart', handleTouchStart, false);
+				document.removeEventListener('touchmove', handleTouchMove, false);
+				window.removeEventListener('resize', handleResize);
+			};
+		}
+	});
+
+	// Cleanup on component destroy
+	onDestroy(() => {
+		stopGame();
+		if (backgroundMusic) {
+			backgroundMusic.pause();
+		}
+	});
 </script>
 
 <svelte:head>
-    <title>Snake.</title>
-    <link rel="icon" href="\snake-logo.ico" />
+	<title>Snake.</title>
+	<link rel="icon" href="\snake-logo.ico" />
 
-    <!-- IOS Tags -->
-    <link rel="apple-touch-icon" href="\snake-logo.ico">
+	<!-- IOS Tags -->
+	<link rel="apple-touch-icon" href="\snake-logo.ico" />
 </svelte:head>
 
 <svelte:window onkeydown={handleKeydown} />
 
 <!-- Game Initialization UI -->
 {#if isGameOver}
-    <div id="game-over">
-        <p>Game Over!</p>
-        <p>Score: {score}</p>
-        <button onclick={() => { handleButtonClick(); handleRestart(); }}>Try Again</button>
-    </div>
+	<div id="game-over">
+		<p>Game Over!</p>
+		<p>Score: {score}</p>
+		<button
+			onclick={() => {
+				handleButtonClick();
+				handleRestart();
+			}}>Try Again</button
+		>
+	</div>
 {:else if currentState === GameState.INIT}
-    <!-- Display logo with previous score (if any) -->
-    <div id="logo" tabindex=0 role="button" onclick={() => { handleButtonClick(); currentState = GameState.THEME_SELECTION; }} onkeypress={() => { handleButtonClick(); currentState = GameState.THEME_SELECTION; }}>
-        <img src="/snake-assets/snake-logo-upscaled-5x.png" alt="Snake Game"/>
-        <p>Snake.</p>
-        {#if score > 0}<p id="previous-score">Previous Score: {score}</p>{/if}
-    </div>
+	<!-- Display logo with previous score (if any) -->
+	<div
+		id="logo"
+		tabindex="0"
+		role="button"
+		onclick={() => {
+			handleButtonClick();
+			currentState = GameState.THEME_SELECTION;
+		}}
+		onkeypress={() => {
+			handleButtonClick();
+			currentState = GameState.THEME_SELECTION;
+		}}
+	>
+		<img src="/snake-assets/snake-logo-upscaled-5x.png" alt="Snake Game" />
+		<p>Snake.</p>
+		{#if score > 0}<p id="previous-score">Previous Score: {score}</p>{/if}
+	</div>
 {:else if currentState === GameState.THEME_SELECTION}
-    <!-- Display theme options -->
-    <div class="menu">
-        <p>Select a theme.</p>
-        <div id="themes">
-            {#each themeKeys as theme}
-                <button onclick={() => { handleButtonClick(); selectTheme(theme); }}>{theme}</button>
-            {/each}
-        </div>
-    </div>
+	<!-- Display theme options -->
+	<div class="menu">
+		<p>Select a theme.</p>
+		<div id="themes">
+			{#each themeKeys as theme}
+				<button
+					onclick={() => {
+						handleButtonClick();
+						selectTheme(theme);
+					}}>{theme}</button
+				>
+			{/each}
+		</div>
+	</div>
 {:else if currentState === GameState.DIFFICULTY_SELECTION}
-    <!-- Display difficulty options -->
-    <div class="menu">
-        <p>Select a difficulty.</p>
-        <div id="difficulties">
-            {#each difficulties as difficulty}
-                <button onclick={() => { handleButtonClick(); selectDifficulty(difficulty); }}>{difficulty}</button>
-            {/each}
-        </div>
-    </div>
+	<!-- Display difficulty options -->
+	<div class="menu">
+		<p>Select a difficulty.</p>
+		<div id="difficulties">
+			{#each difficulties as difficulty}
+				<button
+					onclick={() => {
+						handleButtonClick();
+						selectDifficulty(difficulty);
+					}}>{difficulty}</button
+				>
+			{/each}
+		</div>
+	</div>
 {:else}
-    <!-- Snake Game -->
-    <main style="background-color: {currentTheme.backgroundColor}">
-        <svg width={CELL_SIZE * GRID_WIDTH} height={CELL_SIZE * GRID_HEIGHT}>
-            <!-- Render the snake -->
-            {#each snakeBody as segment (segment.id)}
-                <rect 
-                    x={segment.x * CELL_SIZE + getAdjustedSizeAndOffsets(segment.age).offsetX} 
-                    y={segment.y * CELL_SIZE + getAdjustedSizeAndOffsets(segment.age).offsetY} 
-                    width={getAdjustedSizeAndOffsets(segment.age).adjustedSize} 
-                    height={getAdjustedSizeAndOffsets(segment.age).adjustedSize} 
-                    fill={currentTheme.snakeColor}
-                />
-            {/each}
+	<!-- Snake Game -->
+	<main style="background-color: {currentTheme.backgroundColor}">
+		<svg width={CELL_SIZE * GRID_WIDTH} height={CELL_SIZE * GRID_HEIGHT}>
+			<!-- Render the snake -->
+			{#each snakeBody as segment (segment.id)}
+				<rect
+					x={segment.x * CELL_SIZE + getAdjustedSizeAndOffsets(segment.age).offsetX}
+					y={segment.y * CELL_SIZE + getAdjustedSizeAndOffsets(segment.age).offsetY}
+					width={getAdjustedSizeAndOffsets(segment.age).adjustedSize}
+					height={getAdjustedSizeAndOffsets(segment.age).adjustedSize}
+					fill={currentTheme.snakeColor}
+				/>
+			{/each}
 
-            <!-- Render the food -->
-            {#if foodPosition}
-                <rect x={foodPosition.x * CELL_SIZE} y={foodPosition.y * CELL_SIZE} width={CELL_SIZE} height={CELL_SIZE} fill={currentTheme.foodColor} />
-            {/if}
-        </svg>
-    </main>
+			<!-- Render the food -->
+			{#if foodPosition}
+				<rect
+					x={foodPosition.x * CELL_SIZE}
+					y={foodPosition.y * CELL_SIZE}
+					width={CELL_SIZE}
+					height={CELL_SIZE}
+					fill={currentTheme.foodColor}
+				/>
+			{/if}
+		</svg>
+	</main>
 {/if}
 
 <!-- Sound Button -->
 <button
-    id="soundButton"
-    onclick={() => { handleButtonClick(); toggleSound(); }}
-    aria-label="{isSoundOn ? 'Mute sound' : 'Unmute sound'}"
+	id="soundButton"
+	onclick={() => {
+		handleButtonClick();
+		toggleSound();
+	}}
+	aria-label={isSoundOn ? 'Mute sound' : 'Unmute sound'}
 >
-    <i
-        class="{isSoundOn ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark'}"
-        aria-hidden="true"
-    ></i>
+	<i class={isSoundOn ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark'} aria-hidden="true"
+	></i>
 </button>
 
 <style>
-    /* Variables */
-    :root {
-        --button-color: white;
-        --button-highlighted-color: #ffffff7e;  /* This is a slightly darker shade of white. Adjust as needed. */
-    }
+	/* Variables */
+	:root {
+		--button-color: white;
+		--button-highlighted-color: #ffffff7e; /* This is a slightly darker shade of white. Adjust as needed. */
+	}
 
-    @font-face {
-        font-family: "PressStart2P";
-        src: url("/snake-assets/PressStart2P-Regular.ttf");
-    }
+	@font-face {
+		font-family: 'PressStart2P';
+		src: url('/snake-assets/PressStart2P-Regular.ttf');
+	}
 
-    /* Hide scrollbar for all elements */
-    :global(::-webkit-scrollbar) {
-        display: none;
-    }
+	/* Hide scrollbar for all elements */
+	:global(::-webkit-scrollbar) {
+		display: none;
+	}
 
-    /* Hide scrollbar for non-webkit browsers */
-    :global(html) {
-        scrollbar-width: none;
-        background-color: black;
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        padding: 0;
-    }
+	/* Hide scrollbar for non-webkit browsers */
+	:global(html) {
+		scrollbar-width: none;
+		background-color: black;
+		width: 100%;
+		height: 100%;
+		margin: 0;
+		padding: 0;
+	}
 
-    :global(body) {
-        user-select: none;
-        touch-action: none;
-        background-color: black;
-        color: white;
-        overflow: hidden;
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        padding-top: env(safe-area-inset-top);
-        padding-right: env(safe-area-inset-right);
-        padding-bottom: env(safe-area-inset-bottom);
-        padding-left: env(safe-area-inset-left);
-    }
+	:global(body) {
+		user-select: none;
+		touch-action: none;
+		background-color: black;
+		color: white;
+		overflow: hidden;
+		width: 100%;
+		height: 100%;
+		margin: 0;
+		padding: 0;
+		padding-top: env(safe-area-inset-top);
+		padding-right: env(safe-area-inset-right);
+		padding-bottom: env(safe-area-inset-bottom);
+		padding-left: env(safe-area-inset-left);
+	}
 
-    /* Apply theme background to the game area */
-    #soundButton {
-        position: fixed;
-        width: min-content;
-        bottom: 10px; 
-        right: 10px;
-        background-color: transparent;
-        color: white;
-        border: none;
-        cursor: pointer;
-        font-size: 1.5em; /* Adjust size as required */
-        z-index: 10; /* Ensure the button is always on top */
-    }
+	/* Apply theme background to the game area */
+	#soundButton {
+		position: fixed;
+		width: min-content;
+		bottom: 10px;
+		right: 10px;
+		background-color: transparent;
+		color: white;
+		border: none;
+		cursor: pointer;
+		font-size: 1.5em; /* Adjust size as required */
+		z-index: 10; /* Ensure the button is always on top */
+	}
 
-    .fa-volume-xmark {
-        opacity: 0.5; /* This makes the volume off icon semi-transparent */
-    }
+	.fa-volume-xmark {
+		opacity: 0.5; /* This makes the volume off icon semi-transparent */
+	}
 
-    p {
-        font-family: "PressStart2P";
-    }
+	p {
+		font-family: 'PressStart2P';
+	}
 
-    .menu p {
-        z-index: 3;
-    }
+	.menu p {
+		z-index: 3;
+	}
 
-    main {
-        width: 100vw;
-        height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
+	main {
+		width: 100vw;
+		height: 100vh;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
 
-    #game-over {
-        width: 100%;
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        font-family: "PressStart2P";
-    }
+	#game-over {
+		width: 100%;
+		height: 100vh;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		font-family: 'PressStart2P';
+	}
 
-    #previous-score {
-        font-size: 1em;
-        color: white;
-    }
+	#previous-score {
+		font-size: 1em;
+		color: white;
+	}
 
-    #logo {
-        width: 100vw;
-        height: 100vh;
-        font-size: 3em;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: center;
-        position: absolute;
-        top: 50%; /* These four lines are used to */
-        left: 50%; /* position the container in the */
-        transform: translate(-50%, -50%); /* exact center of the parent. */
-    }
+	#logo {
+		width: 100vw;
+		height: 100vh;
+		font-size: 3em;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+		position: absolute;
+		top: 50%; /* These four lines are used to */
+		left: 50%; /* position the container in the */
+		transform: translate(-50%, -50%); /* exact center of the parent. */
+	}
 
-    .menu {
-        width: 100%;
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center; /* Centers items vertically */
-        position: absolute;
-        top: 50%; /* These four lines are used to */
-        left: 50%; /* position the container in the */
-        transform: translate(-50%, -50%); /* exact center of the parent. */
-        background-color: black;
-    }
+	.menu {
+		width: 100%;
+		height: 100vh;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center; /* Centers items vertically */
+		position: absolute;
+		top: 50%; /* These four lines are used to */
+		left: 50%; /* position the container in the */
+		transform: translate(-50%, -50%); /* exact center of the parent. */
+		background-color: black;
+	}
 
-    .menu p:first-child {
-        margin-bottom: 22rem; /* Adjust this value to your liking. */
-    }
+	.menu p:first-child {
+		margin-bottom: 22rem; /* Adjust this value to your liking. */
+	}
 
-    /* Button Container Styles */
-    #themes, #difficulties {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center; /* Centers items vertically */
-        position: absolute;
-        top: 50%; /* These four lines are used to */
-        left: 50%; /* position the container in the */
-        transform: translate(-50%, -50%); /* exact center of the parent. */
-    }
+	/* Button Container Styles */
+	#themes,
+	#difficulties {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center; /* Centers items vertically */
+		position: absolute;
+		top: 50%; /* These four lines are used to */
+		left: 50%; /* position the container in the */
+		transform: translate(-50%, -50%); /* exact center of the parent. */
+	}
 
-    /* Button Base Styles */
-    button {
-        font-family: "PressStart2P";
-        font-size: 2em;
-        width: 10em;
-        background-color: var(--button-color);
-        color: black;
-        border: none;
-        padding: 8px 12px;
-        margin: 5px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-    }
+	/* Button Base Styles */
+	button {
+		font-family: 'PressStart2P';
+		font-size: 2em;
+		width: 10em;
+		background-color: var(--button-color);
+		color: black;
+		border: none;
+		padding: 8px 12px;
+		margin: 5px;
+		cursor: pointer;
+		transition: background-color 0.3s ease;
+	}
 
-    /* First Button Style */
-    #themes button:first-child, #difficulties button:first-child, #game-over button:first-child {
-        border-top-left-radius: 10px;
-        border-top-right-radius: 10px;
-    }
+	/* First Button Style */
+	#themes button:first-child,
+	#difficulties button:first-child,
+	#game-over button:first-child {
+		border-top-left-radius: 10px;
+		border-top-right-radius: 10px;
+	}
 
-    /* Last Button Style */
-    #themes button:last-child, #difficulties button:last-child, #game-over button:last-child {
-        border-bottom-left-radius: 10px;
-        border-bottom-right-radius: 10px;
-    }
+	/* Last Button Style */
+	#themes button:last-child,
+	#difficulties button:last-child,
+	#game-over button:last-child {
+		border-bottom-left-radius: 10px;
+		border-bottom-right-radius: 10px;
+	}
 
-
-    @media (min-width: 800px) {
-        /* Button Hover Styles only on larger screens*/
-        button:hover {
-            background-color: var(--button-highlighted-color);
-        }
-    }
+	@media (min-width: 800px) {
+		/* Button Hover Styles only on larger screens*/
+		button:hover {
+			background-color: var(--button-highlighted-color);
+		}
+	}
 </style>
