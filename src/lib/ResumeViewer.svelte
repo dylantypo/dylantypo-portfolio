@@ -10,6 +10,9 @@
     fileName?: string;
   }>();
 
+  // 🆕 Add dyslexia mode state
+  let isDyslexiaMode = $state(false);
+
   let safeHtml = $derived(
     DOMPurify.sanitize(
       marked.parse(markdownContent, { async: false }) as string
@@ -31,9 +34,21 @@
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
+
+  // 🆕 Toggle dyslexia mode
+  function toggleDyslexiaMode() {
+    isDyslexiaMode = !isDyslexiaMode;
+  }
 </script>
 
 <style>
+  /* 🆕 Add OpenDyslexic font face */
+  @font-face {
+    font-family: 'OpenDyslexicMono';
+    src: url('/dyslexiafont/OpenDyslexicMono-Regular.otf') format('opentype');
+    font-display: swap;
+  }
+
   /* Base styles */
   :global(body) {
       margin: 0;
@@ -65,7 +80,7 @@
 
   .resume-scroll-container {
       width: 100%;
-      max-width: calc(210mm + 4rem); /* A4 width + margin */
+      max-width: calc(210mm + 4rem);
       margin: 0 auto;
       display: flex;
       justify-content: center;
@@ -74,8 +89,8 @@
   }
 
   .resume-container {
-      width: 210mm; /* A4 width */
-      min-height: 297mm; /* A4 height */
+      width: 210mm;
+      min-height: 297mm;
       background: white;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       position: relative;
@@ -83,9 +98,29 @@
       border-radius: 1cqb;
   }
 
+  /* 🆕 Dyslexia mode styles */
+  .resume-container.dyslexia-mode {
+    border: 3px solid transparent;
+    background: linear-gradient(white, white) padding-box,
+                linear-gradient(45deg, #ff0080, #ff8c00, #40e0d0, #ff0080) border-box;
+    animation: rainbow-glow 3s ease-in-out infinite alternate;
+  }
+
+  @keyframes rainbow-glow {
+    0% { box-shadow: 0 0 20px rgba(255, 0, 128, 0.5); }
+    33% { box-shadow: 0 0 20px rgba(255, 140, 0, 0.5); }
+    66% { box-shadow: 0 0 20px rgba(64, 224, 208, 0.5); }
+    100% { box-shadow: 0 0 20px rgba(255, 0, 128, 0.5); }
+  }
+
   .resume-content {
       padding: 4cqmin;
       box-sizing: border-box;
+  }
+
+  /* 🆕 Conditional font family */
+  .resume-content.dyslexia-mode {
+    font-family: 'OpenDyslexicMono', monospace;
   }
 
   /* Typography styles */
@@ -93,6 +128,11 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       line-height: 1.25;
       font-size: var(--font-size-base);
+  }
+
+  :global(.resume-content.dyslexia-mode) {
+      font-family: 'OpenDyslexicMono', monospace;
+      line-height: 1.4; /* Slightly increased for better readability */
   }
 
   :global(.resume-content h1) {
@@ -174,12 +214,37 @@
       font-weight: 500;
       transition: all var(--transition-speed) ease;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      border: none;
+      cursor: pointer;
   }
 
   .control-button:hover {
       background: rgba(255, 255, 255, 1);
       transform: translateY(-1px);
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  /* 🆕 Dyslexia button specific styles */
+  .dyslexia-button {
+    font-family: 'Inter', sans-serif; /* Default font */
+    border: 2px solid transparent;
+    transition: all var(--transition-speed) ease;
+  }
+
+  .dyslexia-button.active {
+    font-family: 'Inter', sans-serif; /* Keep normal font when active */
+    background: linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)) padding-box,
+                linear-gradient(45deg, #ff0080, #ff8c00, #40e0d0, #ff0080) border-box;
+    animation: button-rainbow 2s linear infinite;
+  }
+
+  .dyslexia-button:not(.active) {
+    font-family: 'OpenDyslexicMono', monospace; /* Dyslexic font when inactive */
+  }
+
+  @keyframes button-rainbow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
   }
 
   /* Print styles */
@@ -204,7 +269,7 @@
       .resume-scroll-container {
           padding: 0 !important;
           max-width: none !important;
-          width: 210mm !important; /* Force A4 width */
+          width: 210mm !important;
       }
 
       .resume-container {
@@ -242,10 +307,11 @@
           background: rgba(0, 0, 0, 0.9);
           backdrop-filter: blur(10px);
           justify-content: center;
+          flex-wrap: wrap;
       }
 
       .outer-container {
-          padding-bottom: 5rem;
+          padding-bottom: 6rem;
       }
 
       .resume-scroll-container {
@@ -259,6 +325,11 @@
 
       .resume-content {
           padding: 1.5cm;
+      }
+
+      .control-button {
+          padding: calc(var(--spacing-base) * 0.5) calc(var(--spacing-base) * 0.75);
+          font-size: 0.875rem;
       }
   }
 </style>
@@ -274,6 +345,7 @@
       </svg>
       Print PDF
     </button>
+    
     <button onclick={handleDownload} class="control-button">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -282,12 +354,26 @@
       </svg>
       Download MD
     </button>
+
+    <!-- 🆕 Dyslexia Mode Button -->
+    <button 
+      onclick={toggleDyslexiaMode} 
+      class="control-button dyslexia-button"
+      class:active={isDyslexiaMode}
+      aria-pressed={isDyslexiaMode}
+      title={isDyslexiaMode ? 'Disable dyslexia-friendly font' : 'Enable dyslexia-friendly font'}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+      </svg>
+      Dyslexia Mode
+    </button>
   </div>
 
   <!-- Resume -->
   <div class="resume-scroll-container">
-    <div class="resume-container">
-      <div class="resume-content">
+    <div class="resume-container" class:dyslexia-mode={isDyslexiaMode}>
+      <div class="resume-content" class:dyslexia-mode={isDyslexiaMode}>
         {@html safeHtml}
       </div>
     </div>
