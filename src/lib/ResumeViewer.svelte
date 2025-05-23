@@ -329,30 +329,154 @@
 
 	/* Print styles */
 	@media print {
-		/* 🔧 Force consistent rendering across all devices */
+		/* 🔧 STEP 1: Reset ALL devices to desktop sizing first */
 
-		/* Reset mobile-specific viewport handling */
+		/* Force desktop viewport behavior */
 		:global(html) {
 			-webkit-text-size-adjust: 100% !important;
 			text-size-adjust: 100% !important;
+			background: white !important;
+			margin: 0 !important;
+			padding: 0 !important;
+			width: 100% !important;
+			height: auto !important;
 		}
 
-		/* Ensure consistent container sizing */
-		.resume-container {
-			width: 8.5in !important;
-			min-height: 11in !important;
-			max-width: 8.5in !important;
+		:global(body) {
+			background: white !important;
+			margin: 0 !important;
+			padding: 0 !important;
+			width: 100% !important;
+			height: auto !important;
 			transform: none !important;
 			-webkit-transform: none !important;
 		}
 
+		/* 🚫 Hide all UI controls */
+		.controls {
+			display: none !important;
+			visibility: hidden !important;
+		}
+
+		/* 📱 RESET: Force mobile containers to desktop size */
+		.outer-container {
+			background: white !important;
+			padding: 0 !important;
+			margin: 0 !important;
+			width: 100% !important;
+			max-width: none !important;
+			height: auto !important;
+			min-height: auto !important;
+			display: block !important;
+			position: static !important;
+			transform: none !important;
+			-webkit-transform: none !important;
+			overflow: visible !important;
+		}
+
+		.resume-scroll-container {
+			background: white !important;
+			padding: 0 !important;
+			margin: 0 !important;
+			width: 100% !important;
+			max-width: none !important;
+			height: auto !important;
+			display: block !important;
+			position: static !important;
+			transform: none !important;
+			-webkit-transform: none !important;
+			overflow: visible !important;
+		}
+
+		/* 🔄 STEP 2: Force desktop resume container dimensions */
+		.resume-container {
+			/* Reset from mobile responsive sizing */
+			width: 210mm !important; /* Force desktop width first */
+			min-width: 210mm !important;
+			max-width: 210mm !important;
+			min-height: 297mm !important; /* A4 height */
+
+			/* Then apply print sizing */
+			width: 8.5in !important;
+			min-width: 8.5in !important;
+			max-width: 8.5in !important;
+			min-height: 11in !important;
+
+			/* Reset positioning and effects */
+			margin: 0 auto !important;
+			padding: 0 !important;
+			background: white !important;
+			position: static !important;
+			display: block !important;
+			transform: none !important;
+			-webkit-transform: none !important;
+
+			/* 🚫 Remove ALL visual effects */
+			box-shadow: none !important;
+			border: none !important;
+			border-radius: 0 !important;
+			animation: none !important;
+			-webkit-animation: none !important;
+			overflow: visible !important;
+		}
+
+		/* 🚫 Force remove dyslexia mode styling in print */
+		.resume-container.dyslexia-mode {
+			border: none !important;
+			background: white !important;
+			box-shadow: none !important;
+			animation: none !important;
+			-webkit-animation: none !important;
+		}
+
+		/* 📝 STEP 3: Force desktop content dimensions */
 		.resume-content {
-			width: 7.5in !important; /* Consistent content width */
+			/* Reset from mobile padding */
+			padding: 4cqmin !important; /* Reset mobile first */
+
+			/* Then apply consistent print sizing */
+			width: 7.5in !important;
+			min-width: 7.5in !important;
 			max-width: 7.5in !important;
 			margin: 0 auto !important;
-			padding: 0.5in !important; /* Consistent padding */
+			padding: 0.5in !important;
+
+			/* Reset everything else */
+			background: white !important;
+			color: black !important;
+			position: static !important;
+			display: block !important;
+			transform: none !important;
+			-webkit-transform: none !important;
+
+			/* Box model consistency */
 			-webkit-box-sizing: border-box !important;
 			box-sizing: border-box !important;
+
+			/* Remove any effects */
+			border: none !important;
+			border-radius: 0 !important;
+			box-shadow: none !important;
+			overflow: visible !important;
+			height: auto !important;
+			min-height: auto !important;
+			max-height: none !important;
+		}
+
+		/* 📱 MOBILE-SPECIFIC RESETS */
+		@media screen and (max-width: 768px) {
+			.resume-container {
+				/* Extra force for mobile Chrome */
+				-webkit-appearance: none !important;
+				appearance: none !important;
+				zoom: 1 !important;
+				-webkit-zoom: 1 !important;
+			}
+
+			.resume-content {
+				/* Mobile Safari specific */
+				-webkit-overflow-scrolling: auto !important;
+			}
 		}
 
 		/* 📏 Force exact same font rendering */
@@ -360,37 +484,73 @@
 			-webkit-font-smoothing: antialiased !important;
 			-moz-osx-font-smoothing: grayscale !important;
 			text-rendering: optimizeLegibility !important;
+			background: transparent !important;
+			border: none !important;
+			box-shadow: none !important;
+			transform: none !important;
+			-webkit-transform: none !important;
 		}
 
-		/* 🎯 Consistent line heights and spacing */
+		/* 🎯 Consistent typography - desktop sizing */
 		:global(.resume-content h1) {
+			font-size: 14pt !important;
 			line-height: 1.1 !important;
 			margin: 0 0 8pt 0 !important;
+			color: black !important;
+			font-weight: bold !important;
 		}
 
 		:global(.resume-content h2) {
+			font-size: 12pt !important;
 			line-height: 1.1 !important;
 			margin: 10pt 0 4pt 0 !important;
+			color: black !important;
+			font-weight: bold !important;
 		}
 
 		:global(.resume-content h3) {
+			font-size: 11pt !important;
 			line-height: 1.1 !important;
 			margin: 5pt 0 3pt 0 !important;
+			color: black !important;
+			font-weight: bold !important;
 		}
 
 		:global(.resume-content p) {
+			font-size: 11pt !important;
 			line-height: 1.2 !important;
 			margin: 0 0 4pt 0 !important;
+			color: black !important;
 		}
 
 		:global(.resume-content ul) {
 			margin: 2pt 0 4pt 20pt !important;
 			padding: 0 !important;
+			list-style-type: disc !important;
 		}
 
 		:global(.resume-content li) {
+			font-size: 11pt !important;
 			line-height: 1.2 !important;
 			margin: 0 0 2pt 0 !important;
+			color: black !important;
+		}
+
+		:global(.resume-content a) {
+			color: black !important;
+			text-decoration: underline !important;
+		}
+
+		/* 🚫 Remove all dyslexia mode font overrides in print */
+		:global(.resume-content.dyslexia-mode),
+		:global(.resume-content.dyslexia-mode *) {
+			font-family: 'Times New Roman', serif !important;
+		}
+
+		/* 📃 Page setup */
+		@page {
+			size: 8.5in 11in;
+			margin: 0.5in;
 		}
 	}
 
