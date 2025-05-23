@@ -414,7 +414,7 @@
       }
 
       :global(.resume-content.dyslexia-mode *) {
-          font-family: 'Courier New', monospace !important;
+          font-family: 'OpenDyslexicMono', monospace !important;
       }
 
       /* Contact info styling */
