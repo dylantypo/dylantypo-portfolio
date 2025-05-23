@@ -226,20 +226,15 @@
 
   /* 🆕 Dyslexia button specific styles */
   .dyslexia-button {
-    font-family: 'Inter', sans-serif; /* Default font */
+    font-family: 'OpenDyslexicMono', monospace; /* Default font */
     border: 2px solid transparent;
     transition: all var(--transition-speed) ease;
   }
 
   .dyslexia-button.active {
-    font-family: 'Inter', sans-serif; /* Keep normal font when active */
     background: linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)) padding-box,
                 linear-gradient(45deg, #ff0080, #ff8c00, #40e0d0, #ff0080) border-box;
     animation: button-rainbow 2s linear infinite;
-  }
-
-  .dyslexia-button:not(.active) {
-    font-family: 'OpenDyslexicMono', monospace; /* Dyslexic font when inactive */
   }
 
   @keyframes button-rainbow {
@@ -255,46 +250,180 @@
           print-color-adjust: inherit !important;
       }
 
-      /* Reset everything to desktop-like state */
+      /* Reset everything to consistent state */
       :global(body) {
           background: white !important;
           margin: 0 !important;
           padding: 0 !important;
+          font-size: 11pt !important; 
+          font-family: 'Times New Roman', serif !important;
+          line-height: 1.2 !important; 
+          color: black !important;
       }
 
       .outer-container {
           padding: 0 !important;
+          background: white !important;
+          width: 100% !important;
+          min-height: auto !important;
+          display: block !important;
       }
 
       .resume-scroll-container {
           padding: 0 !important;
           max-width: none !important;
-          width: 210mm !important;
+          width: 100% !important;
+          margin: 0 auto !important;
+          display: block !important;
       }
 
       .resume-container {
           box-shadow: none !important;
-          margin: 0 !important;
-          width: 210mm !important;
+          margin: 0 auto !important;
+          width: 100% !important;
+          max-width: 8.5in !important;
+          min-height: auto !important;
           border: none !important;
-          border-radius:0  !important;
+          border-radius: 0 !important;
+          background: white !important;
       }
 
       .resume-content {
-          padding: 0 !important;
+          padding: 0.75in !important; /* Slightly smaller margins for more content */
           border: none !important;
           border-radius: 0 !important;
+          font-size: 11pt !important;
+          line-height: 1.2 !important;
+          color: black !important;
+          width: auto !important; /* Let it fill available space */
+          max-width: 7in !important; /* Maximum content width */
+          margin: 0 auto !important; /* Center the content */
+          box-sizing: border-box !important;
       }
 
+      /* Dyslexia mode print styles */
+      :global(.resume-content.dyslexia-mode) {
+          font-family: 'Courier New', monospace !important;
+          font-size: 10pt !important; 
+          line-height: 1.3 !important;
+      }
+
+      /* Optimized typography hierarchy */
+      :global(.resume-content h1) {
+          font-size: 14pt !important;
+          font-weight: bold !important;
+          margin-bottom: 8pt !important;
+          margin-top: 0 !important;
+          color: black !important;
+          page-break-after: avoid !important;
+          line-height: 1.1 !important;
+          text-align: center !important;
+      }
+
+      :global(.resume-content h2) {
+          font-size: 12pt !important;
+          font-weight: bold !important;
+          margin-bottom: 4pt !important;
+          margin-top: 10pt !important;
+          color: black !important;
+          page-break-after: avoid !important;
+          page-break-inside: avoid !important;
+          line-height: 1.1 !important;
+          border-bottom: 1pt solid black !important;
+          padding-bottom: 2pt !important;
+      }
+
+      :global(.resume-content h3) {
+          font-size: 11pt !important;
+          font-weight: bold !important;
+          margin-bottom: 3pt !important;
+          margin-top: 5pt !important;
+          color: black !important;
+          page-break-after: avoid !important;
+          page-break-inside: avoid !important;
+          line-height: 1.1 !important;
+      }
+
+      :global(.resume-content p) {
+          font-size: 11pt !important;
+          margin-bottom: 4pt !important;
+          margin-top: 0 !important;
+          color: black !important;
+          line-height: 1.2 !important;
+          orphans: 2 !important;
+          widows: 2 !important;
+          text-align: left !important;
+      }
+
+      :global(.resume-content.dyslexia-mode p) {
+          font-size: 10pt !important;
+          line-height: 1.3 !important;
+      }
+
+      :global(.resume-content ul) {
+          margin-bottom: 4pt !important;
+          margin-top: 2pt !important;
+          margin-left: 20pt !important;
+          padding-left: 0 !important;
+          page-break-inside: avoid !important;
+      }
+
+      :global(.resume-content li) {
+          font-size: 11pt !important;
+          margin-bottom: 2pt !important;
+          margin-top: 0 !important;
+          color: black !important;
+          line-height: 1.2 !important;
+          page-break-inside: avoid !important;
+      }
+
+      :global(.resume-content.dyslexia-mode li) {
+          font-size: 10pt !important;
+          line-height: 1.3 !important;
+      }
+
+      :global(.resume-content a) {
+          color: black !important;
+          text-decoration: underline !important;
+          border-bottom: none !important;
+      }
+
+      :global(.resume-content hr) {
+          margin: 8pt 0 !important;
+          border: none !important;
+          height: 1pt !important;
+          background-color: black !important;
+          page-break-after: avoid !important;
+      }
+
+      /* Hide controls when printing */
       .controls {
           display: none !important;
       }
 
+      /* Optimized page setup */
       @page {
-          size: A4;
-          margin: var(--spacing-base);
+          size: 8.5in 11in;
+          margin: 0.5in; /* Browser will handle this */
+      }
+
+      /* Force consistent measurements */
+      :global(.resume-content *) {
+          font-family: inherit !important;
+          color: black !important;
+      }
+
+      :global(.resume-content.dyslexia-mode *) {
+          font-family: 'Courier New', monospace !important;
+      }
+
+      /* Contact info styling */
+      :global(.resume-content p:first-of-type) {
+          text-align: center !important;
+          margin-bottom: 6pt !important;
       }
   }
+
 
   /* Mobile styles */
   @media (max-width: 640px) {
