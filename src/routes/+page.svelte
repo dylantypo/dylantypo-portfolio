@@ -1,4 +1,5 @@
 <script lang="ts">
+	import LandingPage from '$lib/LandingPage.svelte';
 	import Globe from '$lib/globe.svelte';
 	import ToolBar from '$lib/ToolBar.svelte';
 	import CoolBar from '$lib/CoolBar.svelte';
@@ -8,8 +9,14 @@
 	let hero_text = $state('Dylan Posner');
 	let isCoolBarVisible = $state(false);
 
+	let showLanding = $state(true);
+
 	function handleRevealCoolBar() {
 		isCoolBarVisible = true;
+	}
+
+	function handleEnter() {
+		showLanding = false;
 	}
 
 	onMount(() => {
@@ -17,12 +24,16 @@
 	});
 </script>
 
-<main id="main-content" aria-label="Portfolio Content">
-	<CoolBar visible={isCoolBarVisible} />
-	<ToolBar />
-	<Globe {hero_text} />
-	<MainContent {handleRevealCoolBar} />
-</main>
+{#if showLanding}
+	<LandingPage onEnter={handleEnter} />
+{:else}
+	<main id="main-content" aria-label="Portfolio Content">
+		<CoolBar visible={isCoolBarVisible} />
+		<ToolBar />
+		<Globe {hero_text} />
+		<MainContent {handleRevealCoolBar} />
+	</main>
+{/if}
 
 <style>
 	main {
