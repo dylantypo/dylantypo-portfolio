@@ -77,7 +77,7 @@
 			<div class="wrapper"><i class="fab fa-github fa-2xl" aria-hidden="true"></i></div>
 		</a>
 		<a href="/resume" target="_blank" class="toolbar-link" aria-label="Download Dylan's Resume">
-			<div class="wrapper"><i class="fa-regular fa-file fa-2xl" aria-hidden="true"></i></div>
+			<div class="wrapper"><i class="fa-solid fa-file fa-2xl" aria-hidden="true"></i></div>
 		</a>
 		<div class="wrapper">
 			<i
