@@ -20,7 +20,7 @@
 <style>
 	@font-face {
 		font-family: 'KenneyFuture';
-		src: url('/fonts/Kenney Future.ttf') format('truetype');
+		src: url('/fonts/Kenney Future.woff2') format('woff2');
 		font-display: swap;
 	}
 

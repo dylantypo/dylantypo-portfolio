@@ -210,11 +210,6 @@
 		font-size: var(--font-size-base);
 	}
 
-	:global(.resume-content div[align='center'] p) {
-		word-break: break-word;
-		font-size: 1em;
-	}
-
 	:global(.resume-content.dyslexia-mode) {
 		font-family: 'OpenDyslexicMono', monospace;
 		line-height: 1.4; /* Slightly increased for better readability */
@@ -588,6 +583,10 @@
 
 		.resume-content {
 			padding: 1.5cm;
+		}
+
+		:global(.resume-content div[align='center'] p) {
+			font-size: 0.85em;
 		}
 
 		.control-button {
