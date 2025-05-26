@@ -71,7 +71,7 @@ Data Scientist with 3+ years specializing in data visualization and automation. 
 ## Certifications
 
 - [**Python Practitioner**](https://www.credly.com/badges/2696e828-6df4-4a87-89cf-b3da203a2ab0/email) - Booz Allen Hamilton | March 17, 2023
-- [**AWS Certified Cloud Practitioner**](https://www.credly.com/badges/66af8ef4-a10b-42d6-aab9-c4a05db1746b?source=linked_in_profile) - Amazon Web Services Training and Certification | May 31, 2022 (Expires on May 31, 2025)
+- [**AWS Certified Cloud Practitioner**](https://www.credly.com/badges/66af8ef4-a10b-42d6-aab9-c4a05db1746b?source=linked_in_profile) - Amazon Web Services Training and Certification | May 31, 2022
 - [**ICAgile Certified Professional**](https://www.icagile.com/credentials/1a0ba384-c3d8-42a5-95c5-b83d76dcd994) - ICAgile | December 07, 2021
 
 ---
