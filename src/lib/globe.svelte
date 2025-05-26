@@ -1,13 +1,26 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import * as THREE from 'three';
-	import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
-	import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 	import pkg from 'lodash';
 	import { writable } from 'svelte/store';
 	import { browser } from '$app/environment';
 
 	const { debounce } = pkg;
+
+	// 🎯 Type-safe interface for Three.js modules
+	interface ThreeModules {
+		THREE: typeof import('three');
+		TextGeometry: typeof import('three/examples/jsm/geometries/TextGeometry.js').TextGeometry;
+		FontLoader: typeof import('three/examples/jsm/loaders/FontLoader.js').FontLoader;
+	}
+
+	// 🎯 Nullable module references
+	let modules: ThreeModules | null = null;
+
+	// Helper to access THREE safely
+	const getThree = () => {
+		if (!modules?.THREE) throw new Error('THREE not loaded');
+		return modules.THREE;
+	};
 
 	// Component props and state
 	let container: HTMLDivElement;
@@ -15,12 +28,12 @@
 	let { hero_text } = $props<{ hero_text: string }>();
 
 	// State management
+	let globeModulesLoaded = $state(false);
 	let globeInitialized = $state(false);
 	let currentLocationIndex = $state(-1);
 	let isControlsEnabled = $state(false);
-	let animationFrameId: number;
+	let animationFrameId: number | undefined;
 	let CLOUDS_ROTATION_SPEED: number;
-	let lastFrameTime = Date.now();
 
 	// Touch handling state
 	let isTouchDevice = $state(false);
@@ -118,6 +131,30 @@
 		}
 	];
 
+	async function loadGlobeModules(): Promise<void> {
+		if (globeModulesLoaded || modules) return;
+
+		try {
+			const [ThreeModule, { TextGeometry }, { FontLoader }] = await Promise.all([
+				import('three'),
+				import('three/examples/jsm/geometries/TextGeometry.js'),
+				import('three/examples/jsm/loaders/FontLoader.js')
+			]);
+
+			modules = {
+				THREE: ThreeModule,
+				TextGeometry,
+				FontLoader
+			};
+
+			globeModulesLoaded = true;
+			console.log('🌍 Globe modules loaded in background');
+		} catch (error) {
+			console.error('Failed to load globe modules:', error);
+			throw error;
+		}
+	}
+
 	function smoothScrollTo(element: HTMLElement, duration = 2000) {
 		const start = window.scrollY;
 		const end = element.getBoundingClientRect().top + window.scrollY;
@@ -180,21 +217,11 @@
 
 		isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
+		loadGlobeModules();
+
 		// Initialize accessibility attributes
 		container.setAttribute('role', 'region');
 		container.setAttribute('aria-label', "Interactive 3D Globe showing places I've lived");
-
-		// ADD THIS PLACEHOLDER WHILE GLOBE LOADS
-		const placeholderDiv = document.createElement('div');
-		placeholderDiv.style.backgroundColor = '#18181b';
-		placeholderDiv.style.width = '100%';
-		placeholderDiv.style.height = '100%';
-		placeholderDiv.style.display = 'flex';
-		placeholderDiv.style.justifyContent = 'center';
-		placeholderDiv.style.alignItems = 'center';
-		placeholderDiv.style.color = 'rgba(255, 255, 255, 0.5)';
-		placeholderDiv.textContent = 'Loading...';
-		container.appendChild(placeholderDiv);
 
 		// ADD THIS CODE TO LAZY LOAD THE GLOBE
 		const observerOptions = {
@@ -213,17 +240,26 @@
 
 		lazyLoadObserver.observe(container);
 
-		// Add screen reader instructions
-		const instructions = document.createElement('div');
-		instructions.className = 'sr-only';
-		instructions.textContent =
-			'Use arrow keys to navigate between locations. Press Enter to focus on a location. Press Escape to exit navigation mode.';
-		container.appendChild(instructions);
-
 		async function initGlobe() {
-			// First, remove the placeholder
+			// 🚀 If modules aren't loaded yet, load them first
+			if (!globeModulesLoaded || !modules) {
+				await loadGlobeModules();
+			}
+
+			if (!modules) throw new Error('Failed to load modules');
+
+			const THREE = modules.THREE;
+			const TextGeometry = modules.TextGeometry;
+			const FontLoader = modules.FontLoader;
+
+			// Remove any loading placeholder
 			container.innerHTML = '';
-			container.appendChild(instructions); // Re-add instructions
+
+			// Re-add accessibility instructions
+			const instructions = document.createElement('div');
+			instructions.className = 'sr-only';
+			instructions.textContent = 'Use arrow keys to navigate between locations...';
+			container.appendChild(instructions);
 
 			// Set priority for loading
 			if ('connection' in navigator) {
@@ -539,18 +575,21 @@
 				window.innerWidth < 768 ? 50 : 75
 			);
 			const Clouds = new THREE.Mesh(cloudsGeometry);
-			new THREE.TextureLoader().load(CLOUDS_IMG_URL, (cloudsTexture) => {
-				Clouds.material = new THREE.MeshPhongMaterial({ map: cloudsTexture, transparent: true });
+			new THREE.TextureLoader().load(CLOUDS_IMG_URL, (cloudsTexture: any) => {
+				Clouds.material = new THREE.MeshPhongMaterial({
+					map: cloudsTexture,
+					transparent: true
+				});
 			});
 			globe.add(Clouds);
 
 			// Enhance globe appearance
-			const globeMaterial = globe.globeMaterial() as THREE.MeshPhongMaterial;
-			if (globeMaterial instanceof THREE.MeshPhongMaterial) {
-				new THREE.TextureLoader().load('/geo/earth-water.webp', (texture) => {
-					globeMaterial.specularMap = texture;
-					globeMaterial.specular = new THREE.Color('grey');
-					globeMaterial.shininess = 100;
+			const globeMaterial = globe.globeMaterial();
+			if (globeMaterial && 'specularMap' in globeMaterial) {
+				new THREE.TextureLoader().load('/geo/earth-water.webp', (texture: any) => {
+					(globeMaterial as any).specularMap = texture;
+					(globeMaterial as any).specular = new THREE.Color('grey');
+					(globeMaterial as any).shininess = 100;
 				});
 			}
 
@@ -712,7 +751,7 @@
 
 			// Animation
 			const animate = () => {
-				animationFrameId = requestAnimationFrame(animate);
+				animationFrameId = requestAnimationFrame(animate) as number;
 
 				if (controls.enabled) {
 					controls.update();
@@ -726,7 +765,6 @@
 				}
 
 				renderers.forEach((r) => r.render(scene, camera));
-				lastFrameTime = Date.now();
 			};
 
 			// Accessibility announcements
@@ -863,8 +901,8 @@
 						ease: 'power2.inOut',
 						onStart: () => {
 							group.visible = true;
-							group.children.forEach((obj: THREE.Object3D) => {
-								const mesh = obj as THREE.Mesh;
+							group.children.forEach((obj: any) => {
+								const mesh = obj;
 								if (mesh.material instanceof THREE.MeshPhongMaterial) {
 									mesh.material.transparent = true;
 									mesh.material.opacity = 0;
@@ -873,16 +911,16 @@
 						},
 						onUpdate: function () {
 							const progress = this.progress();
-							group.children.forEach((obj: THREE.Object3D) => {
-								const mesh = obj as THREE.Mesh;
+							group.children.forEach((obj: any) => {
+								const mesh = obj;
 								if (mesh.material instanceof THREE.MeshPhongMaterial) {
 									mesh.material.opacity = progress * 0.5;
 								}
 							});
 						},
 						onComplete: () => {
-							group.children.forEach((obj: THREE.Object3D) => {
-								const mesh = obj as THREE.Mesh;
+							group.children.forEach((obj: any) => {
+								const mesh = obj;
 								if (mesh.material instanceof THREE.MeshPhongMaterial) {
 									mesh.material.opacity = 0.5;
 								}
@@ -915,11 +953,11 @@
 					});
 					keydownHandlers.clear();
 
-					scene.traverse((object) => {
+					scene.traverse((object: any) => {
 						if (object instanceof THREE.Mesh) {
 							object.geometry.dispose();
 							if (Array.isArray(object.material)) {
-								object.material.forEach((material) => material.dispose());
+								object.material.forEach((material: any) => material.dispose());
 							} else {
 								object.material.dispose();
 							}

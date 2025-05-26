@@ -13,7 +13,14 @@ export default defineConfig(({ mode }) => {
 			rollupOptions: {
 				output: {
 					manualChunks: (id) => {
-						// Break up the three.js dependencies
+						// 🎯 Add route splitting to your existing logic
+						if (id.includes('/routes/mav/')) return 'route-mav';
+						if (id.includes('/routes/ballz/')) return 'route-ballz';
+						if (id.includes('/routes/snake/')) return 'route-snake';
+						if (id.includes('/routes/resume/') || id.includes('ResumeViewer'))
+							return 'route-resume';
+
+						// Your existing three.js chunking (keep as-is)
 						if (id.includes('three/examples/')) {
 							return 'three-examples';
 						}
@@ -35,6 +42,11 @@ export default defineConfig(({ mode }) => {
 					}
 				}
 			}
+		},
+
+		// 🎯 Add this for better optimization
+		define: {
+			'process.env.NODE_ENV': JSON.stringify(mode)
 		}
 	};
 });
