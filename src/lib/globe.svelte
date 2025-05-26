@@ -1038,8 +1038,9 @@
 	.globe-container {
 		position: relative;
 		width: 100%;
-		height: 100dvh; /* Dynamic viewport height */
-		height: calc(var(--vh, 1vh) * 100); /* Fallback */
+		min-height: 100vh; /* ✅ Ensures minimum coverage */
+		min-height: 100svh; /* ✅ Small viewport height for mobile */
+		height: 100dvh; /* ✅ Dynamic viewport - modern browsers */
 		overflow: hidden;
 		background-color: var(--color-primary);
 		will-change: transform;

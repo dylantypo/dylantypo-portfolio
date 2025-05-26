@@ -58,15 +58,20 @@
 		scrollbar-width: none;
 		width: 100vw;
 		height: 100%;
-		background-color: var(--color-background);
+		background-color: var(--color-background) !important;
 		font-family: var(--font-family-base);
 		font-size: var(--font-size-base);
+		min-height: 100vh;
+		min-height: 100svh;
 	}
 
 	:global(body) {
 		margin: 0;
 		padding: 0;
 		line-height: 1.35;
+		background-color: var(--color-background) !important;
+		min-height: 100vh;
+		min-height: 100svh;
 	}
 
 	/* Hide scrollbars */
