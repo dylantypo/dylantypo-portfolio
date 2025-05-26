@@ -1,0 +1,182 @@
+/* Font faces */
+@font-face {
+	font-family: 'Font Awesome 6 Free';
+	font-style: normal;
+	font-weight: 900;
+	font-display: swap;
+	src: url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/webfonts/fa-solid-900.woff2')
+		format('woff2');
+}
+
+@font-face {
+	font-family: 'Font Awesome 6 Brands';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/webfonts/fa-brands-400.woff2')
+		format('woff2');
+}
+
+/* Base classes */
+.fa-solid,
+.fas {
+	font-family: 'Font Awesome 6 Free';
+	font-weight: 900;
+	font-style: normal;
+	font-variant: normal;
+	text-rendering: auto;
+	line-height: 1;
+}
+
+.fa-brands,
+.fab {
+	font-family: 'Font Awesome 6 Brands';
+	font-weight: 400;
+	font-style: normal;
+	font-variant: normal;
+	text-rendering: auto;
+	line-height: 1;
+}
+
+/* Size classes */
+.fa-2xl {
+	font-size: 2em;
+}
+
+/* Only icons you use */
+.fa-microphone-lines:before {
+	content: '\f3c9';
+}
+.fa-hands-holding-circle:before {
+	content: '\e4fb';
+}
+.fa-staff-snake:before {
+	content: '\e579';
+}
+.fa-angle-up:before {
+	content: '\f106';
+}
+.fa-angle-down:before {
+	content: '\f107';
+}
+.fa-atom:before {
+	content: '\f5d2';
+}
+.fa-gear:before {
+	content: '\f013';
+}
+.fa-file:before {
+	content: '\f15b';
+}
+.fa-rocket:before {
+	content: '\f135';
+}
+.fa-caret-up:before {
+	content: '\f0d8';
+}
+.fa-caret-down:before {
+	content: '\f0d7';
+}
+.fa-volume-high:before {
+	content: '\f028';
+}
+.fa-volume-xmark:before {
+	content: '\f6a9';
+}
+.fa-cube:before {
+	content: '\f1b2';
+}
+.fa-person-falling:before {
+	content: '\e546';
+}
+.fa-linkedin-in:before {
+	content: '\f0e1';
+}
+.fa-github:before {
+	content: '\f09b';
+}
+
+/* Animations */
+.fa-spin {
+	animation: fa-spin 2s infinite linear;
+	--fa-animation-duration: 2s;
+}
+.fa-bounce {
+	animation: fa-bounce 1s infinite;
+}
+.fa-beat {
+	animation: fa-beat 1s infinite;
+}
+.fa-fade {
+	animation: fa-fade 2s infinite;
+}
+.fa-beat-fade {
+	animation: fa-beat-fade 2s infinite;
+}
+
+/* Custom animation support */
+[style*='--fa-animation-duration'] {
+	animation-duration: var(--fa-animation-duration, 1s);
+}
+
+[style*='--fa-animation-delay'] {
+	animation-delay: var(--fa-animation-delay, 0s);
+}
+
+/* Keyframes */
+@keyframes fa-spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes fa-bounce {
+	0%,
+	20%,
+	53%,
+	80%,
+	100% {
+		transform: translate3d(0, 0, 0);
+	}
+	40%,
+	43% {
+		transform: translate3d(0, -30px, 0);
+	}
+	70% {
+		transform: translate3d(0, -15px, 0);
+	}
+	90% {
+		transform: translate3d(0, -4px, 0);
+	}
+}
+
+@keyframes fa-beat {
+	0%,
+	90% {
+		transform: scale(1);
+	}
+	45% {
+		transform: scale(1.25);
+	}
+}
+
+@keyframes fa-fade {
+	50% {
+		opacity: 0.4;
+	}
+}
+
+@keyframes fa-beat-fade {
+	0%,
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 0.4;
+		transform: scale(1.125);
+	}
+}
