@@ -48,8 +48,8 @@
 	}
 
 	@font-face {
-		font-family: var(--font-family-base);
-		src: url('/fonts/Kenney Future.ttf') format('truetype');
+		font-family: 'KenneyFuture';
+		src: url('/fonts/Kenney Future.woff2') format('woff2');
 		font-display: swap;
 	}
 

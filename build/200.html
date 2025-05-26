@@ -5,23 +5,39 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta name="theme-color" content="#004643" />
 
-		<!-- Performance Optimizations -->
+		<!-- DNS Prefetch - Load First -->
+		<link rel="dns-prefetch" href="//cdnjs.cloudflare.com" />
+		<link rel="dns-prefetch" href="//rsms.me" />
 		<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
 		<link rel="preconnect" href="https://rsms.me" crossorigin />
+
+		<!-- Critical Resource Preloads -->
 		<link
 			rel="preload"
-			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/webfonts/fa-solid-900.woff2"
+			href="/fonts/Kenney%20Future.woff2"
 			as="font"
 			type="font/woff2"
 			crossorigin
 		/>
-		<link rel="preload" href="/fonts/Kenney%20Future.ttf" as="font" type="font/ttf" crossorigin />
 		<link
 			rel="preload"
-			href="/fonts/OpenDyslexicMono-Regular.otf"
+			href="/fonts/OpenDyslexicMono-Regular.woff2"
 			as="font"
-			type="font/ttf"
+			type="font/woff2"
 			crossorigin
+		/>
+		<link rel="preload" href="/profile.webp" as="image" fetchpriority="high" />
+		<link rel="preload" href="/geo/2_no_clouds_1k.webp" as="image" fetchpriority="high" />
+		<link rel="preload" href="/geo/elev_bump_1k.webp" as="image" />
+		<link rel="preload" href="/geo/fair_clouds_1k.webp" as="image" />
+
+		<!-- Font Awesome - Single File -->
+		<link
+			rel="preload"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+			as="style"
+			onload="this.onload=null;this.rel='stylesheet'"
+			crossorigin="anonymous"
 		/>
 
 		<!-- Core Meta Tags -->
@@ -35,28 +51,7 @@
 		<link rel="icon" href="/favicon.ico" />
 		<link rel="canonical" href="https://dylanposner.com" />
 
-		<!-- Deferred/Non-Critical CSS -->
-		<link
-			rel="stylesheet"
-			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css"
-			media="print"
-			onload="this.media='all'"
-			crossorigin="anonymous"
-		/>
-		<link
-			rel="stylesheet"
-			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css"
-			media="print"
-			onload="this.media='all'"
-			crossorigin="anonymous"
-		/>
-		<link
-			rel="stylesheet"
-			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css"
-			media="print"
-			onload="this.media='all'"
-			crossorigin="anonymous"
-		/>
+		<!-- Deferred Non-Critical CSS -->
 		<link
 			rel="stylesheet"
 			href="https://rsms.me/inter/inter.css"
@@ -68,23 +63,13 @@
 		<noscript>
 			<link
 				rel="stylesheet"
-				href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css"
-				crossorigin="anonymous"
-			/>
-			<link
-				rel="stylesheet"
-				href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css"
-				crossorigin="anonymous"
-			/>
-			<link
-				rel="stylesheet"
-				href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css"
+				href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
 				crossorigin="anonymous"
 			/>
 			<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 		</noscript>
 
-		<!-- IOS Meta Tags -->
+		<!-- PWA Meta Tags -->
 		<meta name="mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
@@ -94,6 +79,7 @@
 		<meta property="og:type" content="profile" />
 		<meta property="og:url" content="https://dylanposner.com" />
 		<meta property="og:title" content="Dylan Posner - Data Scientist" />
+		<meta property="og:image" content="https://dylanposner.com/profile.webp" />
 		<meta
 			property="og:description"
 			content="Data science expert with 5 years experience, blending creativity and innovation to enhance data-driven decision making."
@@ -106,16 +92,17 @@
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:site" content="@superdopedylan" />
 		<meta name="twitter:title" content="Dylan Posner | Data Science Professional" />
+		<meta name="twitter:image" content="https://dylanposner.com/profile.webp" />
 		<meta
 			name="twitter:description"
 			content="Dylan Posner: A data science professional with almost half a decade of diverse experience."
 		/>
 
 		<!-- Reading Mode Specific -->
-		<meta name="displaydate" content="2025-01-10" />
+		<meta name="displaydate" content="2025-01-26" />
 		<link rel="author" href="https://dylanposner.com" />
 
-		<!-- Bing Verification -->
+		<!-- Search Engine Verification -->
 		<meta name="msvalidate.01" content="D5221F0F4DF353FEF4690B6AAF24CF49" />
 
 		<!-- Schema Markup -->
@@ -127,8 +114,10 @@
 				"jobTitle": "Data Science Professional",
 				"url": "https://dylanposner.com",
 				"email": "dylantylerposner@gmail.com",
+				"image": "https://dylanposner.com/profile.webp",
 				"sameAs": [
 					"https://www.linkedin.com/in/dylan-posner-3a0034152/",
+					"https://github.com/dylantypo",
 					"https://twitter.com/superdopedylan"
 				],
 				"description": "Data science expert with 5 years experience, blending creativity and innovation to enhance data-driven decision making."
@@ -137,26 +126,26 @@
 
 		
 		<link href="/_app/immutable/assets/globe.C4fPg75t.css" rel="stylesheet">
-		<link rel="modulepreload" href="/_app/immutable/entry/start.DO0bHgb9.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/DVwPjl-x.js">
-		<link rel="modulepreload" href="/_app/immutable/entry/app.CEy-nkN3.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/BfU1xkFZ.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/DhV2MTw5.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/D1Gs0bc_.js">
+		<link rel="modulepreload" href="/_app/immutable/entry/start.DbLfz0fS.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/gRVUx8bD.js">
+		<link rel="modulepreload" href="/_app/immutable/entry/app.DcauVvwW.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/DLY3Pi7S.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/DPeUspPV.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/D7DSQZ4g.js">
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div id="svelte" style="display: contents">
 			<script>
 				{
-					__sveltekit_34tm3e = {
+					__sveltekit_1hfdx1x = {
 						base: ""
 					};
 
 					const element = document.currentScript.parentElement;
 
 					Promise.all([
-						import("/_app/immutable/entry/start.DO0bHgb9.js"),
-						import("/_app/immutable/entry/app.CEy-nkN3.js")
+						import("/_app/immutable/entry/start.DbLfz0fS.js"),
+						import("/_app/immutable/entry/app.DcauVvwW.js")
 					]).then(([kit, app]) => {
 						kit.start(app, element);
 					});

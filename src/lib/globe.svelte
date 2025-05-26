@@ -151,21 +151,17 @@
 		// Extract file name and extension
 		const pathParts = basePath.split('/');
 		const fileName = pathParts[pathParts.length - 1];
-		const fileParts = fileName.split('.');
-		const baseName = fileParts[0].replace('_4k', '');
+		const baseName = fileName.split('.')[0].replace('_4k', '');
 
 		// Determine resolution based on device capability
 		let resolution = '1k';
-
 		if (devicePixelCategory === 'high') {
 			resolution = '4k';
 		} else if (devicePixelCategory === 'medium') {
 			resolution = '2k';
 		}
-
 		// Build new path with WebP extension
-		const newPath = `/geo/${baseName}_${resolution}.webp`;
-		return newPath;
+		return `/geo/${baseName}_${resolution}.webp`;
 	}
 
 	onMount(async () => {

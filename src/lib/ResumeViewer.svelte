@@ -118,7 +118,7 @@
 	/* 🆕 Add OpenDyslexic font face */
 	@font-face {
 		font-family: 'OpenDyslexicMono';
-		src: url('/fonts/OpenDyslexicMono-Regular.otf') format('opentype');
+		src: url('/fonts/OpenDyslexicMono-Regular.woff2') format('woff2');
 		font-display: swap;
 	}
 
