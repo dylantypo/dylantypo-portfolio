@@ -37,7 +37,7 @@
 
 	$effect(() => {
 		if (visible && coolbar) {
-			timeline = gsap.timeline().to(coolbar, { x: '0', duration: 3, ease: 'back' });
+			timeline = gsap.timeline().to(coolbar, { x: '0', duration: 4, ease: 'back' });
 		}
 	});
 
@@ -113,7 +113,7 @@
 	{#if !expandedCool}
 		<i
 			class="fa-solid fa-atom fa-spin fa-2xl"
-			style="--fa-animation-duration: 5s"
+			style="--fa-animation-duration: 10s"
 			aria-hidden="true"
 		></i>
 	{/if}

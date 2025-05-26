@@ -33,7 +33,7 @@
 
 	onMount(async () => {
 		isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-		gsap.fromTo(toolbar, { x: '200' }, { duration: 4, x: '0', ease: 'back' });
+		gsap.fromTo(toolbar, { x: '200' }, { delay: 1.5, duration: 4, x: '0', ease: 'back' });
 
 		if (isTouchDevice) {
 			document.addEventListener('touchstart', handleOutsideTouch);
@@ -90,7 +90,7 @@
 	{#if !expandedTool}
 		<i
 			class="fa-solid fa-gear fa-spin fa-2xl"
-			style="--fa-animation-duration: 3s"
+			style="--fa-animation-duration: 10s"
 			aria-hidden="true"
 		></i>
 	{/if}
