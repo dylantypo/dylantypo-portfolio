@@ -231,7 +231,7 @@
 
 <div class="landing-container">
 	<!-- Welcome Text -->
-	<div class="welcome-text">Welcome.</div>
+	<div class="welcome-text">Welcome 🌎</div>
 
 	<!-- Loading/Enter Button -->
 	<button
