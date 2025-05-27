@@ -51,9 +51,9 @@
 				<div class="skeleton-content"></div>
 			</div>
 		{:else}
-			{#if CoolBarComponent}
+			<!-- {#if CoolBarComponent}
 				<CoolBarComponent visible={isCoolBarVisible} />
-			{/if}
+			{/if} -->
 
 			{#if ToolBarComponent}
 				<ToolBarComponent />
