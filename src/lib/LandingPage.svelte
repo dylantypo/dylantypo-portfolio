@@ -1,227 +1,30 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 
 	let { onEnter } = $props<{ onEnter: () => void }>();
 
-	let loadingChecks = $state({
-		fonts: false,
-		images: false,
-		scripts: false,
-		textures: false,
-		dom: false,
-		minTime: false
-	});
-
-	let isLoaded = $derived(Object.values(loadingChecks).every(Boolean));
-	let observer: MutationObserver | null = null;
-	let checkInterval: ReturnType<typeof setInterval> | null = null;
-
-	// Track loading progress for debugging
-	let loadingProgress = $derived(() => {
-		const completed = Object.values(loadingChecks).filter(Boolean).length;
-		const total = Object.keys(loadingChecks).length;
-		return Math.round((completed / total) * 100);
-	});
-
-	function checkAllAssets() {
-		if (!browser) return;
-
-		// Check images (including dynamically added ones)
-		checkImages();
-
-		// Check for WebGL textures and 3D assets
-		checkTextures();
-
-		// Re-check fonts in case new ones were added
-		checkFonts();
-	}
-
-	function checkImages() {
-		const images = document.querySelectorAll('img, [style*="background-image"]');
-
-		if (images.length === 0) {
-			loadingChecks.images = true;
-			return;
-		}
-
-		let loadedCount = 0;
-		const totalImages = images.length;
-
-		images.forEach((element) => {
-			if (element instanceof HTMLImageElement) {
-				// Regular img tags
-				if (element.complete && element.naturalWidth > 0) {
-					loadedCount++;
-				} else {
-					element.onload = () => {
-						loadedCount++;
-						if (loadedCount >= totalImages) {
-							loadingChecks.images = true;
-						}
-					};
-					element.onerror = () => {
-						loadedCount++; // Count failed images as "loaded" to prevent hanging
-						if (loadedCount >= totalImages) {
-							loadingChecks.images = true;
-						}
-					};
-				}
-			} else {
-				// Elements with background images
-				loadedCount++; // Assume background images are loaded
-			}
-		});
-
-		if (loadedCount >= totalImages) {
-			loadingChecks.images = true;
-		}
-	}
+	let ready = $state(false);
 
 	function checkFonts() {
 		if (!browser) return;
 
+		const fontTimeout = setTimeout(() => (ready = true), 600);
+
 		document.fonts.ready
 			.then(() => {
-				loadingChecks.fonts = true;
+				clearTimeout(fontTimeout);
+				ready = true;
 			})
 			.catch(() => {
-				// Fallback if font loading fails
-				setTimeout(() => {
-					loadingChecks.fonts = true;
-				}, 2000);
-			});
-	}
-
-	function checkTextures() {
-		// Check for WebGL canvases and 3D content
-		const canvases = document.querySelectorAll('canvas');
-		const has3DContent = canvases.length > 0;
-
-		if (!has3DContent) {
-			loadingChecks.textures = true;
-			return;
-		}
-
-		// Check if Three.js objects are loaded by looking for specific classes or attributes
-		const globeElements = document.querySelectorAll(
-			'[class*="globe"], [class*="three"], .css2d-renderer'
-		);
-
-		if (globeElements.length > 0) {
-			// Give 3D content a moment to initialize
-			setTimeout(() => {
-				loadingChecks.textures = true;
-			}, 500);
-		} else {
-			// No 3D content detected yet, keep checking
-			setTimeout(checkTextures, 100);
-		}
-	}
-
-	function checkScripts() {
-		// Import critical modules
-		Promise.all([
-			import('$lib/globe.svelte').catch(() => null),
-			import('three').catch(() => null),
-			import('three-globe').catch(() => null),
-			import('gsap').catch(() => null)
-		])
-			.then(() => {
-				loadingChecks.scripts = true;
-			})
-			.catch(() => {
-				// Fallback if imports fail
-				setTimeout(() => {
-					loadingChecks.scripts = true;
-				}, 3000);
+				clearTimeout(fontTimeout);
+				ready = true;
 			});
 	}
 
 	onMount(() => {
 		if (!browser) return;
-
-		// Initial DOM ready
-		loadingChecks.dom = true;
-
-		// Start checking all assets
-		checkAllAssets();
-		checkScripts();
-
-		// Set minimum time for good UX
-		setTimeout(() => {
-			loadingChecks.minTime = true;
-		}, 1500);
-
-		// Set up mutation observer to watch for new content
-		observer = new MutationObserver((mutations) => {
-			let shouldRecheck = false;
-
-			mutations.forEach((mutation) => {
-				if (mutation.type === 'childList') {
-					// Check if new images or canvases were added
-					mutation.addedNodes.forEach((node) => {
-						if (node instanceof Element) {
-							const hasImages =
-								node.querySelectorAll?.('img, [style*="background-image"]').length > 0;
-							const hasCanvases = node.querySelectorAll?.('canvas').length > 0;
-
-							if (hasImages || hasCanvases || node.tagName === 'IMG' || node.tagName === 'CANVAS') {
-								shouldRecheck = true;
-							}
-						}
-					});
-				}
-			});
-
-			if (shouldRecheck) {
-				// Reset relevant checks and re-run
-				loadingChecks.images = false;
-				loadingChecks.textures = false;
-
-				// Debounce the recheck
-				setTimeout(checkAllAssets, 100);
-			}
-		});
-
-		// Observe the entire document for changes
-		observer.observe(document.body, {
-			childList: true,
-			subtree: true,
-			attributes: true,
-			attributeFilter: ['src', 'style'] // Watch for image src and style changes
-		});
-
-		// Periodic check as backup (every 500ms for first 10 seconds)
-		let checkCount = 0;
-		checkInterval = setInterval(() => {
-			checkCount++;
-
-			if (!isLoaded && checkCount < 20) {
-				checkAllAssets();
-			} else {
-				if (checkInterval) clearInterval(checkInterval);
-			}
-		}, 500);
-
-		// Emergency timeout - force complete after 15 seconds
-		setTimeout(() => {
-			if (!isLoaded) {
-				console.warn('Loading timeout - forcing completion');
-				Object.keys(loadingChecks).forEach((key) => {
-					loadingChecks[key as keyof typeof loadingChecks] = true;
-				});
-			}
-		}, 15000);
-	});
-
-	onDestroy(() => {
-		if (observer) {
-			observer.disconnect();
-		}
-		if (checkInterval) {
-			clearInterval(checkInterval);
-		}
+		checkFonts();
 	});
 
 	function handleEnter() {
@@ -234,31 +37,17 @@
 	<div class="welcome-text">Welcome 🌎</div>
 
 	<!-- Loading/Enter Button -->
+	<!-- ✅ SIMPLIFIED button state -->
 	<button
 		class="enter-button"
-		class:loading={!isLoaded}
-		class:loaded={isLoaded}
-		onclick={isLoaded ? handleEnter : undefined}
-		disabled={!isLoaded}
-		aria-label={isLoaded ? 'Enter website' : `Loading... ${loadingProgress()}%`}
-		title={isLoaded ? 'Click to enter' : `Loading progress: ${loadingProgress()}%`}
+		class:loading={!ready}
+		class:loaded={ready}
+		onclick={ready ? handleEnter : undefined}
+		disabled={!ready}
+		aria-label={ready ? 'Enter website' : 'Loading...'}
 	>
-		{isLoaded ? '→' : '···'}
+		{ready ? '→' : '⏳'}
 	</button>
-
-	<!-- Debug info (remove in production) -->
-	<!-- {#if !isLoaded && import.meta.env.DEV}
-		<div class="debug-info">
-			<div class="progress-text">{loadingProgress()}% loaded</div>
-			<div class="loading-details">
-				{#each Object.entries(loadingChecks) as [key, value]}
-					<div class="loading-item" class:complete={value}>
-						{key}: {value ? '✓' : '⏳'}
-					</div>
-				{/each}
-			</div>
-		</div>
-	{/if} -->
 </div>
 
 <style>
@@ -283,6 +72,7 @@
 		color: var(--color-text-primary);
 		letter-spacing: -0.02em;
 		font-weight: 600;
+		animation: fadeIn 0.6s ease-out;
 	}
 
 	.enter-button {
@@ -307,17 +97,17 @@
 
 	.enter-button.loading {
 		cursor: default;
-		animation: pulse 1.5s ease-in-out infinite;
 		opacity: 0.7;
 	}
 
 	.enter-button.loaded {
 		opacity: 1;
+		transform: scale(1.02);
 	}
 
 	.enter-button.loaded:hover {
 		opacity: 1;
-		transform: translateY(-2px);
+		transform: translateY(-2px) scale(1.05);
 	}
 
 	.enter-button.loaded:active {
@@ -333,13 +123,14 @@
 		pointer-events: none;
 	}
 
-	@keyframes pulse {
-		0%,
-		100% {
-			opacity: 0.7;
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(20px);
 		}
-		50% {
+		to {
 			opacity: 1;
+			transform: translateY(0);
 		}
 	}
 
