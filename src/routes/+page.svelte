@@ -90,8 +90,6 @@
 		left: 0;
 		width: 100%;
 		height: 100vh;
-		background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-		animation: pulse 2s ease-in-out infinite;
 	}
 
 	.skeleton-content {
@@ -100,18 +98,6 @@
 		left: 2rem;
 		right: 2rem;
 		height: 200px;
-		background: var(--color-fill);
 		border-radius: 1rem;
-		animation: pulse 2s ease-in-out infinite 0.5s;
-	}
-
-	@keyframes pulse {
-		0%,
-		100% {
-			opacity: 0.6;
-		}
-		50% {
-			opacity: 0.3;
-		}
 	}
 </style>

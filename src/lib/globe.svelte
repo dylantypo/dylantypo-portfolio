@@ -16,50 +16,27 @@
 	// 🎯 Nullable module references
 	let modules: ThreeModules | null = null;
 
-	// Helper to access THREE safely
-	const getThree = () => {
-		if (!modules?.THREE) throw new Error('THREE not loaded');
-		return modules.THREE;
-	};
-
 	// Component props and state
 	let container: HTMLDivElement;
-	let scrollableContainer: HTMLDivElement;
 	let { hero_text } = $props<{ hero_text: string }>();
 
 	// State management
 	let globeModulesLoaded = $state(false);
 	let globeInitialized = $state(false);
-	let currentLocationIndex = $state(-1);
-	let isControlsEnabled = $state(false);
 	let animationFrameId: number | undefined;
 	let CLOUDS_ROTATION_SPEED: number;
 
 	// Touch handling state
 	let isTouchDevice = $state(false);
-	let touchStartY = 0;
-	let lastTouchY = 0;
-	let touchVelocity = 0;
-	let isScrolling = false;
-	let scrollTimeout: NodeJS.Timeout;
-
-	// Scroll progress management
-	const scrollProgress = writable(0);
 
 	// Event handler storage
 	let cleanupFn: (() => void) | undefined;
-	let keydownHandlers = new Map<HTMLElement, (e: KeyboardEvent) => void>();
 
 	// Cache values
 	let cachedIsMobile: boolean | null = null;
 	let cachedIdealDistance: number | null = null;
 	let lastWidth = browser ? window.innerWidth : 0;
 	let lastHeight = browser ? window.innerHeight : 0;
-	const SCROLL_DEBOUNCE_DELAY = browser
-		? 'ontouchstart' in window || navigator.maxTouchPoints > 0
-			? 16
-			: 8
-		: 16;
 
 	type Region = {
 		country: string;
@@ -426,81 +403,6 @@
 				}))
 			);
 
-			// Handle keyboard navigation
-			const handleKeyboardNavigation = (e: KeyboardEvent) => {
-				if (!isControlsEnabled) {
-					if (e.key === 'Tab') {
-						isControlsEnabled = true;
-						announceControlsEnabled();
-					}
-					return;
-				}
-
-				switch (e.key) {
-					case 'ArrowRight':
-					case 'ArrowLeft':
-						e.preventDefault();
-						navigateLocations(e.key === 'ArrowRight' ? 1 : -1);
-						break;
-					case 'Enter':
-						if (currentLocationIndex >= 0) {
-							const location = labData[currentLocationIndex];
-							focusOnLocation(location.lat, location.lng);
-						}
-						break;
-					case 'Escape':
-						isControlsEnabled = false;
-						announceControlsDisabled();
-						break;
-				}
-			};
-
-			document.addEventListener('keydown', handleKeyboardNavigation);
-
-			// Touch handlers
-			const handleTouchStart = (e: TouchEvent) => {
-				touchStartY = e.touches[0].clientY;
-				lastTouchY = touchStartY;
-				isScrolling = true;
-				touchVelocity = 0;
-			};
-
-			const handleTouchMove = debounce(
-				(e: TouchEvent) => {
-					if (!isScrolling) return;
-
-					const currentY = e.touches[0].clientY;
-					const deltaY = lastTouchY - currentY;
-
-					touchVelocity = deltaY;
-
-					const newProgress = $scrollProgress + (deltaY / window.innerHeight) * 0.5;
-					scrollProgress.set(Math.max(0, Math.min(1, newProgress)));
-
-					lastTouchY = currentY;
-					e.preventDefault();
-				},
-				SCROLL_DEBOUNCE_DELAY,
-				{ maxWait: 33 }
-			); // Ensure we update at least every 2 frames
-
-			const handleTouchEnd = () => {
-				isScrolling = false;
-
-				const momentum = touchVelocity * 0.2;
-				if (Math.abs(momentum) > 0.01) {
-					const targetProgress = Math.max(0, Math.min(1, $scrollProgress + momentum));
-					scrollProgress.set(targetProgress);
-				}
-
-				if (scrollTimeout) clearTimeout(scrollTimeout);
-
-				scrollTimeout = setTimeout(() => {
-					const targetProgress = Math.round($scrollProgress);
-					scrollProgress.set(targetProgress);
-				}, 300);
-			};
-
 			// Min Point Altitude
 			const MIN_ALTITUDE = 0.0125;
 
@@ -528,34 +430,36 @@
 					const div = document.createElement('div');
 					const isMobile = window.innerWidth < 768;
 
+					// Set all attributes at once
+					Object.assign(div, {
+						textContent: d.name,
+						className: 'location-marker'
+					});
+
+					// Set all attributes
 					div.setAttribute('pointer-events', 'none');
 					div.setAttribute('user-select', 'none');
 					div.setAttribute('role', 'button');
 					div.setAttribute('tabindex', '0');
-					div.className = 'location-marker';
 					div.setAttribute(
 						'aria-label',
 						`${d.name}: Lived here for ${d.years} ${d.years === 1 ? 'year' : 'years'}`
 					);
 
-					const keydownHandler = (e: KeyboardEvent) => {
-						if (e.key === 'Enter') {
-							focusOnLocation(d.lat, d.lng);
-							announceLocationFocus(d.name);
-						}
-					};
-					div.addEventListener('keydown', keydownHandler);
-					keydownHandlers.set(div, keydownHandler);
+					// Set all styles with cssText
+					div.style.cssText = `
+						color: rgba(255, 255, 255, 0.5);
+						font-size: ${isMobile ? '0.35rem' : '0.5rem'};
+						position: absolute;
+						opacity: ${isMobile && d.years < 2 ? '0' : '1'};
+					`;
 
-					div.textContent = d.name;
-					div.style.color = 'rgba(255, 255, 255, 0.5)';
-					div.style.fontSize = isMobile ? '0.35rem' : '0.5rem';
-					div.style.position = 'absolute';
-					div.style.opacity = isMobile && d.years < 2 ? '0' : '1';
-
-					div.dataset.lat = d.lat.toString();
-					div.dataset.lng = d.lng.toString();
-					div.dataset.years = d.years.toString();
+					// Set datasets
+					Object.assign(div.dataset, {
+						lat: d.lat.toString(),
+						lng: d.lng.toString(),
+						years: d.years.toString()
+					});
 
 					return div;
 				});
@@ -671,18 +575,6 @@
 				updateCameraAspect();
 			};
 
-			function focusOnLocation(lat: number, lng: number) {
-				const isMobile = window.innerWidth < 768;
-				adjustCamera(isMobile, { lat, lng });
-			}
-
-			function navigateLocations(direction: number) {
-				const totalLocations = labData.length;
-				currentLocationIndex = (currentLocationIndex + direction + totalLocations) % totalLocations;
-				const location = labData[currentLocationIndex];
-				announceLocation(location);
-			}
-
 			// Resize handling
 			const handleResizeImplementation = () => {
 				const newWidth = window.innerWidth;
@@ -767,50 +659,6 @@
 				renderers.forEach((r) => r.render(scene, camera));
 			};
 
-			// Accessibility announcements
-			function announceLocation(location: any) {
-				const announcement = document.createElement('div');
-				announcement.setAttribute('role', 'alert');
-				announcement.setAttribute('aria-live', 'polite');
-				announcement.className = 'sr-only';
-				announcement.textContent = `${location.name}: Lived here for ${location.years} ${location.years === 1 ? 'year' : 'years'}`;
-				container.appendChild(announcement);
-				setTimeout(() => announcement.remove(), 1000);
-			}
-
-			function announceControlsEnabled() {
-				const announcement = document.createElement('div');
-				announcement.setAttribute('role', 'alert');
-				announcement.className = 'sr-only';
-				announcement.textContent = 'Globe navigation enabled. Use arrow keys to explore locations.';
-				container.appendChild(announcement);
-
-				const firstMarker = container.querySelector('.location-marker');
-				if (firstMarker instanceof HTMLElement) {
-					firstMarker.focus();
-				}
-
-				setTimeout(() => announcement.remove(), 1000);
-			}
-
-			function announceControlsDisabled() {
-				const announcement = document.createElement('div');
-				announcement.setAttribute('role', 'alert');
-				announcement.className = 'sr-only';
-				announcement.textContent = 'Globe navigation disabled.';
-				container.appendChild(announcement);
-				setTimeout(() => announcement.remove(), 1000);
-			}
-
-			function announceLocationFocus(locationName: string) {
-				const announcement = document.createElement('div');
-				announcement.setAttribute('role', 'alert');
-				announcement.className = 'sr-only';
-				announcement.textContent = `Focusing on ${locationName}`;
-				container.appendChild(announcement);
-				setTimeout(() => announcement.remove(), 1000);
-			}
-
 			// Initialize
 			const focusedCity = regionsLived
 				.flatMap((region) => region.states)
@@ -822,11 +670,6 @@
 			CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(isMobile);
 
 			// Add event listeners
-			if (window.innerWidth < 768) {
-				container.addEventListener('touchstart', handleTouchStart, { passive: false });
-				container.addEventListener('touchmove', handleTouchMove, { passive: false });
-				container.addEventListener('touchend', handleTouchEnd);
-			}
 			window.addEventListener('resize', handleResize);
 
 			// Font loading and hero text
@@ -944,15 +787,9 @@
 				}
 
 				window.removeEventListener('resize', handleResize);
-				document.removeEventListener('keydown', handleKeyboardNavigation);
 
 				// Only clean up globe-specific resources if it was initialized
 				if (globeInitialized) {
-					keydownHandlers.forEach((handler, element) => {
-						element.removeEventListener('keydown', handler);
-					});
-					keydownHandlers.clear();
-
 					scene.traverse((object: any) => {
 						if (object instanceof THREE.Mesh) {
 							object.geometry.dispose();
@@ -976,13 +813,6 @@
 				// Clean up observers
 				if (observer) observer.disconnect();
 				if (lazyLoadObserver) lazyLoadObserver.disconnect();
-
-				if (window.innerWidth < 768) {
-					container.removeEventListener('touchstart', handleTouchStart);
-					container.removeEventListener('touchmove', handleTouchMove);
-					container.removeEventListener('touchend', handleTouchEnd);
-				}
-				if (scrollTimeout) clearTimeout(scrollTimeout);
 			};
 		}
 	});
@@ -992,12 +822,10 @@
 	});
 </script>
 
-<div class="globe-container" bind:this={scrollableContainer}>
+<div class="globe-container">
 	<div bind:this={container} aria-describedby="globe-description" class="globe-viewer">
 		<span id="globe-description" class="sr-only">
-			Interactive 3D globe showing locations I've lived in around the world. Use Tab to enable
-			navigation, arrow keys to explore locations, Enter to focus on a location, and Escape to exit
-			navigation mode.
+			Interactive 3D globe showing locations I've lived around the world.
 		</span>
 	</div>
 
@@ -1005,7 +833,6 @@
 	{#if isTouchDevice}
 		<button
 			class="scroll-indicator"
-			class:hidden={$scrollProgress > 0}
 			onclick={() => {
 				const aboutSection = document.getElementById('aboutMe');
 				if (aboutSection) {
@@ -1186,12 +1013,6 @@
 		transform: translateX(-50%) translateY(0);
 	}
 
-	.scroll-indicator.hidden {
-		opacity: 0;
-		transform: translateX(-50%) translateY(20px);
-		pointer-events: none;
-	}
-
 	@keyframes float {
 		0%,
 		100% {
@@ -1271,31 +1092,6 @@
 		margin-top: -8px;
 		backdrop-filter: blur(4px);
 		-webkit-backdrop-filter: blur(4px);
-	}
-
-	/* Progress indicator for mobile */
-	:global(.scroll-progress) {
-		position: fixed;
-		right: 1rem;
-		top: 50%;
-		transform: translateY(-50%);
-		width: 4px;
-		height: 100px;
-		background-color: var(--color-fill);
-		border-radius: 2px;
-		z-index: var(--z-index-overlay);
-		pointer-events: none;
-	}
-
-	:global(.scroll-progress::after) {
-		content: '';
-		position: absolute;
-		width: 100%;
-		background-color: var(--color-text-primary);
-		border-radius: 2px;
-		transition:
-			height 0.1s ease,
-			top 0.1s ease;
 	}
 
 	/* Mobile adjustments */
