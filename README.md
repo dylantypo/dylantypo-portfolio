@@ -1,7 +1,4 @@
 # Dylan's Personal Website
-
-![website_demo_reduced](https://raw.githubusercontent.com/dylantypo/dylantypo.github.io/refs/heads/main/static/globeDemo.gif)
-
 🌟 **High-performance SvelteKit website** built for speed & scalability
 
 ## 🎯 Performance Features
