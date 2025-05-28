@@ -4,30 +4,22 @@
 	import { onMount } from 'svelte';
 
 	let hero_text = $state('Dylan Posner');
-	let isCoolBarVisible = $state(false);
 	let showLanding = $state(true);
 
 	let GlobeComponent: any = $state(null);
 	let ToolBarComponent: any = $state(null);
-	let CoolBarComponent: any = $state(null);
 	let componentsLoaded = $state(false);
-
-	function handleRevealCoolBar() {
-		isCoolBarVisible = true;
-	}
 
 	async function handleEnter() {
 		showLanding = false;
 		try {
-			const [{ default: Globe }, { default: ToolBar }, { default: CoolBar }] = await Promise.all([
+			const [{ default: Globe }, { default: ToolBar }] = await Promise.all([
 				import('$lib/globe.svelte'),
-				import('$lib/ToolBar.svelte'),
-				import('$lib/CoolBar.svelte')
+				import('$lib/ToolBar.svelte')
 			]);
 
 			GlobeComponent = Globe;
 			ToolBarComponent = ToolBar;
-			CoolBarComponent = CoolBar;
 			componentsLoaded = true;
 		} catch (error) {
 			console.error('Failed to load components:', error);
@@ -51,10 +43,6 @@
 				<div class="skeleton-content"></div>
 			</div>
 		{:else}
-			<!-- {#if CoolBarComponent}
-				<CoolBarComponent visible={isCoolBarVisible} />
-			{/if} -->
-
 			{#if ToolBarComponent}
 				<ToolBarComponent />
 			{/if}
@@ -63,7 +51,7 @@
 				<GlobeComponent {hero_text} />
 			{/if}
 
-			<MainContent {handleRevealCoolBar} />
+			<MainContent />
 		{/if}
 	</main>
 {/if}

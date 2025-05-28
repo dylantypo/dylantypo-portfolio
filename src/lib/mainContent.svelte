@@ -4,12 +4,6 @@
 	import Skills from '$lib/skills.svelte';
 	import History from '$lib/history.svelte';
 
-	let { handleRevealCoolBar } = $props<{ handleRevealCoolBar: () => void }>();
-
-	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter') handleRevealCoolBar();
-	}
-
 	let elements: HTMLElement[] = [];
 
 	function splitTextIntoLetters(text: string, highlight: boolean = false): string {
@@ -145,12 +139,7 @@
 		<p class="footer">
 			<span id="copyright" aria-label="Copyright">©</span> Dylan Posner 2025
 		</p>
-		<button
-			class="headshot"
-			onclick={handleRevealCoolBar}
-			onkeydown={handleKeydown}
-			aria-label="View contact information"
-		>
+		<button class="headshot" aria-label="View contact information">
 			<img
 				src="profile.webp"
 				width="200"
