@@ -2,22 +2,29 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<meta name="theme-color" content="#18181b" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+		<meta name="theme-color" content="#18181b" media="(prefers-color-scheme: dark)" />
+		<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
 
-		<!-- DNS Prefetch - Load First -->
+		<meta http-equiv="X-Content-Type-Options" content="nosniff" />
+		<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+		<meta http-equiv="x-dns-prefetch-control" content="on" />
+
 		<link rel="dns-prefetch" href="//cdnjs.cloudflare.com" />
 		<link rel="dns-prefetch" href="//rsms.me" />
 		<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
 		<link rel="preconnect" href="https://rsms.me" crossorigin />
 
-		<!-- Critical Resource Preloads -->
+		<link rel="preload" href="/css/global.css" as="style" fetchpriority="high" />
+		<link rel="stylesheet" href="/css/global.css" />
+
 		<link
 			rel="preload"
 			href="/fonts/Kenney%20Future.woff2"
 			as="font"
 			type="font/woff2"
 			crossorigin
+			fetchpriority="high"
 		/>
 		<link
 			rel="preload"
@@ -31,7 +38,6 @@
 		<link rel="preload" href="/geo/elev_bump_1k.webp" as="image" />
 		<link rel="preload" href="/geo/fair_clouds_1k.webp" as="image" />
 
-		<!-- Font Awesome - Single File -->
 		<link
 			rel="preload"
 			href="/css/fa-subset.css"
@@ -39,108 +45,144 @@
 			onload="this.onload=null;this.rel='stylesheet'"
 		/>
 
-		<!-- Core Meta Tags -->
-		<title>Dylan Posner | Data Scientist</title>
-		<meta name="title" content="Dylan Posner | Data Scientist" />
+		<title>Dylan Posner | Data Scientist & Full-Stack Developer</title>
+		<meta name="title" content="Dylan Posner | Data Scientist & Full-Stack Developer" />
 		<meta name="author" content="Dylan Posner" />
 		<meta
 			name="description"
-			content="Data science expert with 5 years experience, blending creativity and innovation to enhance data-driven decision making."
+			content="🚀 Data Scientist with 3+ years experience building ML pipelines, interactive dashboards, and scalable web apps. Python | AWS | Tableau expert."
+		/>
+		<meta
+			name="keywords"
+			content="data scientist, python developer, aws, machine learning, tableau, web developer, portfolio"
 		/>
 		<link rel="icon" href="/favicon.ico" />
 		<link rel="canonical" href="https://dylanposner.com" />
 
-		<!-- Deferred Non-Critical CSS -->
 		<link
-			rel="stylesheet"
+			rel="preload"
 			href="https://rsms.me/inter/inter.css"
-			media="print"
-			onload="this.media='all'"
+			as="style"
+			onload="this.onload=null;this.rel='stylesheet'"
 		/>
 
-		<!-- Fallback for disabled JavaScript -->
 		<noscript>
+			<link rel="stylesheet" href="/css/global.css" />
 			<link rel="stylesheet" href="/css/fa-subset.css" />
 			<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 		</noscript>
 
-		<!-- PWA Meta Tags -->
 		<meta name="mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-title" content="Dylan Posner" />
+		<meta name="format-detection" content="telephone=no" />
+		<meta name="msapplication-tap-highlight" content="no" />
 
-		<!-- Open Graph / Facebook -->
 		<meta property="og:type" content="profile" />
 		<meta property="og:url" content="https://dylanposner.com" />
-		<meta property="og:title" content="Dylan Posner - Data Scientist" />
+		<meta property="og:title" content="Dylan Posner - Data Scientist & Developer" />
 		<meta property="og:image" content="https://dylanposner.com/profile.webp" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="Dylan Posner - Professional headshot" />
 		<meta
 			property="og:description"
-			content="Data science expert with 5 years experience, blending creativity and innovation to enhance data-driven decision making."
+			content="🚀 Data Scientist building ML pipelines, dashboards & web apps. Python | AWS | Tableau expert with 3+ years experience."
 		/>
 		<meta property="og:site_name" content="Dylan Posner Portfolio" />
 		<meta property="profile:first_name" content="Dylan" />
 		<meta property="profile:last_name" content="Posner" />
 
-		<!-- Twitter -->
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:site" content="@superdopedylan" />
+		<meta name="twitter:creator" content="@superdopedylan" />
 		<meta name="twitter:title" content="Dylan Posner | Data Science Professional" />
 		<meta name="twitter:image" content="https://dylanposner.com/profile.webp" />
+		<meta name="twitter:image:alt" content="Dylan Posner - Professional headshot" />
 		<meta
 			name="twitter:description"
-			content="Dylan Posner: A data science professional with almost half a decade of diverse experience."
+			content="Dylan Posner: Data scientist with 3+ years experience in ML, AWS, and web development."
 		/>
 
-		<!-- Reading Mode Specific -->
-		<meta name="displaydate" content="2025-01-26" />
+		<meta
+			name="robots"
+			content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+		/>
+		<meta name="googlebot" content="index, follow" />
+
+		<meta name="displaydate" content="2025-01-29" />
 		<link rel="author" href="https://dylanposner.com" />
 
-		<!-- Search Engine Verification -->
 		<meta name="msvalidate.01" content="D5221F0F4DF353FEF4690B6AAF24CF49" />
 
-		<!-- Schema Markup -->
 		<script type="application/ld+json">
 			{
 				"@context": "https://schema.org",
 				"@type": "Person",
 				"name": "Dylan Posner",
-				"jobTitle": "Data Science Professional",
+				"jobTitle": "Data Scientist",
+				"worksFor": {
+					"@type": "Organization",
+					"name": "Booz Allen Hamilton"
+				},
 				"url": "https://dylanposner.com",
 				"email": "dylantylerposner@gmail.com",
-				"image": "https://dylanposner.com/profile.webp",
+				"address": {
+					"@type": "PostalAddress",
+					"addressLocality": "Chicago",
+					"addressRegion": "IL",
+					"addressCountry": "US"
+				},
+				"image": {
+					"@type": "ImageObject",
+					"url": "https://dylanposner.com/profile.webp",
+					"width": 400,
+					"height": 400
+				},
 				"sameAs": [
 					"https://www.linkedin.com/in/dylan-posner-3a0034152/",
 					"https://github.com/dylantypo",
 					"https://twitter.com/superdopedylan"
 				],
-				"description": "Data science expert with 5 years experience, blending creativity and innovation to enhance data-driven decision making."
+				"description": "Data scientist with 3+ years experience in machine learning, AWS cloud infrastructure, and full-stack web development.",
+				"knowsAbout": [
+					"Data Science",
+					"Machine Learning",
+					"Python Programming",
+					"AWS Cloud Services",
+					"Tableau",
+					"Web Development"
+				],
+				"alumniOf": {
+					"@type": "EducationalOrganization",
+					"name": "Virginia Tech"
+				}
 			}
 		</script>
 
 		
 		<link href="/_app/immutable/assets/globe.uz5kG93z.css" rel="stylesheet">
-		<link rel="modulepreload" href="/_app/immutable/entry/start.AQGBPn9G.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/DHINt8Yx.js">
-		<link rel="modulepreload" href="/_app/immutable/entry/app.Bun0q97u.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/CJw9DjDA.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/N1PDQruQ.js">
-		<link rel="modulepreload" href="/_app/immutable/chunks/B1DaFyei.js">
+		<link rel="modulepreload" href="/_app/immutable/entry/start.BtGQ40cg.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/N6yLLDeW.js">
+		<link rel="modulepreload" href="/_app/immutable/entry/app.lDjqRE8q.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/FYdsD1GM.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/BQb89fE7.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/TVjIFqmg.js">
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div id="svelte" style="display: contents">
 			<script>
 				{
-					__sveltekit_14ihxis = {
+					__sveltekit_ucf8d0 = {
 						base: ""
 					};
 
 					const element = document.currentScript.parentElement;
 
 					Promise.all([
-						import("/_app/immutable/entry/start.AQGBPn9G.js"),
-						import("/_app/immutable/entry/app.Bun0q97u.js")
+						import("/_app/immutable/entry/start.BtGQ40cg.js"),
+						import("/_app/immutable/entry/app.lDjqRE8q.js")
 					]).then(([kit, app]) => {
 						kit.start(app, element);
 					});
