@@ -34,7 +34,7 @@
 		lastHeight = newHeight;
 
 		ScrollTrigger.refresh();
-	}, 250);
+	}, 500);
 
 	onMount(() => {
 		const initializeAnimations = async () => {
