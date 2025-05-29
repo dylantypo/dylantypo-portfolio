@@ -1,10 +1,14 @@
 <script lang="ts">
 	import gsap from 'gsap';
 	import { onMount } from 'svelte';
+	import { debounce } from 'lodash';
 	import Skills from '$lib/skills.svelte';
 	import History from '$lib/history.svelte';
 
 	let elements: HTMLElement[] = [];
+
+	let lastWidth = 0;
+	let lastHeight = 0;
 
 	function splitTextIntoLetters(text: string, highlight: boolean = false): string {
 		return text
@@ -18,6 +22,19 @@
 			)
 			.join('');
 	}
+
+	const handleResize = debounce(() => {
+		const newWidth = window.innerWidth;
+		const newHeight = window.innerHeight;
+
+		// Only update if dimensions actually changed
+		if (newWidth === lastWidth && newHeight === lastHeight) return;
+
+		lastWidth = newWidth;
+		lastHeight = newHeight;
+
+		ScrollTrigger.refresh();
+	}, 250);
 
 	onMount(() => {
 		const initializeAnimations = async () => {
@@ -92,7 +109,15 @@
 				ScrollTrigger.refresh();
 			});
 
+			// Add resize listener
+			window.addEventListener('resize', handleResize);
+
+			// Store initial dimensions
+			lastWidth = window.innerWidth;
+			lastHeight = window.innerHeight;
+
 			return () => {
+				window.removeEventListener('resize', handleResize);
 				ctx.revert();
 			};
 		};
