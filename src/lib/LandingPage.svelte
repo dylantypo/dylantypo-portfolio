@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
 
 	let { onEnter } = $props<{ onEnter: () => void }>();
@@ -24,10 +24,33 @@
 
 	onMount(() => {
 		if (!browser) return;
+
+		document.body.style.overflow = 'hidden';
+		document.documentElement.style.overflow = 'hidden';
+
+		// Prevent touch scrolling on mobile
+		const preventTouch = (e: TouchEvent) => {
+			if (e.touches.length > 1) return; // Allow pinch zoom
+			e.preventDefault();
+		};
+
+		document.addEventListener('touchmove', preventTouch, { passive: false });
+
 		checkFonts();
+		return () => {
+			document.removeEventListener('touchmove', preventTouch);
+		};
+	});
+
+	onDestroy(() => {
+		if (!browser) return;
+		document.body.style.overflow = '';
+		document.documentElement.style.overflow = '';
 	});
 
 	function handleEnter() {
+		document.body.style.overflow = '';
+		document.documentElement.style.overflow = '';
 		onEnter();
 	}
 </script>
@@ -62,18 +85,19 @@
 		flex-direction: column;
 		justify-content: center;
 		align-items: center;
-		scroll-behavior: none;
-		overflow: hidden;
 		gap: 3rem;
 		font-family: var(--font-family-base);
 		z-index: 1000;
+		overflow: hidden;
+		overscroll-behavior: none;
+		touch-action: none;
 	}
 
 	.welcome-text {
-		font-size: clamp(2.5rem, 6vw, 4rem);
+		font-size: clamp(4rem, 6vw, 6rem);
 		color: var(--color-text-primary);
 		letter-spacing: -0.02em;
-		font-weight: 600;
+		font-weight: 750;
 		animation: fadeIn 0.6s ease-out;
 	}
 
@@ -93,8 +117,7 @@
 		gap: 0.5rem;
 		backdrop-filter: blur(4px);
 		-webkit-backdrop-filter: blur(4px);
-		width: auto;
-		height: auto;
+		touch-action: manipulation;
 	}
 
 	.enter-button.loading {
@@ -142,6 +165,11 @@
 			gap: 2rem;
 		}
 
+		.welcome-text {
+			font-size: clamp(2.5rem, 6vw, 4rem);
+			font-weight: 600;
+		}
+
 		.enter-button {
 			font-size: 1rem;
 			padding: 0.65rem 1.2rem;
@@ -150,46 +178,11 @@
 
 	/* Reduced motion */
 	@media (prefers-reduced-motion: reduce) {
+		.welcome-text {
+			animation: none;
+		}
 		.enter-button.loading {
 			animation: none;
 		}
 	}
-
-	/* Debug styles (development only) */
-	/* .debug-info {
-		position: fixed;
-		bottom: 2rem;
-		left: 2rem;
-		background: rgba(0, 0, 0, 0.8);
-		color: white;
-		padding: 1rem;
-		border-radius: 0.5rem;
-		font-size: 0.8rem;
-		backdrop-filter: blur(4px);
-	}
-
-	.progress-text {
-		font-weight: bold;
-		margin-bottom: 0.5rem;
-	}
-
-	.loading-item {
-		display: flex;
-		justify-content: space-between;
-		margin: 0.2rem 0;
-		opacity: 0.7;
-	}
-
-	.loading-item.complete {
-		opacity: 1;
-		color: var(--color-secondary, #14b8a6);
-	}
-
-	@media (max-width: 768px) {
-		.debug-info {
-			bottom: 1rem;
-			left: 1rem;
-			font-size: 0.7rem;
-		}
-	} */
 </style>

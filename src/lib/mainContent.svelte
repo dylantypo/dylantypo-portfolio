@@ -1,7 +1,8 @@
 <script lang="ts">
 	import gsap from 'gsap';
 	import { onMount } from 'svelte';
-	import { debounce } from 'lodash';
+	import pkg from 'lodash';
+	const { debounce } = pkg;
 	import Skills from '$lib/skills.svelte';
 	import History from '$lib/history.svelte';
 
