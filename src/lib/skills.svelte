@@ -145,13 +145,13 @@
 
 	.header {
 		width: max-content;
-		padding-left: var(--content-padding-desktop);
+		padding-left: var(--content-padding-current);
 		font-size: var(--font-size-lg);
 		margin-bottom: var(--spacing-xl);
 	}
 
 	.legend-container {
-		padding: 0 var(--content-padding-desktop);
+		padding: 0 var(--content-padding-current);
 		display: flex;
 		flex-direction: column;
 		gap: var(--spacing-base);
@@ -275,13 +275,12 @@
 
 		.legend-container {
 			width: 85%;
-			padding: 0 var(--content-padding-tablet);
 		}
 	}
 
 	@media (max-width: 610px) {
 		.legend-container {
-			padding: 0 var(--content-padding-mobile);
+			padding: 0 var(--content-padding-current);
 		}
 
 		.skill-name {
@@ -296,7 +295,7 @@
 
 	@media (max-width: 480px) {
 		.legend-container {
-			padding: 0 calc(var(--content-padding-mobile) * 0.6);
+			padding: 0 calc(var(--content-padding-current) * 0.6);
 		}
 
 		.legend-header {

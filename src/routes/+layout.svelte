@@ -32,11 +32,14 @@
 		--spacing-lg: 2rem;
 		--spacing-xl: 4rem;
 
-		/* Layout */
+		/* Layout - Fixed responsive padding */
 		--content-width-desktop: 80vw;
 		--content-padding-desktop: 20vw;
-		--content-padding-tablet: 10vw;
-		--content-padding-mobile: 5vw;
+		--content-padding-tablet: 12vw;
+		--content-padding-mobile: 8vw;
+
+		/* Current responsive padding that updates */
+		--content-padding-current: var(--content-padding-desktop);
 
 		/* Transitions */
 		--transition-speed: 0.3s;
@@ -97,16 +100,22 @@
 		outline-offset: 2px;
 	}
 
-	/* Common Media Queries */
+	/* Common Media Queries - Update current padding */
 	@media (max-width: 925px) {
 		:root {
-			--content-padding-desktop: var(--content-padding-tablet);
+			--content-padding-current: var(--content-padding-tablet);
 		}
 	}
 
 	@media (max-width: 610px) {
 		:root {
-			--content-padding-desktop: var(--content-padding-mobile);
+			--content-padding-current: var(--content-padding-mobile);
+		}
+	}
+
+	@media (max-width: 480px) {
+		:root {
+			--content-padding-current: 6vw;
 		}
 	}
 

@@ -108,8 +108,8 @@
 
 	.toolbar {
 		position: fixed;
-		bottom: 5em;
-		right: 5em;
+		bottom: 10vh;
+		right: 5vw;
 		background: var(--color-secondary);
 		opacity: 65%;
 		border-radius: 50%;
@@ -118,7 +118,7 @@
 		transition:
 			height 0.6s var(--transition-ease),
 			border-radius 1s var(--transition-ease),
-			opacity 1s;
+			opacity 1s var(--transition-speed);
 		color: var(--color-background);
 		display: flex;
 		justify-content: center;
@@ -150,14 +150,17 @@
 
 	.toolbar-link:focus-visible {
 		border-radius: 50%;
-		border: var(--color-background);
+		outline: 3px solid var(--color-focus);
+		outline-offset: 2px;
 	}
 
 	@media (max-width: 1030px) {
 		.toolbar {
 			opacity: 50%;
-			bottom: 2em;
-			right: 1em;
+			bottom: 12vh;
+			right: 8vw;
+			width: 45px;
+			height: 45px;
 		}
 		.toolbar.expandedTool {
 			opacity: 100%;

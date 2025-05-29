@@ -27,7 +27,6 @@
 			const { CustomEase } = await import('gsap/CustomEase');
 			gsap.registerPlugin(CustomEase);
 
-			// Create more fluid custom ease
 			CustomEase.create('waterRipple', 'M0,0 C0.2,0.4 0.4,0.8 1,1');
 
 			const ctx = gsap.context(() => {
@@ -53,13 +52,16 @@
 					});
 
 					const letters = el.querySelectorAll('.letter');
+
+					// 📱 Simple landscape detection for timing adjustment
+					const isLandscape = window.innerHeight < 500 && window.innerWidth > window.innerHeight;
+
 					const timeline = gsap.timeline({
 						scrollTrigger: {
 							trigger: el,
-							start: 'top 75%',
+							start: isLandscape ? 'top 85%' : 'top 75%',
 							end: () => `+=${el.offsetHeight}`,
-							scrub: 1.75
-							// markers: true // debugging
+							scrub: isLandscape ? 1.2 : 1.75
 						}
 					});
 
@@ -78,7 +80,7 @@
 							rotateX: '0deg',
 							scale: 1,
 							stagger: {
-								amount: 1.75,
+								amount: isLandscape ? 1.2 : 1.75,
 								from: 'random'
 							},
 							ease: 'waterRipple',
@@ -86,6 +88,7 @@
 						}
 					);
 				});
+
 				ScrollTrigger.refresh();
 			});
 
@@ -173,6 +176,8 @@
 
 	.headshot:focus-visible {
 		border-radius: 50%;
+		outline: 3px solid var(--color-focus);
+		outline-offset: 2px;
 	}
 
 	.headshot img {
@@ -183,9 +188,9 @@
 		opacity: 0.6;
 		box-shadow: 0 8px 10px rgba(0, 0, 0, 0.85);
 		transition:
-			transform 0.55s,
-			opacity 0.55s,
-			box-shadow 0.55s;
+			transform var(--transition-speed),
+			opacity var(--transition-speed),
+			box-shadow var(--transition-speed);
 	}
 
 	.headshot img:hover {
@@ -195,30 +200,44 @@
 	}
 
 	.section {
+		min-height: 30vh;
 		height: auto;
-		margin-bottom: 20vh;
 		display: flex;
 		flex-direction: column;
+		justify-content: center;
+		align-items: flex-start;
+		padding: var(--spacing-base) 0 var(--spacing-lg) 0;
+		margin-bottom: 0;
+		box-sizing: border-box;
 	}
 
 	.header,
 	.footer {
 		width: max-content;
-		padding-left: 20vw;
-		font-size: 3.5vmin;
+		padding-left: var(--content-padding-current);
+		font-size: var(--font-size-lg);
+		flex-shrink: 0;
+		font-family: var(--font-family-base);
 	}
 
 	.long-text {
-		font-size: clamp(2rem, 5vw, 4rem);
-		line-height: 1.25;
+		font-size: clamp(1.6rem, 4vh + 2vw, 4rem);
+		line-height: clamp(1.3, 1.2 + 1vh, 1.6);
 		font-weight: 600;
-		padding: 0 max(20vw, 2rem);
+		letter-spacing: clamp(0.02em, 0.03vw, 0.06em);
+		word-spacing: clamp(0.1em, 0.15vw, 0.25em);
+		padding: var(--spacing-lg) var(--content-padding-current);
 		color: var(--color-text-primary);
 		max-width: 100%;
+		font-family: var(--font-family-base);
 		transform-style: preserve-3d;
 		perspective: 2000px;
 		position: relative;
 		overflow: visible;
+		contain: layout style;
+		text-rendering: optimizeLegibility;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
 	}
 
 	:global(.letter) {
@@ -227,24 +246,33 @@
 		backface-visibility: hidden;
 		perspective: 1000px;
 		will-change: transform, opacity;
-		transition: color 0.3s ease;
-		&.highlight {
-			color: var(--color-secondary);
-		}
+		transition: color var(--transition-speed) ease;
+	}
+
+	:global(.letter.highlight) {
+		color: var(--color-secondary);
+		text-shadow: 0 0 2px rgba(20, 184, 166, 0.3);
 	}
 
 	:global(.word-container) {
 		display: inline-block;
-		margin-right: 0.25em;
+		margin-right: clamp(0.15em, 0.3vw, 0.4em);
 		min-height: 1.3em;
 		vertical-align: middle;
 		perspective: 1000px;
 		overflow: visible;
 	}
 
+	@media (max-height: 500px) and (orientation: landscape) {
+		.section {
+			min-height: 25vh;
+		}
+	}
+
 	@media (max-width: 925px) {
 		.section {
 			align-items: center;
+			min-height: 35vh;
 		}
 
 		.header {
@@ -252,36 +280,38 @@
 		}
 
 		.long-text {
-			font-size: clamp(1.8rem, 4.5vw, 3.5rem);
-			padding: 0 max(12vw, 1.5rem);
+			font-size: clamp(1.5rem, 3.5vh + 1.8vw, 3.6rem);
+			letter-spacing: clamp(0.025em, 0.035vw, 0.07em);
+			word-spacing: clamp(0.12em, 0.18vw, 0.28em);
 		}
 	}
 
 	@media (max-width: 610px) {
 		.section {
-			align-items: center;
-		}
-
-		.header {
-			padding-left: 0;
+			min-height: 40vh;
 		}
 
 		.long-text {
-			padding: 0 max(8vw, 1rem);
+			font-size: clamp(1.2rem, 2.8vh + 1.5vw, 2.8rem);
+			letter-spacing: clamp(0.03em, 0.04vw, 0.08em);
+			word-spacing: clamp(0.15em, 0.2vw, 0.3em);
+			line-height: clamp(1.3, 1.2 + 0.8vh, 1.5);
 		}
 	}
 
 	@media (max-width: 480px) {
 		.section {
-			align-items: center;
-		}
-
-		.header {
-			padding-left: 0;
+			min-height: 45vh;
 		}
 
 		.long-text {
-			padding: 0 max(5vw, 0.8rem);
+			font-size: clamp(1rem, 2.5vh + 1.2vw, 2.4rem);
+		}
+	}
+
+	@media (min-width: 1400px) {
+		.section {
+			min-height: 25vh;
 		}
 	}
 </style>

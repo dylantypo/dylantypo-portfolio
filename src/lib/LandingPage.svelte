@@ -62,6 +62,8 @@
 		flex-direction: column;
 		justify-content: center;
 		align-items: center;
+		scroll-behavior: none;
+		overflow: hidden;
 		gap: 3rem;
 		font-family: var(--font-family-base);
 		z-index: 1000;

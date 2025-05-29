@@ -185,7 +185,7 @@
 
 	.header {
 		width: max-content;
-		padding-left: var(--content-padding-desktop);
+		padding-left: var(--content-padding-current);
 		font-size: var(--font-size-lg);
 	}
 
@@ -213,7 +213,7 @@
 	}
 
 	.year {
-		padding-left: var(--content-padding-desktop);
+		padding-left: var(--content-padding-current);
 		color: var(--color-text-primary);
 		z-index: 2;
 		margin: 0;
@@ -223,8 +223,8 @@
 	.role-text {
 		overflow: hidden;
 		font-size: 3vmin;
-		padding-left: var(--content-padding-desktop);
-		padding-right: var(--content-padding-desktop);
+		padding-left: var(--content-padding-current);
+		padding-right: var(--content-padding-current);
 		font-style: italic;
 		transition: opacity var(--transition-speed) ease-in-out;
 		opacity: 1;
@@ -244,8 +244,8 @@
 	}
 
 	.company {
-		padding-left: var(--content-padding-desktop);
-		padding-right: var(--content-padding-desktop);
+		padding-left: var(--content-padding-current);
+		padding-right: var(--content-padding-current);
 		color: var(--color-text-primary);
 		transition:
 			color var(--transition-speed) ease-in-out,
@@ -264,8 +264,8 @@
 
 	.description {
 		font-size: 3vmin;
-		padding-left: var(--content-padding-desktop);
-		padding-right: var(--content-padding-desktop);
+		padding-left: var(--content-padding-current);
+		padding-right: var(--content-padding-current);
 		color: var(--color-text-primary);
 		transition:
 			color var(--transition-speed) ease,
@@ -345,13 +345,7 @@
 			margin-bottom: var(--spacing-base);
 		}
 		.company {
-			padding-left: var(--content-padding-tablet);
-			padding-right: var(--content-padding-tablet);
 			margin-bottom: 0.75rem;
-		}
-		.description {
-			padding-left: var(--content-padding-tablet);
-			padding-right: var(--content-padding-tablet);
 		}
 		.background {
 			top: 0;
@@ -359,12 +353,6 @@
 	}
 
 	@media (max-width: 610px) {
-		.role-text,
-		.company,
-		.description {
-			padding-left: var(--content-padding-mobile);
-			padding-right: var(--content-padding-mobile);
-		}
 		.year {
 			margin-bottom: calc(var(--spacing-base) * 0.5);
 		}
