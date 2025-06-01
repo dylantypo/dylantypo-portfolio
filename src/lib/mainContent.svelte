@@ -24,23 +24,23 @@
 			.join('');
 	}
 
-	const handleResize = debounce(() => {
-		const newWidth = window.innerWidth;
-		const newHeight = window.innerHeight;
-
-		// Only update if dimensions actually changed
-		if (newWidth === lastWidth && newHeight === lastHeight) return;
-
-		lastWidth = newWidth;
-		lastHeight = newHeight;
-
-		ScrollTrigger.refresh();
-	}, 500);
-
 	onMount(() => {
 		const initializeAnimations = async () => {
 			const { ScrollTrigger } = await import('gsap/ScrollTrigger');
 			gsap.registerPlugin(ScrollTrigger);
+
+			const handleResize = debounce(() => {
+				const newWidth = window.innerWidth;
+				const newHeight = window.innerHeight;
+
+				// Only update if dimensions actually changed
+				if (newWidth === lastWidth && newHeight === lastHeight) return;
+
+				lastWidth = newWidth;
+				lastHeight = newHeight;
+
+				ScrollTrigger.refresh();
+			}, 500);
 
 			const { CustomEase } = await import('gsap/CustomEase');
 			gsap.registerPlugin(CustomEase);
