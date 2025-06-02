@@ -555,7 +555,7 @@
 	}
 
 	/* Mobile styles */
-	@media (max-width: 640px) {
+	@media (max-width: 1880px) {
 		.controls {
 			position: fixed;
 			bottom: 0;
