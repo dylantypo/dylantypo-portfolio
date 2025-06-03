@@ -2,13 +2,13 @@
 	import Globe from '$lib/globe.svelte';
 	import { goto } from '$app/navigation';
 
-	let hero_text = ' Error 404 ';
+	let hero_text = ' Error 404: Page Not Found ';
 </script>
 
 <main>
 	<section class="message">
 		<button onclick={() => goto('/')}>
-			<Globe {hero_text} />
+			<h1>{hero_text}</h1>
 		</button>
 	</section>
 </main>

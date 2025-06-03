@@ -195,9 +195,22 @@
 		observer.observe(container);
 
 		function getSharpFontSize() {
-			const isMobile = window.innerWidth < 768;
+			const width = window.innerWidth;
+			const height = window.innerHeight;
 			const pixelRatio = Math.min(window.devicePixelRatio, 2.5);
-			return isMobile ? 0.45 * pixelRatio : 0.7 * pixelRatio;
+
+			// 📐 Base size on smallest dimension for better control
+			const smallestDimension = Math.min(width, height);
+			const baseFontSize =
+				smallestDimension < 400
+					? 0.25
+					: smallestDimension < 600
+						? 0.35
+						: smallestDimension < 768
+							? 0.45
+							: 0.7;
+
+			return baseFontSize * pixelRatio;
 		}
 
 		async function initGlobe() {
