@@ -21,7 +21,6 @@
 
 	// State management
 	let focusedLocationName = $state<string | null>(null);
-	let globeModulesLoaded = $state(false);
 	let globeInitialized = $state(false);
 	let animationFrameId: number | undefined;
 	let CLOUDS_ROTATION_SPEED: number;
@@ -30,8 +29,6 @@
 	let cleanupFn: (() => void) | undefined;
 
 	// Cache values
-	let cachedIsMobile: boolean | null = null;
-	let cachedIdealDistance: number | null = null;
 	let lastWidth = browser ? window.innerWidth : 0;
 	let lastHeight = browser ? window.innerHeight : 0;
 
@@ -106,7 +103,7 @@
 	];
 
 	async function loadGlobeModules(): Promise<void> {
-		if (globeModulesLoaded || modules) return;
+		if (modules) return; // ✅ Only check modules
 
 		try {
 			const [ThreeModule, { TextGeometry }, { FontLoader }] = await Promise.all([
@@ -115,14 +112,7 @@
 				import('three/examples/jsm/loaders/FontLoader.js')
 			]);
 
-			modules = {
-				THREE: ThreeModule,
-				TextGeometry,
-				FontLoader
-			};
-
-			globeModulesLoaded = true;
-			console.log('🌍 Globe modules loaded in background');
+			modules = { THREE: ThreeModule, TextGeometry, FontLoader };
 		} catch (error) {
 			console.error('Failed to load globe modules:', error);
 			throw error;
@@ -155,7 +145,6 @@
 		requestAnimationFrame(scrollAnimation);
 	}
 
-	let devicePixelRatio = 1;
 	let devicePixelCategory = 'low';
 
 	function getOptimizedTexturePath(basePath: string) {
@@ -181,10 +170,9 @@
 
 		// Determine device capabilities once on mount
 		if (browser) {
-			devicePixelRatio = window.devicePixelRatio || 1;
 			const isMobile = window.innerWidth < 768;
-			const isHighEnd = devicePixelRatio > 2 && !isMobile && window.innerWidth > 1600;
-			const isMidRange = (devicePixelRatio > 1.5 && !isMobile) || window.innerWidth > 1200;
+			const isHighEnd = window.devicePixelRatio > 2 && !isMobile && window.innerWidth > 1600;
+			const isMidRange = (window.devicePixelRatio > 1.5 && !isMobile) || window.innerWidth > 1200;
 
 			devicePixelCategory = isHighEnd ? 'high' : isMidRange ? 'medium' : 'low';
 		}
@@ -195,29 +183,20 @@
 		container.setAttribute('role', 'region');
 		container.setAttribute('aria-label', "Interactive 3D Globe showing places I've lived");
 
-		// ADD THIS CODE TO LAZY LOAD THE GLOBE
-		const observerOptions = {
-			rootMargin: '200px', // Load when within 200px of viewport
-			threshold: 0.01 // Even tiny visibility triggers loading
-		};
-
-		// This observer will initialize the globe when it comes into view
-		const lazyLoadObserver = new IntersectionObserver((entries) => {
-			if (entries[0].isIntersecting && !globeInitialized) {
-				globeInitialized = true;
-				initGlobe(); // Call the initialization function
-				lazyLoadObserver.disconnect();
-			}
-		}, observerOptions);
-
-		lazyLoadObserver.observe(container);
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries[0].isIntersecting && !globeInitialized) {
+					globeInitialized = true;
+					initGlobe();
+				}
+			},
+			{ rootMargin: '200px', threshold: 0.01 }
+		);
+		observer.observe(container);
 
 		async function initGlobe() {
 			// 🚀 If modules aren't loaded yet, load them first
-			if (!globeModulesLoaded || !modules) {
-				await loadGlobeModules();
-			}
-
+			if (!modules) await loadGlobeModules();
 			if (!modules) throw new Error('Failed to load modules');
 
 			const THREE = modules.THREE;
@@ -266,20 +245,15 @@
 			container.style.touchAction = 'none';
 			container.style.userSelect = 'none';
 
-			let pointerDown = false;
-
 			container.addEventListener('pointerdown', () => {
-				pointerDown = true;
 				(container as HTMLElement).style.cursor = 'grabbing';
 			});
 
 			container.addEventListener('pointerup', () => {
-				pointerDown = false;
 				(container as HTMLElement).style.cursor = 'grab';
 			});
 
 			container.addEventListener('pointerout', () => {
-				pointerDown = false;
 				(container as HTMLElement).style.cursor = 'grab';
 			});
 
@@ -424,7 +398,6 @@
 				.htmlElement((d: any) => {
 					const wrapper = document.createElement('div');
 					const div = document.createElement('div');
-					const isMobile = window.innerWidth < 768;
 
 					wrapper.style.position = 'absolute';
 					wrapper.style.pointerEvents = 'none';
@@ -437,12 +410,8 @@
 					wrapper.style.backfaceVisibility = 'hidden';
 					wrapper.style.perspective = '1000px';
 
-					// Inner div handles the scaling
 					div.textContent = d.name;
-					div.className =
-						isMobile && d.years < 2 ? 'location-marker location-hidden' : 'location-marker';
-
-					// Remove position absolute from inner div
+					div.className = 'location-marker';
 					div.style.pointerEvents = 'auto';
 					div.style.cursor = 'pointer';
 					div.style.position = 'relative';
@@ -575,14 +544,6 @@
 				updateCameraAspect();
 			};
 
-			const toggleLabelRenderer = (isMobile: boolean) => {
-				const labels = labelRenderer.domElement.querySelectorAll('div');
-				labels.forEach((label) => {
-					const years = parseFloat(label.dataset.years || '0');
-					label.style.opacity = isMobile && years < 2 ? '0' : '1';
-				});
-			};
-
 			const setCameraPosition = (lat: number, lng: number, idealDistance: number) => {
 				const phi = (90 - lat) * (Math.PI / 180);
 				const theta = (180 - lng) * (Math.PI / 180);
@@ -597,11 +558,6 @@
 
 			const adjustCamera = (isMobile: boolean, focusedCity?: { lat: number; lng: number }) => {
 				const idealDistance = calculateIdealDistance(isMobile);
-
-				if (idealDistance === cachedIdealDistance && isMobile === cachedIsMobile) return;
-
-				cachedIsMobile = isMobile;
-				cachedIdealDistance = idealDistance;
 
 				if (focusedCity) {
 					setCameraPosition(focusedCity.lat, focusedCity.lng, idealDistance);
@@ -637,7 +593,7 @@
 					requestAnimationFrame(() => {
 						updateVH();
 						resizeRenderers();
-						toggleLabelRenderer(isMobile);
+						// toggleLabelRenderer(isMobile);
 						adjustCamera(isMobile);
 					});
 				}, resizeDelay);
@@ -655,13 +611,6 @@
 				isMobile ? 250 : 100
 			);
 
-			// Intersection Observer setup
-			const observerOptions = {
-				root: null,
-				rootMargin: '0px',
-				threshold: 0.1
-			};
-
 			const handleIntersection = (entries: IntersectionObserverEntry[]) => {
 				entries.forEach((entry) => {
 					if (entry.isIntersecting) {
@@ -675,7 +624,11 @@
 				});
 			};
 
-			const observer = new IntersectionObserver(handleIntersection, observerOptions);
+			const observer = new IntersectionObserver(handleIntersection, {
+				root: null,
+				rootMargin: '0px',
+				threshold: 0.1
+			});
 			observer.observe(container);
 
 			// Animation
@@ -702,7 +655,6 @@
 				.find((state) => state.name === 'Arlington');
 			updateVH();
 			resizeRenderers();
-			toggleLabelRenderer(isMobile);
 			adjustCamera(isMobile, focusedCity);
 			CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(isMobile);
 
@@ -849,7 +801,6 @@
 
 				// Clean up observers
 				if (observer) observer.disconnect();
-				if (lazyLoadObserver) lazyLoadObserver.disconnect();
 			};
 		}
 	});
