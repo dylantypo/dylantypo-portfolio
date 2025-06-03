@@ -294,14 +294,6 @@
 	}
 
 	@media (max-width: 480px) {
-		.legend-container {
-			padding: 0 calc(var(--content-padding-current) * 0.6);
-		}
-
-		.legend-header {
-			gap: 0.5rem;
-		}
-
 		.legend-marker {
 			width: 0.75rem;
 			height: 0.75rem;

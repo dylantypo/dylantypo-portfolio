@@ -336,8 +336,8 @@
 			align-items: center;
 		}
 		.role-text {
-			padding-left: var(--content-padding-tablet);
-			padding-right: var(--content-padding-tablet);
+			padding-left: var(--content-padding-current);
+			padding-right: var(--content-padding-current);
 		}
 		.year {
 			padding: 2vh 0 0 0;
@@ -352,18 +352,12 @@
 		}
 	}
 
-	@media (max-width: 610px) {
-		.year {
-			margin-bottom: calc(var(--spacing-base) * 0.5);
-		}
-	}
-
 	@media (max-width: 480px) {
 		.role-text,
 		.company,
 		.description {
-			padding-left: calc(var(--content-padding-mobile) * 0.6);
-			padding-right: calc(var(--content-padding-mobile) * 0.6);
+			padding-left: var(--content-padding-current);
+			padding-right: var(--content-padding-current);
 		}
 	}
 </style>
