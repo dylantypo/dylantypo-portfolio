@@ -194,6 +194,12 @@
 		);
 		observer.observe(container);
 
+		function getSharpFontSize() {
+			const isMobile = window.innerWidth < 768;
+			const pixelRatio = Math.min(window.devicePixelRatio, 2.5);
+			return isMobile ? 0.45 * pixelRatio : 0.7 * pixelRatio;
+		}
+
 		async function initGlobe() {
 			// 🚀 If modules aren't loaded yet, load them first
 			if (!modules) await loadGlobeModules();
@@ -422,7 +428,9 @@
 					div.style.willChange = 'transform';
 					div.style.backfaceVisibility = 'hidden';
 					div.style.transformOrigin = 'center center';
+					div.style.fontSize = `${getSharpFontSize()}rem`;
 					div.style.textRendering = 'optimizeLegibility';
+					(div.style as any).webkitFontSmoothing = 'antialiased';
 
 					div.onclick = (e) => {
 						e.stopPropagation();
@@ -607,6 +615,9 @@
 					}
 
 					window.requestAnimationFrame(handleResizeImplementation);
+					document.querySelectorAll('.location-marker').forEach((marker) => {
+						(marker as HTMLElement).style.fontSize = `${getSharpFontSize()}rem`;
+					});
 				},
 				isMobile ? 250 : 100
 			);
@@ -900,7 +911,6 @@
 	:global(.location-marker) {
 		color: rgba(255, 255, 255, 0.5) !important;
 		font-family: var(--font-family-base) !important;
-		font-size: 0.7rem !important;
 		padding: 4px 8px !important;
 		border-radius: 4px !important;
 		opacity: 1 !important;
@@ -1020,7 +1030,6 @@
 		}
 
 		:global(.location-marker) {
-			font-size: 0.45rem !important;
 			padding: var(--spacing-sm);
 		}
 
@@ -1051,18 +1060,6 @@
 		:global(.location-marker:focus-visible),
 		:global(.location-marker:focus) {
 			transform: scale(2) !important;
-		}
-	}
-
-	/* Touch devices */
-	@media (hover: none) {
-		:global(.location-marker:active) {
-			transform: scale(2.5) !important;
-			background-color: rgba(0, 0, 0, 0.3) !important;
-			color: var(--color-text-primary) !important;
-			z-index: 100 !important;
-			transform-origin: center center !important;
-			outline: none !important;
 		}
 	}
 
