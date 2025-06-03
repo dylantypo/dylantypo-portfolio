@@ -20,6 +20,7 @@
 	let { hero_text } = $props<{ hero_text: string }>();
 
 	// State management
+	let focusedLocationName = $state<string | null>(null);
 	let globeModulesLoaded = $state(false);
 	let globeInitialized = $state(false);
 	let animationFrameId: number | undefined;
@@ -287,6 +288,13 @@
 				(container as HTMLElement).style.cursor = 'grab';
 			});
 
+			document.addEventListener('click', (e) => {
+				// Clear focus if clicking outside any location
+				if (!(e.target instanceof Element) || !e.target.closest('.location-marker')) {
+					focusedLocationName = null;
+				}
+			});
+
 			// Dynamically import browser-only dependencies
 			const [
 				{ CSS2DRenderer },
@@ -429,14 +437,33 @@
 					const div = document.createElement('div');
 					const isMobile = window.innerWidth < 768;
 
-					// Set all attributes at once
+					// Set all attributes
 					Object.assign(div, {
 						textContent: d.name,
 						className: 'location-marker'
 					});
 
-					// Set all attributes
-					div.setAttribute('pointer-events', 'none');
+					div.onclick = (e) => {
+						e.stopPropagation();
+						// Use requestAnimationFrame to update state outside the event handler
+						requestAnimationFrame(() => {
+							focusedLocationName = focusedLocationName === d.name ? null : d.name;
+						});
+					};
+
+					div.onfocus = () => {
+						requestAnimationFrame(() => {
+							focusedLocationName = d.name;
+						});
+					};
+
+					div.onblur = () => {
+						requestAnimationFrame(() => {
+							focusedLocationName = null;
+						});
+					};
+
+					div.setAttribute('pointer-events', 'auto');
 					div.setAttribute('user-select', 'none');
 					div.setAttribute('role', 'button');
 					div.setAttribute('tabindex', '0');
@@ -445,12 +472,17 @@
 						`${d.name}: Lived here for ${d.years} ${d.years === 1 ? 'year' : 'years'}`
 					);
 
-					// Set all styles with cssText
 					div.style.cssText = `
 						color: rgba(255, 255, 255, 0.5);
 						font-size: ${isMobile ? '0.35rem' : '0.5rem'};
 						position: absolute;
 						opacity: ${isMobile && d.years < 2 ? '0' : '1'};
+						cursor: pointer;
+						padding: 4px 8px;
+						border-radius: 4px;
+						pointer-events: auto;
+						user-select: none;
+						touch-action: manipulation;
 					`;
 
 					// Set datasets
@@ -816,6 +848,21 @@
 		}
 	});
 
+	$effect(() => {
+		// Simple style update for all markers
+		const markers = document.querySelectorAll('.location-marker');
+		markers.forEach((marker) => {
+			const locationName = marker.textContent;
+			const isFocused = focusedLocationName === locationName;
+
+			(marker as HTMLElement).style.transform = isFocused ? 'scale(2.5)' : 'scale(1)';
+			(marker as HTMLElement).style.backgroundColor = isFocused
+				? 'rgba(0, 0, 0, 0.3)'
+				: 'transparent';
+			(marker as HTMLElement).style.transition = 'all 0.2s ease';
+		});
+	});
+
 	onDestroy(() => {
 		if (cleanupFn) cleanupFn();
 	});
@@ -913,21 +960,9 @@
 	:global(.location-marker) {
 		color: var(--color-text-primary);
 		font-family: var(--font-family-base);
-		font-size: 0.8rem;
-		opacity: 0.5;
-		cursor: inherit;
-		pointer-events: auto;
-		padding: var(--spacing-base);
-		border-radius: 4px;
-		background-color: transparent;
-		touch-action: manipulation;
-		user-select: none;
-		-webkit-tap-highlight-color: transparent;
 	}
 
 	:global(.location-marker:focus-visible) {
-		opacity: 1;
-		background-color: rgba(0, 0, 0, 0.3);
 		outline: 2px solid var(--color-focus);
 		outline-offset: 2px;
 	}
@@ -938,37 +973,6 @@
 			opacity: 1;
 			background-color: rgba(0, 0, 0, 0.3);
 		}
-	}
-
-	/* Loading overlay */
-	:global(.loading-overlay) {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		background-color: var(--color-background);
-		color: var(--color-text-primary);
-		font-family: var(--font-family-base);
-		z-index: var(--z-index-modal);
-	}
-
-	/* Error message */
-	:global(.error-message) {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		padding: var(--spacing-lg);
-		background-color: rgba(0, 0, 0, 0.8);
-		color: var(--color-text-primary);
-		font-family: var(--font-family-base);
-		border-radius: 8px;
-		text-align: center;
-		z-index: var(--z-index-modal);
 	}
 
 	/* Scroll indicators */
