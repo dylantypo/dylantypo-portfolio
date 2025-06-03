@@ -26,9 +26,6 @@
 	let animationFrameId: number | undefined;
 	let CLOUDS_ROTATION_SPEED: number;
 
-	// Touch handling state
-	let isTouchDevice = $state(false);
-
 	// Event handler storage
 	let cleanupFn: (() => void) | undefined;
 
@@ -192,8 +189,6 @@
 			devicePixelCategory = isHighEnd ? 'high' : isMidRange ? 'medium' : 'low';
 		}
 
-		isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
 		loadGlobeModules();
 
 		// Initialize accessibility attributes
@@ -286,13 +281,6 @@
 			container.addEventListener('pointerout', () => {
 				pointerDown = false;
 				(container as HTMLElement).style.cursor = 'grab';
-			});
-
-			document.addEventListener('click', (e) => {
-				// Clear focus if clicking outside any location
-				if (!(e.target instanceof Element) || !e.target.closest('.location-marker')) {
-					focusedLocationName = null;
-				}
 			});
 
 			// Dynamically import browser-only dependencies
@@ -434,37 +422,68 @@
 				.htmlLng((d: any) => d.lng)
 				.htmlAltitude((d: any) => (window.innerWidth < 768 ? 0.03 : 0.055))
 				.htmlElement((d: any) => {
+					const wrapper = document.createElement('div');
 					const div = document.createElement('div');
 					const isMobile = window.innerWidth < 768;
 
-					// Set all attributes
-					Object.assign(div, {
-						textContent: d.name,
-						className: 'location-marker'
-					});
+					wrapper.style.position = 'absolute';
+					wrapper.style.pointerEvents = 'none';
+					wrapper.style.transformStyle = 'preserve-3d';
+					wrapper.style.margin = '0';
+					wrapper.style.padding = '0';
+					wrapper.style.border = 'none';
+					wrapper.style.background = 'none';
+					wrapper.style.willChange = 'transform';
+					wrapper.style.backfaceVisibility = 'hidden';
+					wrapper.style.perspective = '1000px';
+
+					// Inner div handles the scaling
+					div.textContent = d.name;
+					div.className =
+						isMobile && d.years < 2 ? 'location-marker location-hidden' : 'location-marker';
+
+					// Remove position absolute from inner div
+					div.style.pointerEvents = 'auto';
+					div.style.cursor = 'pointer';
+					div.style.position = 'relative';
+					div.style.display = 'inline-block';
+					div.style.margin = '0';
+					div.style.padding = '0';
+					div.style.border = 'none';
+					div.style.willChange = 'transform';
+					div.style.backfaceVisibility = 'hidden';
+					div.style.transformOrigin = 'center center';
+					div.style.textRendering = 'optimizeLegibility';
 
 					div.onclick = (e) => {
 						e.stopPropagation();
-						// Use requestAnimationFrame to update state outside the event handler
-						requestAnimationFrame(() => {
-							focusedLocationName = focusedLocationName === d.name ? null : d.name;
+						e.preventDefault();
+						document.querySelectorAll('.location-marker').forEach((marker) => {
+							marker.classList.remove('location-focused');
 						});
+						const isNowFocused = !div.classList.contains('location-focused');
+						if (isNowFocused) {
+							div.classList.add('location-focused');
+							focusedLocationName = d.name;
+						} else {
+							div.classList.remove('location-focused');
+							focusedLocationName = null;
+						}
 					};
 
 					div.onfocus = () => {
-						requestAnimationFrame(() => {
-							focusedLocationName = d.name;
+						document.querySelectorAll('.location-marker').forEach((marker) => {
+							if (marker !== div) marker.classList.remove('location-focused');
 						});
+						div.classList.add('location-focused');
+						focusedLocationName = d.name;
 					};
 
 					div.onblur = () => {
-						requestAnimationFrame(() => {
-							focusedLocationName = null;
-						});
+						div.classList.remove('location-focused');
+						focusedLocationName = null;
 					};
 
-					div.setAttribute('pointer-events', 'auto');
-					div.setAttribute('user-select', 'none');
 					div.setAttribute('role', 'button');
 					div.setAttribute('tabindex', '0');
 					div.setAttribute(
@@ -472,27 +491,14 @@
 						`${d.name}: Lived here for ${d.years} ${d.years === 1 ? 'year' : 'years'}`
 					);
 
-					div.style.cssText = `
-						color: rgba(255, 255, 255, 0.5);
-						font-size: ${isMobile ? '0.35rem' : '0.5rem'};
-						position: absolute;
-						opacity: ${isMobile && d.years < 2 ? '0' : '1'};
-						cursor: pointer;
-						padding: 4px 8px;
-						border-radius: 4px;
-						pointer-events: auto;
-						user-select: none;
-						touch-action: manipulation;
-					`;
-
-					// Set datasets
 					Object.assign(div.dataset, {
 						lat: d.lat.toString(),
 						lng: d.lng.toString(),
 						years: d.years.toString()
 					});
 
-					return div;
+					wrapper.appendChild(div);
+					return wrapper;
 				});
 
 			// Adding Clouds layer
@@ -848,21 +854,6 @@
 		}
 	});
 
-	$effect(() => {
-		// Simple style update for all markers
-		const markers = document.querySelectorAll('.location-marker');
-		markers.forEach((marker) => {
-			const locationName = marker.textContent;
-			const isFocused = focusedLocationName === locationName;
-
-			(marker as HTMLElement).style.transform = isFocused ? 'scale(2.5)' : 'scale(1)';
-			(marker as HTMLElement).style.backgroundColor = isFocused
-				? 'rgba(0, 0, 0, 0.3)'
-				: 'transparent';
-			(marker as HTMLElement).style.transition = 'all 0.2s ease';
-		});
-	});
-
 	onDestroy(() => {
 		if (cleanupFn) cleanupFn();
 	});
@@ -875,35 +866,33 @@
 		</span>
 	</div>
 
-	<!-- Mobile scroll indicator -->
-	{#if isTouchDevice}
-		<button
-			class="scroll-indicator"
-			onclick={() => {
-				const aboutSection = document.getElementById('aboutMe');
-				if (aboutSection) {
-					smoothScrollTo(aboutSection, 2000); // 2000ms = 2 seconds
-				}
-			}}
-			aria-label="Scroll to About Me section"
-		>
-			<div class="scroll-icon">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="24"
-					height="24"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
-					<path d="M12 5v14M19 12l-7 7-7-7" />
-				</svg>
-			</div>
-		</button>
-	{/if}
+	<!-- Scroll indicator -->
+	<button
+		class="scroll-indicator"
+		onclick={() => {
+			const aboutSection = document.getElementById('aboutMe');
+			if (aboutSection) {
+				smoothScrollTo(aboutSection, 2000); // 2000ms = 2 seconds
+			}
+		}}
+		aria-label="Scroll to About Me section"
+	>
+		<div class="scroll-icon">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="24"
+				height="24"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<path d="M12 5v14M19 12l-7 7-7-7" />
+			</svg>
+		</div>
+	</button>
 </div>
 
 <style>
@@ -911,15 +900,15 @@
 	.globe-container {
 		position: relative;
 		width: 100%;
-		min-height: 100vh; /* ✅ Ensures minimum coverage */
-		min-height: 100svh; /* ✅ Small viewport height for mobile */
-		height: 100dvh; /* ✅ Dynamic viewport - modern browsers */
+		min-height: 100vh;
+		min-height: 100svh;
+		height: 100dvh;
 		overflow: hidden;
-		background-color: var(--color-primary);
+		background-color: var(--color-background);
 		will-change: transform;
 		touch-action: pan-y;
 		-webkit-overflow-scrolling: touch;
-		transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		transition: height var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
 		contain: paint layout;
 	}
 
@@ -936,7 +925,7 @@
 		-webkit-tap-highlight-color: transparent;
 	}
 
-	/* Canvas layering with performance optimizations */
+	/* Canvas layering */
 	:global(canvas),
 	:global(.css2d-renderer) {
 		position: absolute;
@@ -956,52 +945,68 @@
 		touch-action: none;
 	}
 
-	/* Location markers with touch optimizations */
+	/* Location markers */
 	:global(.location-marker) {
-		color: var(--color-text-primary);
-		font-family: var(--font-family-base);
+		color: rgba(255, 255, 255, 0.5) !important;
+		font-family: var(--font-family-base) !important;
+		font-size: 0.5rem !important;
+		padding: 4px 8px !important;
+		border-radius: 4px !important;
+		opacity: 1 !important;
+		transition: transform 0.3s ease !important;
+		margin: 0 !important;
+		border: none !important;
+		background: transparent !important;
+		text-rendering: optimizeLegibility !important;
+		-webkit-font-smoothing: antialiased !important;
+		-moz-osx-font-smoothing: grayscale !important;
+		font-weight: 500 !important;
 	}
 
-	:global(.location-marker:focus-visible) {
-		outline: 2px solid var(--color-focus);
-		outline-offset: 2px;
+	:global(.location-marker.location-focused),
+	:global(.location-marker:focus-visible),
+	:global(.location-marker:focus) {
+		transform: scale(1.8) !important;
+		background-color: rgba(0, 0, 0, 0.3) !important;
+		color: var(--color-text-primary) !important;
+		z-index: 100 !important;
+		outline: 2px solid var(--color-focus) !important;
+		outline-offset: 2px !important;
+		transform-origin: center center !important;
 	}
 
-	/* Touch feedback for mobile */
-	@media (hover: none) {
-		:global(.location-marker:active) {
-			opacity: 1;
-			background-color: rgba(0, 0, 0, 0.3);
-		}
+	:global(.location-marker.location-hidden) {
+		opacity: 0 !important;
+		visibility: hidden !important;
+		pointer-events: none !important;
 	}
 
-	/* Scroll indicators */
+	/* Scroll indicator */
 	.scroll-indicator {
 		position: absolute;
-		bottom: 2rem;
+		bottom: var(--spacing-lg);
 		left: 50%;
 		transform: translateX(-50%);
 		color: var(--color-text-primary);
 		opacity: 0.7;
-		transition: opacity 0.3s ease;
-		pointer-events: none;
+		transition: opacity var(--transition-speed) ease;
+		pointer-events: auto;
 		z-index: var(--z-index-overlay);
 		background: none;
 		border: none;
 		padding: 0;
 		cursor: pointer;
 		animation: float 3s ease-in-out infinite;
-		pointer-events: auto; /* Enable interactions */
 	}
 
 	.scroll-icon {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 0.5rem;
+		gap: var(--spacing-sm);
 		background-color: var(--color-fill);
 		padding: 0.75rem 1.5rem;
-		border-radius: 2rem;
+		border-radius: var(--spacing-lg);
 		backdrop-filter: blur(4px);
 		-webkit-backdrop-filter: blur(4px);
 	}
@@ -1016,6 +1021,12 @@
 		transform: translateX(-50%) translateY(0);
 	}
 
+	.scroll-indicator:focus-visible {
+		outline: 2px solid var(--color-focus);
+		outline-offset: 2px;
+	}
+
+	/* Animations */
 	@keyframes float {
 		0%,
 		100% {
@@ -1023,28 +1034,6 @@
 		}
 		50% {
 			transform: translateX(-50%) translateY(-10px);
-		}
-	}
-
-	/* Focus style for the button */
-	.scroll-indicator:focus-visible {
-		outline: 2px solid var(--color-focus);
-		outline-offset: 2px;
-	}
-
-	@keyframes bounce {
-		0%,
-		20%,
-		50%,
-		80%,
-		100% {
-			transform: translateX(-50%) translateY(0);
-		}
-		40% {
-			transform: translateX(-50%) translateY(-10px);
-		}
-		60% {
-			transform: translateX(-50%) translateY(-5px);
 		}
 	}
 
@@ -1069,42 +1058,25 @@
 		opacity: 1;
 	}
 
-	/* Keyboard focus indicator */
-	:global(.keyboard-focus-indicator) {
-		position: absolute;
-		padding: 4px 8px;
-		background-color: var(--color-secondary);
-		color: var(--color-primary);
-		border-radius: 4px;
-		font-size: 0.8rem;
-		pointer-events: none;
-		z-index: var(--z-index-modal);
-	}
-
-	/* Tooltip with backdrop blur */
-	:global(.location-tooltip) {
-		position: absolute;
-		background-color: rgba(0, 0, 0, 0.8);
-		color: var(--color-text-primary);
-		padding: var(--spacing-base);
-		border-radius: 4px;
-		font-size: 0.8rem;
-		pointer-events: none;
-		z-index: var(--z-index-modal);
-		transform: translate(-50%, -100%);
-		margin-top: -8px;
-		backdrop-filter: blur(4px);
-		-webkit-backdrop-filter: blur(4px);
-	}
-
-	/* Mobile adjustments */
+	/* Mobile responsive */
 	@media (max-width: 768px) {
 		.globe-container {
 			overscroll-behavior-y: none;
 		}
 
 		.globe-viewer {
-			height: 100%; /* Full viewport height for mobile */
+			height: 100%;
+		}
+
+		:global(.location-marker) {
+			font-size: 0.5rem !important;
+			padding: var(--spacing-sm);
+		}
+
+		:global(.location-marker.location-focused),
+		:global(.location-marker:focus-visible),
+		:global(.location-marker:focus) {
+			transform: scale(2.2) !important;
 		}
 
 		:global(.navigation-hint) {
@@ -1114,24 +1086,30 @@
 			padding: var(--spacing-sm);
 		}
 
-		:global(.location-marker) {
-			font-size: 0.7rem;
-			padding: var(--spacing-sm);
-		}
-
 		.scroll-indicator {
 			bottom: 1.5rem;
 		}
+	}
 
-		/* Hide scroll progress on very small screens */
-		@media (max-height: 500px) {
-			:global(.scroll-progress) {
-				display: none;
-			}
+	@media (max-height: 500px) {
+		:global(.scroll-progress) {
+			display: none;
 		}
 	}
 
-	/* Reduced motion */
+	/* Touch devices */
+	@media (hover: none) {
+		:global(.location-marker:active) {
+			transform: scale(2.5) !important;
+			background-color: rgba(0, 0, 0, 0.3) !important;
+			color: var(--color-text-primary) !important;
+			z-index: 100 !important;
+			transform-origin: center center !important;
+			outline: none !important;
+		}
+	}
+
+	/* Accessibility */
 	@media (prefers-reduced-motion: reduce) {
 		.globe-viewer,
 		:global(.location-marker),
@@ -1142,7 +1120,6 @@
 		}
 	}
 
-	/* High contrast mode support */
 	@media (forced-colors: active) {
 		:global(.location-marker:focus-visible) {
 			outline: 2px solid CanvasText;
