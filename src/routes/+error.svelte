@@ -2,17 +2,13 @@
 	import Globe from '$lib/globe.svelte';
 	import { goto } from '$app/navigation';
 
-	let hero_text = ' 404 ';
+	let hero_text = ' Error 404 ';
 </script>
 
 <main>
-	<Globe {hero_text} />
-
 	<section class="message">
 		<button onclick={() => goto('/')}>
-			<i class="fa-regular fa-rocket fa-bounce fa-2xl" style="--fa-animation-duration: 3.25s"></i>
-			<h1>Page not found</h1>
-			<i class="fa-regular fa-rocket fa-bounce fa-2xl" style="--fa-animation-duration: 3.67s"></i>
+			<Globe {hero_text} />
 		</button>
 	</section>
 </main>
@@ -41,11 +37,10 @@
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
-		background-color: var(--color-secondary);
 	}
 
 	.message button {
-		cursor: pointer;
+		cursor: pointer !important;
 		display: flex;
 		justify-content: center;
 		align-items: center;
@@ -54,10 +49,5 @@
 		color: var(--color-text-primary);
 		background-color: transparent;
 		border: none;
-	}
-
-	.message button i {
-		padding-left: 10vmin;
-		padding-right: 10vmin;
 	}
 </style>
