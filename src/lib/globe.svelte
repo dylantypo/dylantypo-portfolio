@@ -900,7 +900,7 @@
 	:global(.location-marker) {
 		color: rgba(255, 255, 255, 0.5) !important;
 		font-family: var(--font-family-base) !important;
-		font-size: 0.75rem !important;
+		font-size: 0.7rem !important;
 		padding: 4px 8px !important;
 		border-radius: 4px !important;
 		opacity: 1 !important;
@@ -917,7 +917,7 @@
 	:global(.location-marker.location-focused),
 	:global(.location-marker:focus-visible),
 	:global(.location-marker:focus) {
-		transform: scale(1.8) !important;
+		transform: scale(1.65) !important;
 		background-color: rgba(0, 0, 0, 0.3) !important;
 		color: var(--color-text-primary) !important;
 		z-index: 100 !important;
@@ -1027,7 +1027,7 @@
 		:global(.location-marker.location-focused),
 		:global(.location-marker:focus-visible),
 		:global(.location-marker:focus) {
-			transform: scale(2.5) !important;
+			transform: scale(2) !important;
 		}
 
 		:global(.navigation-hint) {
@@ -1043,8 +1043,14 @@
 	}
 
 	@media (max-height: 500px) {
-		:global(.scroll-progress) {
-			display: none;
+		:global(.location-marker) {
+			font-size: 0.25rem !important;
+		}
+
+		:global(.location-marker.location-focused),
+		:global(.location-marker:focus-visible),
+		:global(.location-marker:focus) {
+			transform: scale(2) !important;
 		}
 	}
 
