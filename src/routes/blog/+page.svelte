@@ -1,16 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	type BlogPost = {
-		slug: string;
-		title: string;
-		excerpt: string;
-		date: string;
-		readTime: string;
-	};
+	let { data } = $props();
 
-	// Use server-loaded data instead of client-side loading
-	let { data } = $props<{ data: { posts: BlogPost[] } }>();
+	let posts = $state(data.posts || []);
+	let isLoading = $state(false);
+	let error = $state(null);
 
 	onMount(() => {
 		window.scrollTo(0, 0);
@@ -105,12 +100,20 @@
 		background-color: var(--color-fill);
 		border-radius: 0.5rem;
 		overflow: hidden;
-		transition: transform var(--transition-speed) ease;
+		transition:
+			background-color var(--transition-speed) ease,
+			box-shadow var(--transition-speed) ease;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
 
 	.post-card:hover {
-		transform: translateY(-2px);
 		background-color: var(--color-hover);
+		/* Natural inner glow + dark outer shadow */
+		box-shadow:
+			inset 0 2px 0 rgba(20, 184, 166, 0.3),
+			inset 0 -5px 0 rgba(20, 184, 166, 0.2),
+			inset 2px 0 0 rgba(20, 184, 166, 0.2),
+			inset -5px 0 0 rgba(20, 184, 166, 0.2);
 	}
 
 	.post-link {
@@ -129,9 +132,11 @@
 
 	.post-excerpt {
 		font-size: 1rem;
-		opacity: 0.8;
+		opacity: 0.75;
 		margin-bottom: var(--spacing-base);
 		line-height: 1.5;
+		color: var(--color-text-primary);
+		transition: none;
 	}
 
 	.post-meta {
@@ -140,6 +145,8 @@
 		align-items: center;
 		font-size: 0.875rem;
 		opacity: 0.6;
+		color: var(--color-text-primary);
+		transition: none;
 	}
 
 	.blog-footer {
