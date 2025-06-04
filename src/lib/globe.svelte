@@ -103,7 +103,7 @@
 	];
 
 	async function loadGlobeModules(): Promise<void> {
-		if (modules) return; // ✅ Only check modules
+		if (modules) return;
 
 		try {
 			const [ThreeModule, { TextGeometry }, { FontLoader }] = await Promise.all([
@@ -199,7 +199,6 @@
 			const height = window.innerHeight;
 			const pixelRatio = Math.min(window.devicePixelRatio, 2.5);
 
-			// 📐 Base size on smallest dimension for better control
 			const smallestDimension = Math.min(width, height);
 			const baseFontSize =
 				smallestDimension < 400
