@@ -28,10 +28,16 @@ const config = {
 		adapter: adapter({
 			fallback: '200.html',
 			pages: 'build',
-			assets: 'build'
+			assets: 'build',
+			strict: false
 		}),
 		prerender: {
-			entries: ['*']
+			entries: [
+				'*',
+				'/blog',
+				...blogEntries // Auto-add all blog posts
+			],
+			handleMissingId: 'warn'
 		},
 		alias: {
 			$lib: path.resolve('./src/lib')
