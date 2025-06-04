@@ -7,7 +7,9 @@ export async function load({ params }) {
 
 	try {
 		const filePath = join(process.cwd(), 'static/blog/posts', `${slug}.md`);
-		const content = await readFile(filePath, 'utf-8');
+		let content = await readFile(filePath, 'utf-8');
+
+		content = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
 		// Parse frontmatter with regex for better reliability
 		const frontmatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
@@ -21,12 +23,13 @@ export async function load({ params }) {
 
 			// Parse YAML-like frontmatter
 			frontmatter.split('\n').forEach((line) => {
-				const [key, ...value] = line.split(':');
-				if (key && value.length) {
-					meta[key.trim()] = value.join(':').trim();
+				const colonIndex = line.indexOf(':');
+				if (colonIndex > 0) {
+					const key = line.substring(0, colonIndex).trim();
+					const value = line.substring(colonIndex + 1).trim();
+					meta[key] = value;
 				}
 			});
-
 			markdownContent = markdown.trim();
 		}
 
