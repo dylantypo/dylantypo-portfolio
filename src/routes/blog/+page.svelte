@@ -9,74 +9,8 @@
 		readTime: string;
 	};
 
-	// Dynamic posts loaded from files
-	let posts = $state<BlogPost[]>([]);
-	let isLoading = $state(true);
-	let error = $state<string | null>(null);
-
-	async function loadPosts() {
-		isLoading = true;
-		error = null;
-
-		try {
-			// Get all markdown files from posts directory
-			const postFiles = import.meta.glob('/static/blog/posts/*.md', {
-				query: '?raw',
-				import: 'default'
-			});
-
-			const loadedPosts: BlogPost[] = [];
-
-			for (const [path, moduleLoader] of Object.entries(postFiles)) {
-				try {
-					// Extract filename from path
-					const filename = path.split('/').pop()?.replace('.md', '') || '';
-
-					// Load the markdown content
-					const content = (await moduleLoader()) as string;
-
-					// Parse frontmatter
-					const lines = content.split('\n');
-					let meta: Record<string, string> = {};
-
-					if (lines[0] === '---') {
-						for (let i = 1; i < lines.length; i++) {
-							if (lines[i] === '---') break;
-							const [key, ...value] = lines[i].split(':');
-							if (key && value.length) {
-								meta[key.trim()] = value.join(':').trim();
-							}
-						}
-					}
-
-					// Create post object
-					const post: BlogPost = {
-						slug: filename,
-						title: meta['title'] || 'Untitled Post',
-						excerpt: meta['excerpt'] || 'No description available',
-						date: meta['date'] || '',
-						readTime: meta['readTime'] || 'Unknown'
-					};
-
-					loadedPosts.push(post);
-				} catch (err) {
-					console.warn(`Failed to load post ${path}:`, err);
-				}
-			}
-
-			// Sort posts by date (newest first)
-			posts = loadedPosts.sort((a, b) => {
-				const dateA = new Date(a.date);
-				const dateB = new Date(b.date);
-				return dateB.getTime() - dateA.getTime();
-			});
-		} catch (err) {
-			error = err instanceof Error ? err.message : 'Failed to load posts';
-			console.error('Error loading posts:', err);
-		} finally {
-			isLoading = false;
-		}
-	}
+	// Use server-loaded data instead of client-side loading
+	let { data } = $props<{ data: { posts: BlogPost[] } }>();
 
 	onMount(() => {
 		window.scrollTo(0, 0);
@@ -95,23 +29,13 @@
 	</header>
 
 	<section class="posts-grid">
-		{#if isLoading}
-			<div class="loading">
-				<div class="spinner"></div>
-				<p>Loading...</p>
-			</div>
-		{:else if error}
-			<div class="error">
-				<h2>❌ {error}</h2>
-				<p>Failed to load blog posts. Check console for details.</p>
-			</div>
-		{:else if posts.length === 0}
+		{#if data.posts.length === 0}
 			<div class="empty">
 				<h2>📝 No posts yet</h2>
 				<p>Check back soon for new content!</p>
 			</div>
 		{:else}
-			{#each posts as post}
+			{#each data.posts as post}
 				<article class="post-card">
 					<a href="/blog/{post.slug}" class="post-link">
 						<div class="post-content">
@@ -166,8 +90,6 @@
 		margin: 0 auto var(--spacing-xl);
 	}
 
-	.loading,
-	.error,
 	.empty {
 		display: flex;
 		flex-direction: column;
@@ -176,28 +98,6 @@
 		min-height: 40vh;
 		gap: var(--spacing-base);
 		text-align: center;
-	}
-
-	.spinner {
-		width: 2rem;
-		height: 2rem;
-		border: 2px solid var(--color-fill);
-		border-top: 2px solid var(--color-secondary);
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
-	.error {
-		color: #ef4444;
-	}
-
-	.empty {
 		opacity: 0.7;
 	}
 

@@ -32,7 +32,8 @@ export async function GET() {
 		// RSS Feed metadata
 		const feedTitle = 'Dylan Posner - Blog';
 		const feedDescription =
-			'Latest thoughts and updates from Dylan Posner - Data Scientist building fast, interactive websites';
+			'Latest thoughts and updates from Dylan Posner, covering technology, web development, and data science.';
+		// Feed link
 		const feedLink = `${baseUrl}/blog`;
 
 		// Load blog posts

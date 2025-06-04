@@ -19,18 +19,25 @@ export async function load() {
 			if (file.endsWith('.md')) {
 				try {
 					const filePath = join(postsDir, file);
-					const content = await readFile(filePath, 'utf-8');
-					
-					// Parse frontmatter
+					let content = await readFile(filePath, 'utf-8');
+
+					// Fix Windows line endings
+					content = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
 					const lines = content.split('\n');
 					const meta: Record<string, string> = {};
-					
-					if (lines[0] === '---') {
+
+					if (lines[0].trim() === '---') {
 						for (let i = 1; i < lines.length; i++) {
-							if (lines[i] === '---') break;
-							const [key, ...value] = lines[i].split(':');
-							if (key && value.length) {
-								meta[key.trim()] = value.join(':').trim();
+							if (lines[i].trim() === '---') break;
+
+							const line = lines[i];
+							const colonIndex = line.indexOf(':');
+
+							if (colonIndex > 0) {
+								const key = line.substring(0, colonIndex).trim();
+								const value = line.substring(colonIndex + 1).trim();
+								meta[key] = value;
 							}
 						}
 					}
@@ -48,7 +55,6 @@ export async function load() {
 			}
 		}
 
-		// Sort by date (newest first)
 		posts.sort((a, b) => {
 			const dateA = new Date(a.date);
 			const dateB = new Date(b.date);
