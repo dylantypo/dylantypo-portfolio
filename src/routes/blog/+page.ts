@@ -7,7 +7,7 @@ export async function load() {
 		slug: post.postPath,
 		title: post.metadata.title || 'Untitled',
 		excerpt: post.metadata.excerpt || 'No excerpt',
-		date: post.metadata.date || new Date().toISOString(),
+		date: post.metadata.date?.split('T')[0] || new Date().toISOString().split('T')[0],
 		readTime: post.metadata.readTime || '5 min read'
 	}));
 

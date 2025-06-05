@@ -140,7 +140,7 @@
 										<h2 class="post-title">📄 {post.title || 'Untitled'}</h2>
 										<p class="post-excerpt">💡 {post.excerpt || 'No excerpt'}</p>
 										<div class="post-meta">
-											<time class="post-date">📅 {post.date || 'No date'}</time>
+											<time class="post-date">📅 {post.date?.split('T')[0] || post.date}</time>
 											<span class="read-time">⏰ {post.readTime || '5 min read'}</span>
 										</div>
 									</div>

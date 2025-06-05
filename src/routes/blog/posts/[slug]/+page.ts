@@ -8,7 +8,7 @@ export async function load({ params }) {
 		const post = {
 			slug: params.slug,
 			title: resolvedPost.metadata.title || 'Untitled',
-			date: resolvedPost.metadata.date || '',
+			date: resolvedPost.metadata.date?.split('T')[0] || new Date().toISOString().split('T')[0],
 			readTime: resolvedPost.metadata.readTime || '5 min read',
 			excerpt: resolvedPost.metadata.excerpt || '',
 			content: resolvedPost.content

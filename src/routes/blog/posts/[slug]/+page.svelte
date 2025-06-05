@@ -43,7 +43,7 @@
 		<header class="post-header">
 			<h1 class="post-title">{post.title}</h1>
 			<div class="post-meta">
-				<time class="post-date">📅 {post.date}</time>
+				<time class="post-date">📅 {post.date?.split('T')[0] || post.date}</time>
 				<span class="read-time">⏰ {post.readTime}</span>
 			</div>
 		</header>
