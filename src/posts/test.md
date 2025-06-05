@@ -1,11 +1,10 @@
-<script module>
-  export const metadata = {
-    title: 'Test Post',
-    date: '2025-06-05',
-    excerpt: 'Simple test post',
-    readTime: '1 min read'
-  };
-</script>
+---
+title: Test Post
+description: Simple test post
+date: 2025-06-05
+excerpt: Simple test post
+readTime: 1 min read
+---
 
 # Test Post
 

@@ -1,11 +1,10 @@
-<script module>
-  export const metadata = {
-    title: 'Hello World - Markdown Demo',
-    date: '2025-06-04',
-    readTime: '3 min read',
-    excerpt: 'A complete demo of all markdown possibilities for creative blog posts'
-  };
-</script>
+---
+title: Hello World - Markdown Demo
+description: A complete demo of all markdown possibilities for creative blog posts
+date: 2025-06-04
+readTime: 3 min read
+excerpt: A complete demo of all markdown possibilities for creative blog posts
+---
 
 # Hello World - Markdown Demo 🎨
 
