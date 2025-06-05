@@ -135,7 +135,7 @@
 					{#each filteredPosts as post (post?.slug || Math.random())}
 						{#if post && post.slug}
 							<article class="post-card">
-								<a href="/blog/{post.slug}" class="post-link">
+								<a href="/posts/{post.slug}" class="post-link">
 									<div class="post-content">
 										<h2 class="post-title">📄 {post.title || 'Untitled'}</h2>
 										<p class="post-excerpt">💡 {post.excerpt || 'No excerpt'}</p>
