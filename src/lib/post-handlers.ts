@@ -17,9 +17,10 @@ export type ResolvedBlogPost = {
 	slug: string;
 };
 
+const posts = import.meta.glob('../posts/*.md');
+
 export async function getAllPosts(): Promise<PostLink[]> {
-	const allPostFiles = import.meta.glob('../posts/*.md');
-	const iterablePostFiles = Object.entries(allPostFiles);
+	const iterablePostFiles = Object.entries(posts);
 
 	const postJobs = iterablePostFiles.map(async ([path, resolver]) => {
 		const { metadata } = (await resolver()) as { metadata: BlogPostMetadata };
@@ -27,30 +28,34 @@ export async function getAllPosts(): Promise<PostLink[]> {
 		return { metadata, postPath };
 	});
 
-	const posts = await Promise.all(postJobs);
+	const allPosts = await Promise.all(postJobs);
 
 	// Sort by date (newest first)
-	posts.sort((a, b) => {
+	allPosts.sort((a, b) => {
 		const dateA = new Date(a.metadata.date);
 		const dateB = new Date(b.metadata.date);
 		return dateB.getTime() - dateA.getTime();
 	});
 
-	return posts;
+	return allPosts;
 }
 
-// 🎯 Get single post by slug
 export async function getPostBySlug(slug: string): Promise<ResolvedBlogPost> {
+	const postPath = `../posts/${slug}.md`;
+
+	if (!(postPath in posts)) {
+		throw new Error(`Post not found: ${slug}`);
+	}
+
 	try {
-		const post = await import(/* @vite-ignore */ `../posts/${slug}.md`);
-		const content = post.default;
+		const post = await posts[postPath]();
 
 		return {
-			metadata: post.metadata,
-			content,
+			metadata: (post as any).metadata,
+			content: (post as any).default,
 			slug
 		};
 	} catch (error) {
-		throw new Error(`Post not found: ${slug}`);
+		throw new Error(`Failed to load post: ${slug}`);
 	}
 }
