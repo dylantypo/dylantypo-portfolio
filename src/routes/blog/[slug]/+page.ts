@@ -1,4 +1,3 @@
-// src/routes/blog/[slug]/+page.ts
 import { getPostBySlug } from '$lib/post-handlers';
 import { error } from '@sveltejs/kit';
 
@@ -6,7 +5,6 @@ export async function load({ params }) {
 	try {
 		const resolvedPost = await getPostBySlug(params.slug);
 
-		// Convert to your expected format
 		const post = {
 			slug: params.slug,
 			title: resolvedPost.metadata.title || 'Untitled',

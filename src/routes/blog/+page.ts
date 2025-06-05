@@ -1,12 +1,9 @@
-// src/routes/blog/+page.ts
 import { getAllPosts } from '$lib/post-handlers';
-import type { PostLink } from '$lib/post-handlers';
 
 export async function load() {
 	const allPosts = await getAllPosts();
 
-	// Convert to your expected format
-	const posts = allPosts.map((post: PostLink) => ({
+	const posts = allPosts.map((post) => ({
 		slug: post.postPath,
 		title: post.metadata.title || 'Untitled',
 		excerpt: post.metadata.excerpt || 'No excerpt',
