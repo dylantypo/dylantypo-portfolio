@@ -15,8 +15,8 @@
 	};
 
 	// 🔥 Now posts come from the server automatically!
-	let { data }: { data: PageData } = $props();
-	let posts = $state<BlogPost[]>(data.posts || []);
+	let { data = { posts: [] } }: { data?: PageData } = $props();
+	let posts = $state<BlogPost[]>(Array.isArray(data?.posts) ? data.posts : []);
 
 	let searchTerm = $state('');
 
