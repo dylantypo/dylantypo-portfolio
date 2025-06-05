@@ -1,29 +1,31 @@
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
-import { readdir } from 'fs/promises';
-import { join } from 'path';
+import { mdsvex } from 'mdsvex';
 import path from 'path';
 
-// Auto-discover blog posts
-async function getBlogEntries() {
-	try {
-		const postsDir = join(process.cwd(), 'static/blog/posts');
-		const files = await readdir(postsDir);
-		return files
-			.filter((file) => file.endsWith('.md'))
-			.map((file) => `/blog/${file.replace('.md', '')}`);
-	} catch (error) {
-		console.warn('Could not read blog posts:', error);
-		return [];
+/** @type {import('mdsvex').MdsvexOptions} */
+const mdsvexOptions = {
+	extensions: ['.md'],
+	layout: './src/lib/BlogLayout.svelte',
+	highlight: {
+		highlighter: async (code, lang = 'text') => {
+			const { codeToHtml } = await import('shiki');
+			const html = await codeToHtml(code, {
+				lang,
+				theme: 'github-dark'
+			});
+			return `{@html \`${html}\` }`;
+		}
 	}
-}
-
-const blogEntries = await getBlogEntries();
-console.log('📝 Auto-discovered blog posts:', blogEntries);
+};
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-	preprocess: vitePreprocess({ script: true }),
+	extensions: ['.svelte', '.md'], // 🔥 Allow .md files as routes
+	preprocess: [
+		vitePreprocess({ script: true }),
+		mdsvex(mdsvexOptions) // 🔥 Process markdown
+	],
 	kit: {
 		adapter: adapter({
 			fallback: '200.html',
@@ -32,12 +34,8 @@ const config = {
 			strict: false
 		}),
 		prerender: {
-			entries: [
-				'*',
-				'/blog',
-				...blogEntries // Auto-add all blog posts
-			],
-			handleMissingId: 'warn'
+			entries: ['*'], // 🔥 Auto-discover everything (including .md)
+			handleMissingId: 'ignore'
 		},
 		alias: {
 			$lib: path.resolve('./src/lib')

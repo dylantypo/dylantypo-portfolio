@@ -5,7 +5,30 @@ readTime: 3 min read
 excerpt: A complete demo of all markdown possibilities for creative blog posts
 ---
 
-# Hello World - Markdown Demo 🎨
+<script>
+	// 🔥 You can use Svelte components in markdown!
+	let isDyslexiaMode = $state(false);
+	
+	function toggleDyslexia() {
+		isDyslexiaMode = !isDyslexiaMode;
+	}
+</script>
+
+<svelte:head>
+<title>{title} | Dylan Posner</title>
+<meta name="description" content={excerpt} />
+</svelte:head>
+
+<!-- 🎛️ Interactive dyslexia toggle -->
+<div class="post-controls">
+	<button onclick={toggleDyslexia} class:active={isDyslexiaMode}>
+		{isDyslexiaMode ? '🔤' : '👁️'} Dyslexia Mode
+	</button>
+</div>
+
+<div class="post-content" class:dyslexia-mode={isDyslexiaMode}>
+
+# {title} 🎨
 
 Welcome! This post shows **everything** you can do with Markdown. Perfect for creative blogging! ✨
 
@@ -51,7 +74,6 @@ Welcome! This post shows **everything** you can do with Markdown. Perfect for cr
 // Interactive website code
 function makeItFast() {
 	const optimizations = ['lazy loading', 'code splitting', 'image compression'];
-
 	return optimizations.map((opt) => `✅ ${opt}`);
 }
 
@@ -111,3 +133,35 @@ Use three dashes for section breaks:
 - 🟡 In Progress
 - ❌ Not Started
 - 🔄 Under Review
+
+</div>
+
+<style>
+	.post-controls {
+		position: fixed;
+		top: 2rem;
+		right: 2rem;
+		z-index: 1000;
+	}
+	
+	.post-controls button {
+		background: white;
+		border: 2px solid #ccc;
+		border-radius: 0.5rem;
+		padding: 0.5rem 1rem;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	
+	.post-controls button:hover,
+	.post-controls button.active {
+		background: #14b8a6;
+		color: white;
+		border-color: #14b8a6;
+	}
+	
+	.post-content.dyslexia-mode {
+		font-family: 'OpenDyslexicMono', monospace;
+		line-height: 1.6;
+	}
+</style>

@@ -1,11 +1,36 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	let { data } = $props();
+	type BlogPost = {
+		slug: string;
+		title: string;
+		excerpt: string;
+		date: string;
+		readTime: string;
+	};
 
-	let posts = $state(data.posts || []);
-	let isLoading = $state(false);
-	let error = $state(null);
+	// 🔥 MDsveX auto-discovers posts, so we need to list them
+	let posts = $state<BlogPost[]>([
+		{
+			slug: 'hello-world',
+			title: 'Hello World - Markdown Demo',
+			excerpt: 'A complete demo of all markdown possibilities for creative blog posts',
+			date: '2025-06-04',
+			readTime: '3 min read'
+		}
+		// Add more posts here as you create them
+	]);
+
+	let searchTerm = $state('');
+
+	let filteredPosts = $derived.by(() => {
+		if (!searchTerm) return posts;
+		return posts.filter(
+			(post: BlogPost) =>
+				post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+				post.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
+		);
+	});
 
 	onMount(() => {
 		window.scrollTo(0, 0);
@@ -21,16 +46,38 @@
 	<header class="blog-header">
 		<h1 class="title">Blog 📝</h1>
 		<p class="subtitle">Latest thoughts & updates</p>
+
+		{#if posts.length > 0}
+			<div class="search-container">
+				<input
+					type="text"
+					placeholder="🔍 Search posts..."
+					bind:value={searchTerm}
+					class="search-input"
+				/>
+				{#if posts.length !== filteredPosts.length}
+					<p class="search-results">
+						Showing {filteredPosts.length} of {posts.length} posts
+					</p>
+				{/if}
+			</div>
+		{/if}
 	</header>
 
 	<section class="posts-grid">
-		{#if data.posts.length === 0}
+		{#if filteredPosts.length === 0}
 			<div class="empty">
-				<h2>📝 No posts yet</h2>
-				<p>Check back soon for new content!</p>
+				{#if searchTerm}
+					<h2>🔍 No posts found</h2>
+					<p>No posts match "{searchTerm}"</p>
+					<button onclick={() => (searchTerm = '')} class="clear-search"> Clear Search </button>
+				{:else}
+					<h2>📝 No posts yet</h2>
+					<p>Check back soon for new content!</p>
+				{/if}
 			</div>
 		{:else}
-			{#each data.posts as post}
+			{#each filteredPosts as post (post.slug)}
 				<article class="post-card">
 					<a href="/blog/{post.slug}" class="post-link">
 						<div class="post-content">
@@ -75,7 +122,39 @@
 	.subtitle {
 		font-size: var(--font-size-lg);
 		opacity: 0.8;
-		margin: 0;
+		margin: 0 0 2rem;
+	}
+
+	.search-container {
+		max-width: 400px;
+		margin: 0 auto;
+	}
+
+	.search-input {
+		width: 100%;
+		padding: 0.75rem 1rem;
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		border-radius: 0.5rem;
+		background: rgba(255, 255, 255, 0.1);
+		color: white;
+		font-size: 1rem;
+		font-family: var(--font-family-base);
+	}
+
+	.search-input::placeholder {
+		color: rgba(255, 255, 255, 0.5);
+	}
+
+	.search-input:focus {
+		outline: 2px solid var(--color-secondary);
+		outline-offset: 2px;
+	}
+
+	.search-results {
+		text-align: center;
+		margin-top: 0.5rem;
+		opacity: 0.7;
+		font-size: 0.9rem;
 	}
 
 	.posts-grid {
@@ -96,6 +175,21 @@
 		opacity: 0.7;
 	}
 
+	.clear-search {
+		background: var(--color-secondary);
+		color: white;
+		border: none;
+		border-radius: 0.5rem;
+		padding: 0.5rem 1rem;
+		cursor: pointer;
+		font-family: var(--font-family-base);
+		transition: opacity 0.2s ease;
+	}
+
+	.clear-search:hover {
+		opacity: 0.8;
+	}
+
 	.post-card {
 		background-color: var(--color-fill);
 		border-radius: 0.5rem;
@@ -108,7 +202,6 @@
 
 	.post-card:hover {
 		background-color: var(--color-hover);
-		/* Natural inner glow + dark outer shadow */
 		box-shadow:
 			inset 0 2px 0 rgba(20, 184, 166, 0.3),
 			inset 0 -5px 0 rgba(20, 184, 166, 0.2),
@@ -136,7 +229,6 @@
 		margin-bottom: var(--spacing-base);
 		line-height: 1.5;
 		color: var(--color-text-primary);
-		transition: none;
 	}
 
 	.post-meta {
@@ -146,7 +238,6 @@
 		font-size: 0.875rem;
 		opacity: 0.6;
 		color: var(--color-text-primary);
-		transition: none;
 	}
 
 	.blog-footer {
