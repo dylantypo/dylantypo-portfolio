@@ -41,6 +41,7 @@
 		"gsap": "^3.13.0",
 		"lodash": "^4.17.21",
 		"marked": "^15.0.12",
+		"mdsvex": "^0.12.6",
 		"open-simplex-noise": "^2.5.0",
 		"protobufjs": "^7.4.0",
 		"three": "^0.176.0",

@@ -14,7 +14,7 @@
 		"target": "ES2022",
 		"module": "ESNext",
 		"lib": ["ES2022", "DOM", "DOM.Iterable"],
-		"types": ["svelte", "@sveltejs/kit"]
+		"types": ["svelte", "@sveltejs/kit", "mdsvex"]
 	},
 	"include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.ts", "src/**/*.svelte", "src/**/*.md"],
 	"exclude": ["node_modules/**", "build/**", ".svelte-kit/**", "static/**"]
