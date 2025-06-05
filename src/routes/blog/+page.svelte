@@ -14,18 +14,18 @@
 		posts: BlogPost[];
 	};
 
-	// 🔥 Now posts come from the server automatically!
+	// 🛡️ Safe data handling with defaults
 	let { data = { posts: [] } }: { data?: PageData } = $props();
 	let posts = $state<BlogPost[]>(Array.isArray(data?.posts) ? data.posts : []);
 
 	let searchTerm = $state('');
 
 	let filteredPosts = $derived.by(() => {
-		if (!searchTerm) return posts;
+		if (!searchTerm || !Array.isArray(posts)) return posts;
 		return posts.filter(
 			(post: BlogPost) =>
-				post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-				post.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
+				post?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+				post?.excerpt?.toLowerCase().includes(searchTerm.toLowerCase())
 		);
 	});
 
@@ -44,7 +44,7 @@
 		<h1 class="title">📝 Blog</h1>
 		<p class="subtitle">💭 Latest thoughts & updates</p>
 
-		{#if posts.length > 0}
+		{#if posts && posts.length > 0}
 			<div class="search-container">
 				<input
 					type="text"
@@ -62,7 +62,7 @@
 	</header>
 
 	<section class="posts-grid">
-		{#if filteredPosts.length === 0}
+		{#if !filteredPosts || filteredPosts.length === 0}
 			<div class="empty">
 				{#if searchTerm}
 					<h2>🔍 No posts found</h2>
@@ -74,19 +74,21 @@
 				{/if}
 			</div>
 		{:else}
-			{#each filteredPosts as post (post.slug)}
-				<article class="post-card">
-					<a href="/blog/{post.slug}" class="post-link">
-						<div class="post-content">
-							<h2 class="post-title">📄 {post.title}</h2>
-							<p class="post-excerpt">💡 {post.excerpt}</p>
-							<div class="post-meta">
-								<time class="post-date">📅 {post.date}</time>
-								<span class="read-time">⏰ {post.readTime}</span>
+			{#each filteredPosts as post (post?.slug || Math.random())}
+				{#if post && post.slug}
+					<article class="post-card">
+						<a href="/posts/{post.slug}" class="post-link">
+							<div class="post-content">
+								<h2 class="post-title">📄 {post.title || 'Untitled'}</h2>
+								<p class="post-excerpt">💡 {post.excerpt || 'No excerpt'}</p>
+								<div class="post-meta">
+									<time class="post-date">📅 {post.date || 'No date'}</time>
+									<span class="read-time">⏰ {post.readTime || '5 min read'}</span>
+								</div>
 							</div>
-						</div>
-					</a>
-				</article>
+						</a>
+					</article>
+				{/if}
 			{/each}
 		{/if}
 	</section>

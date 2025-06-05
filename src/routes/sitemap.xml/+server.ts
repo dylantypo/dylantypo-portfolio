@@ -32,18 +32,6 @@ export async function GET() {
 				lastmod: today,
 				changefreq: 'weekly',
 				priority: '0.8'
-			},
-			{
-				url: `${baseUrl}/ballz`,
-				lastmod: today,
-				changefreq: 'monthly',
-				priority: '0.6'
-			},
-			{
-				url: `${baseUrl}/snake`,
-				lastmod: today,
-				changefreq: 'monthly',
-				priority: '0.6'
 			}
 		];
 
@@ -51,7 +39,7 @@ export async function GET() {
 		const blogPosts: SitemapEntry[] = [];
 
 		try {
-			const postsDir = join(process.cwd(), 'static/blog/posts');
+			const postsDir = join(process.cwd(), 'src/posts');
 			const files = await readdir(postsDir);
 
 			for (const file of files) {
@@ -81,7 +69,7 @@ export async function GET() {
 
 						const slug = file.replace('.md', '');
 						blogPosts.push({
-							url: `${baseUrl}/blog/${slug}`,
+							url: `${baseUrl}/posts/${slug}`,
 							lastmod: postDate,
 							changefreq: 'monthly',
 							priority: '0.7'

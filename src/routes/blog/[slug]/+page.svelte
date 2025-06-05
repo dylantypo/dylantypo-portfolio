@@ -1,14 +1,11 @@
 <script lang="ts">
-	import { marked } from 'marked';
-	import DOMPurify from 'dompurify';
-
 	type BlogPost = {
 		slug: string;
 		title: string;
 		date: string;
 		readTime: string;
 		excerpt: string;
-		content: string;
+		content: any;
 	};
 
 	type PageData = {
@@ -20,11 +17,6 @@
 
 	// 🆕 Add dyslexia mode state
 	let isDyslexiaMode = $state(false);
-
-	// Convert markdown to HTML
-	let htmlContent = $derived(
-		DOMPurify.sanitize(marked.parse(post.content, { async: false }) as string)
-	);
 
 	// 🆕 Toggle dyslexia mode
 	function toggleDyslexiaMode() {
@@ -103,8 +95,8 @@
 					{/if}
 				</header>
 
-				<!-- Rendered Content -->
-				{@html htmlContent}
+				<!-- ✅ Render MDsveX component -->
+				{@render post.content()}
 			</div>
 		</div>
 	</div>
@@ -219,7 +211,7 @@
 		color: #6b7280;
 	}
 
-	/* Typography styles */
+	/* Typography styles for MDsveX content */
 	:global(.blog-content) {
 		font-family:
 			'Inter',

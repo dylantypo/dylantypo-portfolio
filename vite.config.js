@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
 
 		server: {
 			fs: {
-				allow: ['static/blog/posts']
+				allow: ['src/posts']
 			}
 		},
 
@@ -19,13 +19,9 @@ export default defineConfig(({ mode }) => {
 			rollupOptions: {
 				output: {
 					manualChunks: (id) => {
-						if (id.includes('/routes/mav/')) return 'route-mav';
-						if (id.includes('/routes/ballz/')) return 'route-ballz';
-						if (id.includes('/routes/snake/')) return 'route-snake';
 						if (id.includes('/routes/resume/') || id.includes('ResumeViewer'))
 							return 'route-resume';
 						if (id.includes('/routes/blog/')) return 'route-blog';
-
 						if (id.includes('three/examples/')) return 'three-examples';
 						if (id.includes('three-globe') || id.includes('globe.svelte')) return 'globe';
 						if (id.includes('three') && !id.includes('three-globe')) return 'three-core';

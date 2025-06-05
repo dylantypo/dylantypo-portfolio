@@ -40,7 +40,7 @@ export async function GET() {
 		const rssItems: RSSItem[] = [];
 
 		try {
-			const postsDir = join(process.cwd(), 'static/blog/posts');
+			const postsDir = join(process.cwd(), 'src/posts');
 			const files = await readdir(postsDir);
 
 			for (const file of files) {
@@ -79,10 +79,10 @@ export async function GET() {
 
 						rssItems.push({
 							title: meta['title'] || 'Untitled Post',
-							link: `${baseUrl}/blog/${slug}`,
+							link: `${baseUrl}/posts/${slug}`,
 							description: meta['excerpt'] || excerpt,
 							pubDate: formatRSSDate(postDate),
-							guid: `${baseUrl}/blog/${slug}`,
+							guid: `${baseUrl}/posts/${slug}`,
 							content: escapeXml(postContent)
 						});
 					} catch (err) {
