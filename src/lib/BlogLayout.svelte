@@ -1,26 +1,17 @@
 <script lang="ts">
-	// This layout wraps all your .md blog posts
+	// 🔥 Simplified for MDsveX - frontmatter is passed automatically
+	let { children } = $props<{ children?: any }>();
 
-	let {
-		title = 'Blog Post',
-		date = '',
-		readTime = '',
-		excerpt = '',
-		children
-	} = $props<{
-		title?: string;
-		date?: string;
-		readTime?: string;
-		excerpt?: string;
-		children?: any;
-	}>();
+	// 🆕 Add dyslexia mode state back
+	let isDyslexiaMode = $state(false);
+
+	// 🆕 Toggle dyslexia mode
+	function toggleDyslexiaMode() {
+		isDyslexiaMode = !isDyslexiaMode;
+	}
 </script>
 
-<svelte:head>
-	<title>{title} | Dylan Posner</title>
-	<meta name="description" content={excerpt} />
-</svelte:head>
-
+<!-- MDsveX passes frontmatter as component props automatically -->
 <div class="blog-wrapper">
 	<!-- Back to blog button -->
 	<nav class="blog-nav">
@@ -35,24 +26,21 @@
 			>
 				<path d="M19 12H5M12 19l-7-7 7-7" />
 			</svg>
-			Back to Blog
+			🏠 Back to Blog
 		</a>
 	</nav>
 
+	<!-- 🆕 Dyslexia Mode Controls -->
+	<div class="post-controls">
+		<button onclick={toggleDyslexiaMode} class:active={isDyslexiaMode}>
+			{isDyslexiaMode ? '🔤' : '👁️'} Dyslexia Mode
+		</button>
+	</div>
+
 	<!-- Blog post container -->
 	<article class="blog-post">
-		<header class="post-header">
-			<h1 class="post-title">{title}</h1>
-			{#if date || readTime}
-				<div class="post-meta">
-					{#if date}<time>📅 {date}</time>{/if}
-					{#if readTime}<span>⏰ {readTime}</span>{/if}
-				</div>
-			{/if}
-		</header>
-
 		<!-- This is where your markdown content gets rendered -->
-		<div class="post-content">
+		<div class="post-content" class:dyslexia-mode={isDyslexiaMode}>
 			{@render children()}
 		</div>
 	</article>
@@ -102,40 +90,52 @@
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 	}
 
-	.post-header {
-		text-align: center;
-		margin-bottom: 3rem;
-		border-bottom: 1px solid #e5e7eb;
-		padding-bottom: 2rem;
+	.post-content {
+		line-height: 1.7;
 	}
 
-	.post-title {
+	/* 🆕 Dyslexia mode styles */
+	.post-content.dyslexia-mode {
+		font-family: 'OpenDyslexicMono', monospace;
+		line-height: 1.6;
+	}
+
+	/* 🆕 Dyslexia mode controls */
+	.post-controls {
+		position: fixed;
+		top: 2rem;
+		right: 2rem;
+		z-index: 1000;
+	}
+
+	.post-controls button {
+		background: white;
+		border: 2px solid #ccc;
+		border-radius: 0.5rem;
+		padding: 0.5rem 1rem;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		font-family: inherit;
+	}
+
+	.post-controls button:hover,
+	.post-controls button.active {
+		background: #14b8a6;
+		color: white;
+		border-color: #14b8a6;
+	}
+
+	/* Style the markdown content */
+	:global(.post-content h1) {
 		font-size: 2.5rem;
 		font-weight: 700;
 		margin-bottom: 1rem;
 		color: #1f2937;
 		line-height: 1.2;
-	}
-
-	.post-meta {
-		display: flex;
-		justify-content: center;
-		gap: 1rem;
-		opacity: 0.7;
-		font-size: 0.9rem;
-		color: #6b7280;
-	}
-
-	.post-content {
-		line-height: 1.7;
-	}
-
-	/* Style the markdown content */
-	:global(.post-content h1) {
-		font-size: 2rem;
-		font-weight: 700;
-		margin: 2rem 0 1rem;
-		color: #1f2937;
+		text-align: center;
+		border-bottom: 1px solid #e5e7eb;
+		padding-bottom: 2rem;
+		margin-bottom: 3rem;
 	}
 
 	:global(.post-content h2) {
@@ -243,13 +243,8 @@
 			padding: 2rem 1.5rem;
 		}
 
-		.post-title {
+		:global(.post-content h1) {
 			font-size: 2rem;
-		}
-
-		.post-meta {
-			flex-direction: column;
-			gap: 0.5rem;
 		}
 	}
 </style>

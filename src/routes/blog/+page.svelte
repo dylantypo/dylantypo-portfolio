@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
+	// 🎯 Define types
 	type BlogPost = {
 		slug: string;
 		title: string;
@@ -9,17 +10,13 @@
 		readTime: string;
 	};
 
-	// 🔥 MDsveX auto-discovers posts, so we need to list them
-	let posts = $state<BlogPost[]>([
-		{
-			slug: 'hello-world',
-			title: 'Hello World - Markdown Demo',
-			excerpt: 'A complete demo of all markdown possibilities for creative blog posts',
-			date: '2025-06-04',
-			readTime: '3 min read'
-		}
-		// Add more posts here as you create them
-	]);
+	type PageData = {
+		posts: BlogPost[];
+	};
+
+	// 🔥 Now posts come from the server automatically!
+	let { data }: { data: PageData } = $props();
+	let posts = $state<BlogPost[]>(data.posts || []);
 
 	let searchTerm = $state('');
 
@@ -44,8 +41,8 @@
 
 <main class="blog-container">
 	<header class="blog-header">
-		<h1 class="title">Blog 📝</h1>
-		<p class="subtitle">Latest thoughts & updates</p>
+		<h1 class="title">📝 Blog</h1>
+		<p class="subtitle">💭 Latest thoughts & updates</p>
 
 		{#if posts.length > 0}
 			<div class="search-container">
@@ -57,7 +54,7 @@
 				/>
 				{#if posts.length !== filteredPosts.length}
 					<p class="search-results">
-						Showing {filteredPosts.length} of {posts.length} posts
+						📊 Showing {filteredPosts.length} of {posts.length} posts
 					</p>
 				{/if}
 			</div>
@@ -69,11 +66,11 @@
 			<div class="empty">
 				{#if searchTerm}
 					<h2>🔍 No posts found</h2>
-					<p>No posts match "{searchTerm}"</p>
-					<button onclick={() => (searchTerm = '')} class="clear-search"> Clear Search </button>
+					<p>❌ No posts match "{searchTerm}"</p>
+					<button onclick={() => (searchTerm = '')} class="clear-search"> 🗑️ Clear Search </button>
 				{:else}
 					<h2>📝 No posts yet</h2>
-					<p>Check back soon for new content!</p>
+					<p>⏰ Check back soon for new content!</p>
 				{/if}
 			</div>
 		{:else}
@@ -81,11 +78,11 @@
 				<article class="post-card">
 					<a href="/blog/{post.slug}" class="post-link">
 						<div class="post-content">
-							<h2 class="post-title">{post.title}</h2>
-							<p class="post-excerpt">{post.excerpt}</p>
+							<h2 class="post-title">📄 {post.title}</h2>
+							<p class="post-excerpt">💡 {post.excerpt}</p>
 							<div class="post-meta">
-								<time class="post-date">{post.date}</time>
-								<span class="read-time">{post.readTime}</span>
+								<time class="post-date">📅 {post.date}</time>
+								<span class="read-time">⏰ {post.readTime}</span>
 							</div>
 						</div>
 					</a>
@@ -95,7 +92,7 @@
 	</section>
 
 	<footer class="blog-footer">
-		<a href="/" class="back-home">← Back to Home</a>
+		<a href="/" class="back-home">🏠 Back to Home</a>
 	</footer>
 </main>
 
@@ -204,9 +201,9 @@
 		background-color: var(--color-hover);
 		box-shadow:
 			inset 0 2px 0 rgba(20, 184, 166, 0.3),
-			inset 0 -5px 0 rgba(20, 184, 166, 0.2),
+			inset 0 -2px 0 rgba(20, 184, 166, 0.2),
 			inset 2px 0 0 rgba(20, 184, 166, 0.2),
-			inset -5px 0 0 rgba(20, 184, 166, 0.2);
+			inset -2px 0 0 rgba(20, 184, 166, 0.2);
 	}
 
 	.post-link {
