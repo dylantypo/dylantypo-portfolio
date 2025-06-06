@@ -32,31 +32,25 @@
 		type GlobeModules
 	} from '$lib/utils';
 
-	// Component props and state
 	let container: HTMLDivElement;
 	let { hero_text } = $props<{ hero_text: string }>();
 
-	// State management
 	let focusedLocationName = $state<string | null>(null);
 	let globeInitialized = $state(false);
 	let animationFrameId: number | undefined;
 	let CLOUDS_ROTATION_SPEED: number;
 
-	// Module references
 	let threeModules: ThreeModules | null = null;
 	let globeModules: GlobeModules | null = null;
 
-	// Event handler storage - FIXED: Added proper cleanup tracking
 	let cleanupFn: (() => void) | undefined;
 	let intersectionObserver: IntersectionObserver | undefined;
 	let animationObserver: IntersectionObserver | undefined;
 
-	// Cache values
 	let lastWidth = browser ? window.innerWidth : 0;
 	let lastHeight = browser ? window.innerHeight : 0;
 	let devicePixelCategory: DeviceCategory = 'low';
 
-	// Regions data
 	const regionsLived: Region[] = [
 		{
 			country: 'United States',
@@ -129,7 +123,6 @@
 		const wrapper = document.createElement('div');
 		const div = document.createElement('div');
 
-		// Setup wrapper styles
 		Object.assign(wrapper.style, {
 			position: 'absolute',
 			pointerEvents: 'none',
@@ -143,7 +136,6 @@
 			perspective: '1000px'
 		});
 
-		// Setup marker div
 		div.textContent = data.name;
 		div.className = 'location-marker';
 		Object.assign(div.style, {
@@ -162,7 +154,6 @@
 			webkitFontSmoothing: 'antialiased'
 		});
 
-		// Event handlers
 		div.onclick = (e) => {
 			e.stopPropagation();
 			e.preventDefault();
@@ -192,7 +183,6 @@
 			setFocused(null);
 		};
 
-		// Accessibility
 		div.setAttribute('role', 'button');
 		div.setAttribute('tabindex', '0');
 		div.setAttribute(
@@ -213,20 +203,16 @@
 	onMount(async () => {
 		if (!browser) return;
 
-		// Determine device capabilities
 		devicePixelCategory = categorizeDevice();
 		const networkCategory = checkNetworkConditions();
 		if (networkCategory === 'low') devicePixelCategory = 'low';
 
-		// Load modules
 		threeModules = await loadThreeModules();
 		globeModules = await loadGlobeModules();
 
-		// Initialize accessibility
 		container.setAttribute('role', 'region');
 		container.setAttribute('aria-label', "Interactive 3D Globe showing places I've lived");
 
-		// Setup intersection observer - FIXED: Store reference for cleanup
 		intersectionObserver = new IntersectionObserver(
 			(entries) => {
 				if (entries[0].isIntersecting && !globeInitialized) {
@@ -244,16 +230,13 @@
 			const { THREE, FontLoader, TextGeometry } = threeModules;
 			const { CSS2DRenderer, Globe, TrackballControls, gsap } = globeModules;
 
-			// Clear container
 			container.innerHTML = '';
 
-			// Add accessibility instructions
 			const instructions = document.createElement('div');
 			instructions.className = 'sr-only';
 			instructions.textContent = 'Use arrow keys to navigate between locations...';
 			container.appendChild(instructions);
 
-			// Setup pointer events
 			Object.assign(container.style, {
 				touchAction: 'none',
 				userSelect: 'none'
@@ -269,7 +252,6 @@
 				container.style.cursor = 'grab';
 			});
 
-			// Initialize scene
 			const scene = new THREE.Scene();
 			scene.background = new THREE.Color('#18181b');
 			const camera = new THREE.PerspectiveCamera(
@@ -279,13 +261,10 @@
 				1000
 			);
 
-			// FIXED: Setup renderers - only use what we need
 			const { renderer, renderers } = setupRenderers(THREE, CSS2DRenderer, container);
 
-			// Setup lighting
 			setupLighting(THREE, scene);
 
-			// Setup controls (without globe reference)
 			const controls = setupCameraControls(TrackballControls, camera, renderer);
 			let isUserInteracting = false;
 
@@ -296,11 +275,9 @@
 				isUserInteracting = false;
 			});
 
-			// Process data
 			const labData = processRegionsData(regionsLived);
 			const MIN_ALTITUDE = 0.0125;
 
-			// Create globe
 			const globe = new Globe()
 				.showAtmosphere(true)
 				.atmosphereAltitude(0.1)
@@ -314,10 +291,8 @@
 
 			scene.add(globe);
 
-			// Connect controls to globe (AFTER globe creation)
 			connectControlsToGlobe(controls, globe, camera);
 
-			// Add location markers
 			globe
 				.htmlElementsData(labData)
 				.htmlLat((d: any) => d.lat)
@@ -325,7 +300,6 @@
 				.htmlAltitude((d: any) => (window.innerWidth < 768 ? 0.03 : 0.055))
 				.htmlElement((data: any) => createLocationMarker(data, setFocusedLocationName));
 
-			// Add clouds
 			const isMobile = window.innerWidth < 768;
 			const cloudsGeometry = createCloudsGeometry(THREE, globe.getGlobeRadius(), isMobile);
 			const Clouds = new THREE.Mesh(cloudsGeometry);
@@ -341,24 +315,19 @@
 			);
 			globe.add(Clouds);
 
-			// Enhance globe material
 			enhanceGlobeMaterial(THREE, globe);
-
-			// Setup globe tilt
 			setupGlobeTilt(THREE, globe);
-
-			// Optimize rendering
 			optimizeRendering(renderer, devicePixelCategory);
-
-			// Create hero text
 			createHeroText(THREE, FontLoader, TextGeometry, scene, globe, gsap, hero_text);
 
-			// Setup camera
-			const idealDistance = calculateIdealDistance(globe.getGlobeRadius(), camera.fov, isMobile);
-			controls.maxDistance = idealDistance * 1.1;
-			controls.minDistance = idealDistance * 0.9;
+			const initialIdealDistance = calculateIdealDistance(
+				globe.getGlobeRadius(),
+				camera.fov,
+				isMobile
+			);
+			controls.maxDistance = initialIdealDistance * 1.1;
+			controls.minDistance = initialIdealDistance * 0.9;
 
-			// Utility functions
 			const resizeRenderers = () => {
 				const newWidth = window.innerWidth;
 				const newHeight = window.innerHeight;
@@ -369,6 +338,11 @@
 
 			const adjustCamera = (isMobile: boolean, focusedCity?: { lat: number; lng: number }) => {
 				const idealDistance = calculateIdealDistance(globe.getGlobeRadius(), camera.fov, isMobile);
+
+				// Update control bounds to match new ideal distance
+				controls.maxDistance = idealDistance * 1.1;
+				controls.minDistance = idealDistance * 0.9;
+
 				if (focusedCity) {
 					setCameraPosition(
 						camera,
@@ -378,12 +352,15 @@
 						globe.getGlobeRadius()
 					);
 				} else {
-					camera.position.z = idealDistance;
+					// Smoothly adjust camera to ideal distance if significantly different
+					const currentDistance = camera.position.length();
+					if (Math.abs(currentDistance - idealDistance) > idealDistance * 0.1) {
+						camera.position.normalize().multiplyScalar(idealDistance);
+					}
 				}
 				updateCameraAspect(camera);
 			};
 
-			// Resize handling
 			const handleResizeImplementation = () => {
 				const newWidth = window.innerWidth;
 				const newHeight = window.innerHeight;
@@ -421,7 +398,6 @@
 				isMobile ? 250 : 100
 			);
 
-			// Animation intersection observer - FIXED: Store reference
 			const handleIntersection = (entries: IntersectionObserverEntry[]) => {
 				entries.forEach((entry) => {
 					if (entry.isIntersecting) {
@@ -442,7 +418,6 @@
 			});
 			animationObserver.observe(container);
 
-			// Animation loop
 			const animate = () => {
 				animationFrameId = requestAnimationFrame(animate) as number;
 
@@ -458,17 +433,14 @@
 				renderers.forEach((r) => r.render(scene, camera));
 			};
 
-			// Initialize everything
 			const focusedCity = findFocusedCity(regionsLived, 'Arlington');
 			updateVH();
 			resizeRenderers();
 			adjustCamera(isMobile, focusedCity);
 			CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(isMobile);
 
-			// Add event listeners
 			window.addEventListener('resize', handleResize);
 
-			// FIXED: Improved cleanup with proper observer tracking
 			cleanupFn = () => {
 				if (animationFrameId) cancelAnimationFrame(animationFrameId);
 				window.removeEventListener('resize', handleResize);
@@ -498,7 +470,6 @@
 	});
 
 	onDestroy(() => {
-		// FIXED: Proper cleanup of all observers
 		if (intersectionObserver) intersectionObserver.disconnect();
 		if (animationObserver) animationObserver.disconnect();
 		if (cleanupFn) cleanupFn();
