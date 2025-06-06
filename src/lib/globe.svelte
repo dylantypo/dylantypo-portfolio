@@ -12,7 +12,6 @@
 		calculateCloudsRotationSpeed,
 		calculateIdealDistance,
 		setCameraPosition,
-		updateVH,
 		updateCameraAspect,
 		findFocusedCity,
 		setupLighting,
@@ -26,6 +25,7 @@
 		loadThreeModules,
 		loadGlobeModules,
 		createHeroText,
+		viewportManager,
 		type DeviceCategory,
 		type Region,
 		type ThreeModules,
@@ -47,8 +47,6 @@
 	let intersectionObserver: IntersectionObserver | undefined;
 	let animationObserver: IntersectionObserver | undefined;
 
-	let lastWidth = browser ? window.innerWidth : 0;
-	let lastHeight = browser ? window.innerHeight : 0;
 	let devicePixelCategory: DeviceCategory = 'low';
 
 	const regionsLived: Region[] = [
@@ -203,6 +201,8 @@
 	onMount(async () => {
 		if (!browser) return;
 
+		viewportManager.init();
+
 		devicePixelCategory = categorizeDevice();
 		const networkCategory = checkNetworkConditions();
 		if (networkCategory === 'low') devicePixelCategory = 'low';
@@ -329,17 +329,19 @@
 			controls.minDistance = initialIdealDistance * 0.9;
 
 			const resizeRenderers = () => {
-				const newWidth = window.innerWidth;
-				const newHeight = window.innerHeight;
-				renderers.forEach((r) => r.setSize(newWidth, newHeight));
-				globe.rendererSize(new THREE.Vector2(newWidth, newHeight));
+				const viewport = viewportManager.getViewportInfo();
+				renderers.forEach((r) => r.setSize(viewport.width, viewport.height));
+				globe.rendererSize(new THREE.Vector2(viewport.width, viewport.height));
 				updateCameraAspect(camera);
 			};
 
-			const adjustCamera = (isMobile: boolean, focusedCity?: { lat: number; lng: number }) => {
-				const idealDistance = calculateIdealDistance(globe.getGlobeRadius(), camera.fov, isMobile);
+			const adjustCamera = (viewport: any, focusedCity?: { lat: number; lng: number }) => {
+				const idealDistance = calculateIdealDistance(
+					globe.getGlobeRadius(),
+					camera.fov,
+					viewport.isMobile
+				);
 
-				// Update control bounds to match new ideal distance
 				controls.maxDistance = idealDistance * 1.1;
 				controls.minDistance = idealDistance * 0.9;
 
@@ -352,7 +354,6 @@
 						globe.getGlobeRadius()
 					);
 				} else {
-					// Smoothly adjust camera to ideal distance if significantly different
 					const currentDistance = camera.position.length();
 					if (Math.abs(currentDistance - idealDistance) > idealDistance * 0.1) {
 						camera.position.normalize().multiplyScalar(idealDistance);
@@ -361,42 +362,22 @@
 				updateCameraAspect(camera);
 			};
 
-			const handleResizeImplementation = () => {
-				const newWidth = window.innerWidth;
-				const newHeight = window.innerHeight;
+			const handleViewportChange = (event: CustomEvent) => {
+				const viewport = event.detail;
 
-				if (newWidth === lastWidth && newHeight === lastHeight) return;
+				CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(viewport.isMobile);
 
-				const resizeDelay = isMobile ? (window.devicePixelRatio > 2 ? 150 : 100) : 50;
+				document.querySelectorAll('.location-marker').forEach((marker) => {
+					(marker as HTMLElement).style.fontSize = `${getSharpFontSize()}rem`;
+				});
 
-				setTimeout(() => {
-					lastWidth = newWidth;
-					lastHeight = newHeight;
-					const currentMobile = newWidth < 768;
-					CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(currentMobile);
-
-					requestAnimationFrame(() => {
-						updateVH();
-						resizeRenderers();
-						adjustCamera(currentMobile);
-					});
-				}, resizeDelay);
+				requestAnimationFrame(() => {
+					resizeRenderers();
+					adjustCamera(viewport);
+				});
 			};
 
-			const handleResize = debounce(
-				() => {
-					if (!window.requestAnimationFrame) {
-						handleResizeImplementation();
-						return;
-					}
-
-					window.requestAnimationFrame(handleResizeImplementation);
-					document.querySelectorAll('.location-marker').forEach((marker) => {
-						(marker as HTMLElement).style.fontSize = `${getSharpFontSize()}rem`;
-					});
-				},
-				isMobile ? 250 : 100
-			);
+			window.addEventListener('viewport:resize', handleViewportChange as EventListener);
 
 			const handleIntersection = (entries: IntersectionObserverEntry[]) => {
 				entries.forEach((entry) => {
@@ -433,17 +414,9 @@
 				renderers.forEach((r) => r.render(scene, camera));
 			};
 
-			const focusedCity = findFocusedCity(regionsLived, 'Arlington');
-			updateVH();
-			resizeRenderers();
-			adjustCamera(isMobile, focusedCity);
-			CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(isMobile);
-
-			window.addEventListener('resize', handleResize);
-
 			cleanupFn = () => {
 				if (animationFrameId) cancelAnimationFrame(animationFrameId);
-				window.removeEventListener('resize', handleResize);
+				window.removeEventListener('viewport:resize', handleViewportChange as EventListener);
 
 				if (globeInitialized) {
 					scene.traverse((object: any) => {
@@ -466,6 +439,12 @@
 
 				if (container) container.innerHTML = '';
 			};
+
+			const initialViewport = viewportManager.getViewportInfo();
+			const focusedCity = findFocusedCity(regionsLived, 'Arlington');
+			resizeRenderers();
+			adjustCamera(initialViewport, focusedCity);
+			CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(initialViewport.isMobile);
 		}
 	});
 
@@ -491,15 +470,12 @@
 	.globe-container {
 		position: relative;
 		width: 100%;
-		min-height: 100vh;
-		min-height: 100svh;
-		height: 100dvh;
+		height: 100vh;
+		height: calc(var(--vh, 1vh) * 100);
 		overflow: hidden;
 		background-color: var(--color-background);
-		will-change: transform;
 		touch-action: pan-y;
 		-webkit-overflow-scrolling: touch;
-		transition: height var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
 		contain: paint layout;
 	}
 
@@ -575,6 +551,7 @@
 	@media (max-width: 768px) {
 		.globe-container {
 			overscroll-behavior-y: none;
+			height: calc(var(--vh, 1vh) * 100);
 		}
 
 		.globe-viewer {
@@ -592,7 +569,12 @@
 		}
 	}
 
-	@media (max-height: 500px) {
+	/* Landscape mobile */
+	@media (max-height: 500px) and (orientation: landscape) {
+		.globe-container {
+			height: calc(var(--vh, 1vh) * 100);
+		}
+
 		:global(.location-marker) {
 			font-size: 0.25rem !important;
 		}
@@ -606,6 +588,10 @@
 
 	/* Accessibility */
 	@media (prefers-reduced-motion: reduce) {
+		.globe-container {
+			transition: none;
+		}
+
 		.globe-viewer,
 		:global(.location-marker) {
 			transition: none;

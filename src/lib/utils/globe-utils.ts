@@ -70,15 +70,6 @@ export function setCameraPosition(
 }
 
 /**
- * 📐 Update viewport height CSS variable
- */
-export function updateVH(): void {
-	if (typeof window === 'undefined') return;
-	const vh = window.innerHeight * 0.01;
-	document.documentElement.style.setProperty('--vh', `${vh}px`);
-}
-
-/**
  * 📷 Update camera aspect ratio
  */
 export function updateCameraAspect(camera: any): void {

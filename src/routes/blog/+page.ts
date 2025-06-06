@@ -1,4 +1,4 @@
-import { getAllPosts } from '$lib/post-handlers';
+import { getAllPosts } from '$lib/utils';
 
 export async function load() {
 	const allPosts = await getAllPosts();

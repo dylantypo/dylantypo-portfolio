@@ -1,3 +1,4 @@
+// src/lib/utils/index.ts
 export { debounce } from './debounce';
 
 export {
@@ -13,7 +14,6 @@ export {
 	calculateCloudsRotationSpeed,
 	calculateIdealDistance,
 	setCameraPosition,
-	updateVH,
 	updateCameraAspect,
 	findFocusedCity,
 	type Region,
@@ -38,3 +38,13 @@ export {
 	type ThreeModules,
 	type GlobeModules
 } from './module-loader';
+
+export { viewportManager } from './viewport-manager';
+
+export {
+	getAllPosts,
+	getPostBySlug,
+	type BlogPostMetadata,
+	type PostLink,
+	type ResolvedBlogPost
+} from './post-handlers';

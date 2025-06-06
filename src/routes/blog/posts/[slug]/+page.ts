@@ -1,4 +1,4 @@
-import { getPostBySlug } from '$lib/post-handlers';
+import { getPostBySlug } from '$lib/utils';
 import { error } from '@sveltejs/kit';
 
 export async function load({ params }) {

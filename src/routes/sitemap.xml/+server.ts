@@ -1,4 +1,4 @@
-import { getAllPosts } from '$lib/post-handlers';
+import { getAllPosts } from '$lib/utils';
 import { create } from 'xmlbuilder2';
 
 export const prerender = true;

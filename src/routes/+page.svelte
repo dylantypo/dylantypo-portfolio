@@ -1,5 +1,5 @@
 <script lang="ts">
-	import LandingPage from '$lib/LandingPage.svelte';
+	import LandingPage from '$lib/components/LandingPage.svelte';
 	import MainContent from '$lib/mainContent.svelte';
 	import { onMount } from 'svelte';
 
@@ -15,7 +15,7 @@
 		try {
 			const [{ default: Globe }, { default: ToolBar }] = await Promise.all([
 				import('$lib/globe.svelte'),
-				import('$lib/ToolBar.svelte')
+				import('$lib/components/ToolBar.svelte')
 			]);
 
 			GlobeComponent = Globe;

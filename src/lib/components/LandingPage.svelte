@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
+	import { viewportManager } from '$lib/utils/viewport-manager';
 
 	let { onEnter } = $props<{ onEnter: () => void }>();
 
@@ -25,10 +26,13 @@
 	onMount(() => {
 		if (!browser) return;
 
-		document.body.style.overflow = 'hidden';
-		document.documentElement.style.overflow = 'hidden';
+		// 🎯 Initialize viewport manager first
+		viewportManager.init();
 
-		// Prevent touch scrolling on mobile
+		// 🔒 Use centralized body overflow management
+		viewportManager.setBodyOverflow('hidden', 'landing-page');
+
+		// 🚫 Prevent touch scrolling on mobile
 		const preventTouch = (e: TouchEvent) => {
 			if (e.touches.length > 1) return; // Allow pinch zoom
 			e.preventDefault();
@@ -37,6 +41,7 @@
 		document.addEventListener('touchmove', preventTouch, { passive: false });
 
 		checkFonts();
+
 		return () => {
 			document.removeEventListener('touchmove', preventTouch);
 		};
@@ -44,13 +49,13 @@
 
 	onDestroy(() => {
 		if (!browser) return;
-		document.body.style.overflow = '';
-		document.documentElement.style.overflow = '';
+		// 🔓 Remove body overflow using centralized manager
+		viewportManager.removeBodyOverflow('landing-page');
 	});
 
 	function handleEnter() {
-		document.body.style.overflow = '';
-		document.documentElement.style.overflow = '';
+		// 🔓 Remove body overflow before transitioning
+		viewportManager.removeBodyOverflow('landing-page');
 		onEnter();
 	}
 </script>
@@ -60,7 +65,6 @@
 	<div class="welcome-text">Welcome 🌎</div>
 
 	<!-- Loading/Enter Button -->
-	<!-- ✅ SIMPLIFIED button state -->
 	<button
 		class="enter-button"
 		class:loading={!ready}
@@ -80,6 +84,7 @@
 		left: 0;
 		width: 100vw;
 		height: 100vh;
+		height: calc(var(--vh, 1vh) * 100);
 		background-color: var(--color-background);
 		display: flex;
 		flex-direction: column;
@@ -98,7 +103,11 @@
 		color: var(--color-text-primary);
 		letter-spacing: -0.02em;
 		font-weight: 750;
-		animation: fadeIn 0.6s ease-out;
+		animation: fadeIn 0.25s ease-out;
+		text-align: center;
+		white-space: nowrap;
+		max-width: 90vw;
+		overflow: hidden;
 	}
 
 	.enter-button {
@@ -159,15 +168,18 @@
 		}
 	}
 
-	/* Mobile adjustments */
+	/* 📱 Mobile adjustments */
 	@media (max-width: 768px) {
 		.landing-container {
 			gap: 2rem;
+			height: 100vh;
+			height: calc(var(--vh, 1vh) * 100);
 		}
 
 		.welcome-text {
-			font-size: clamp(2.5rem, 6vw, 4rem);
+			font-size: clamp(2.5rem, 8vw, 4rem);
 			font-weight: 600;
+			max-width: 85vw;
 		}
 
 		.enter-button {
@@ -176,7 +188,17 @@
 		}
 	}
 
-	/* Reduced motion */
+	/* 🔄 Orientation change handling */
+	@media (max-height: 500px) and (orientation: landscape) {
+		.landing-container {
+			gap: 1.5rem;
+		}
+
+		.welcome-text {
+			font-size: clamp(2rem, 6vh, 3rem);
+		}
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.welcome-text {
 			animation: none;

@@ -1,4 +1,3 @@
-// src/lib/post-handlers.ts
 export type BlogPostMetadata = {
 	title: string;
 	date: string;
@@ -17,14 +16,14 @@ export type ResolvedBlogPost = {
 	slug: string;
 };
 
-const posts = import.meta.glob('../posts/*.md');
+const posts = import.meta.glob('../../posts/*.md');
 
 export async function getAllPosts(): Promise<PostLink[]> {
 	const iterablePostFiles = Object.entries(posts);
 
 	const postJobs = iterablePostFiles.map(async ([path, resolver]) => {
 		const { metadata } = (await resolver()) as { metadata: BlogPostMetadata };
-		const postPath = path.replace('../posts/', '').replace('.md', '');
+		const postPath = path.replace('../../posts/', '').replace('.md', '');
 		return { metadata, postPath };
 	});
 
@@ -41,7 +40,7 @@ export async function getAllPosts(): Promise<PostLink[]> {
 }
 
 export async function getPostBySlug(slug: string): Promise<ResolvedBlogPost> {
-	const postPath = `../posts/${slug}.md`;
+	const postPath = `../../posts/${slug}.md`;
 
 	if (!(postPath in posts)) {
 		throw new Error(`Post not found: ${slug}`);

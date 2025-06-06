@@ -1,14 +1,10 @@
 <script lang="ts">
-	import gsap from 'gsap';
 	import { onMount } from 'svelte';
-	import { debounce } from '$lib/utils/debounce';
-	import Skills from '$lib/skills.svelte';
-	import History from '$lib/history.svelte';
+	import { viewportManager, loadGlobeModules } from '$lib/utils';
+	import Skills from '$lib/components/skills.svelte';
+	import History from '$lib/components/history.svelte';
 
 	let elements: HTMLElement[] = [];
-
-	let lastWidth = 0;
-	let lastHeight = 0;
 
 	function splitTextIntoLetters(text: string, highlight: boolean = false): string {
 		return text
@@ -25,31 +21,23 @@
 
 	onMount(() => {
 		const initializeAnimations = async () => {
+			const { gsap } = await loadGlobeModules();
 			const { ScrollTrigger } = await import('gsap/ScrollTrigger');
-			gsap.registerPlugin(ScrollTrigger);
-
-			const handleResize = debounce(() => {
-				const newWidth = window.innerWidth;
-				const newHeight = window.innerHeight;
-
-				// Only update if dimensions actually changed
-				if (newWidth === lastWidth && newHeight === lastHeight) return;
-
-				lastWidth = newWidth;
-				lastHeight = newHeight;
-
-				ScrollTrigger.refresh();
-			}, 500);
-
 			const { CustomEase } = await import('gsap/CustomEase');
-			gsap.registerPlugin(CustomEase);
+
+			gsap.registerPlugin(ScrollTrigger, CustomEase);
+			viewportManager.init();
+
+			const handleViewportChange = (event: CustomEvent) => {
+				ScrollTrigger.refresh();
+			};
 
 			CustomEase.create('waterRipple', 'M0,0 C0.2,0.4 0.4,0.8 1,1');
 
 			const ctx = gsap.context(() => {
 				elements = gsap.utils.toArray('.fade-in') as HTMLElement[];
 
-				elements.forEach((el, index) => {
+				elements.forEach((el) => {
 					const nodes = Array.from(el.childNodes);
 					el.innerHTML = '';
 					const originalContent = el.textContent;
@@ -69,9 +57,8 @@
 					});
 
 					const letters = el.querySelectorAll('.letter');
-
-					// 📱 Simple landscape detection for timing adjustment
-					const isLandscape = window.innerHeight < 500 && window.innerWidth > window.innerHeight;
+					const viewport = viewportManager.getViewportInfo();
+					const isLandscape = viewport.height < 500 && viewport.width > viewport.height;
 
 					const timeline = gsap.timeline({
 						scrollTrigger: {
@@ -109,24 +96,15 @@
 				ScrollTrigger.refresh();
 			});
 
-			// Add resize listener
-			window.addEventListener('resize', handleResize);
-
-			// Store initial dimensions
-			lastWidth = window.innerWidth;
-			lastHeight = window.innerHeight;
+			window.addEventListener('viewport:resize', handleViewportChange as EventListener);
 
 			return () => {
-				window.removeEventListener('resize', handleResize);
+				window.removeEventListener('viewport:resize', handleViewportChange as EventListener);
 				ctx.revert();
 			};
 		};
 
 		initializeAnimations();
-	});
-
-	$effect(() => {
-		// Effect for tracking elements if needed
 	});
 </script>
 
@@ -185,7 +163,7 @@
 	}
 
 	#footer-content {
-		padding-bottom: 10vh;
+		padding-bottom: calc(var(--vh, 1vh) * 10); /* Use managed viewport */
 		display: flex;
 		flex-direction: row;
 		justify-content: flex-start;
@@ -225,7 +203,7 @@
 	}
 
 	.section {
-		min-height: 30vh;
+		min-height: calc(var(--vh, 1vh) * 30);
 		height: auto;
 		display: flex;
 		flex-direction: column;
@@ -290,14 +268,14 @@
 
 	@media (max-height: 500px) and (orientation: landscape) {
 		.section {
-			min-height: 25vh;
+			min-height: calc(var(--vh, 1vh) * 25);
 		}
 	}
 
 	@media (max-width: 925px) {
 		.section {
 			align-items: center;
-			min-height: 35vh;
+			min-height: calc(var(--vh, 1vh) * 35);
 		}
 
 		.header {
@@ -313,7 +291,7 @@
 
 	@media (max-width: 610px) {
 		.section {
-			min-height: 40vh;
+			min-height: calc(var(--vh, 1vh) * 40);
 		}
 
 		.long-text {
@@ -326,7 +304,7 @@
 
 	@media (max-width: 480px) {
 		.section {
-			min-height: 45vh;
+			min-height: calc(var(--vh, 1vh) * 45);
 		}
 
 		.long-text {
@@ -336,7 +314,18 @@
 
 	@media (min-width: 1400px) {
 		.section {
-			min-height: 25vh;
+			min-height: calc(var(--vh, 1vh) * 25);
+		}
+	}
+
+	/* Accessibility */
+	@media (prefers-reduced-motion: reduce) {
+		:global(.letter) {
+			transition: none;
+		}
+
+		.headshot img {
+			transition: none;
 		}
 	}
 </style>
