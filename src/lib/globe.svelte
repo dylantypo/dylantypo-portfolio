@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import pkg from 'lodash';
+	import { debounce } from '$lib/utils';
 	import { browser } from '$app/environment';
-
-	const { debounce } = pkg;
 
 	// 🎯 Type-safe interface for Three.js modules
 	interface ThreeModules {
