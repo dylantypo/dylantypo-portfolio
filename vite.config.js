@@ -37,7 +37,7 @@ export default defineConfig(({ mode, command }) => {
 
 			rollupOptions: {
 				output: {
-					// 📦 Optimized chunking strategy
+					// 📦 OPTIMIZED chunking strategy for utils
 					manualChunks: (id) => {
 						// Critical path - keep small
 						if (id.includes('src/routes/+layout')) return 'layout';
@@ -59,15 +59,23 @@ export default defineConfig(({ mode, command }) => {
 						// Content processing
 						if (id.includes('marked') || id.includes('dompurify')) return 'markdown';
 
-						// Everything else from node_modules
-						if (
-							id.includes('node_modules') &&
-							!id.includes('three') &&
-							!id.includes('gsap') &&
-							!id.includes('marked') &&
-							!id.includes('dompurify')
-						) {
-							return 'vendor';
+						// Split specific heavy vendors
+						if (id.includes('node_modules')) {
+							if (id.includes('firebase')) return 'vendor-firebase';
+							if (id.includes('xmlbuilder2')) return 'vendor-xml';
+
+							if (id.includes('protobufjs') || id.includes('open-simplex-noise')) {
+								return 'vendor-small';
+							}
+
+							if (
+								!id.includes('three') &&
+								!id.includes('gsap') &&
+								!id.includes('marked') &&
+								!id.includes('dompurify')
+							) {
+								return 'vendor';
+							}
 						}
 					},
 
@@ -79,15 +87,24 @@ export default defineConfig(({ mode, command }) => {
 
 			// 🔧 Advanced build options
 			reportCompressedSize: isProd,
-			chunkSizeWarningLimit: 1000 // Warn for chunks > 1MB
+			chunkSizeWarningLimit: 800 // 🆕 Reduced from 1000kb to 800kb for better performance
 		},
 
-		// ⚡ Optimization settings
+		// ⚡ OPTIMIZED dependency settings
 		optimizeDeps: {
-			include: ['lodash', 'gsap', 'marked', 'dompurify'],
+			include: [
+				'gsap',
+				'marked',
+				'dompurify',
+				// 🆕 Pre-bundle utils that are used frequently
+				'$lib/utils/debounce',
+				'$lib/utils/device-utils'
+			],
 			exclude: [
 				'three', // Dynamic import
-				'three-globe' // Dynamic import
+				'three-globe', // Dynamic import
+				'$lib/utils/three-helpers', // 🆕 Large, loaded conditionally
+				'$lib/utils/module-loader' // 🆕 Dynamic by nature
 			]
 		},
 

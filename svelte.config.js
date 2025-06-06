@@ -18,15 +18,18 @@ const config = {
 			fallback: '200.html',
 			pages: 'build',
 			assets: 'build',
-			strict: false
+			strict: false,
+			precompress: true
 		}),
 		prerender: {
 			entries: ['*'],
 			handleMissingId: 'ignore',
-			crawl: true
+			crawl: true,
+			concurrency: 4
 		},
 		alias: {
-			$lib: path.resolve('./src/lib')
+			$lib: path.resolve('./src/lib'),
+			$utils: path.resolve('./src/lib/utils')
 		}
 	},
 	compilerOptions: {

@@ -36,13 +36,13 @@ export function setupLighting(THREE: any, scene: any): void {
 }
 
 /**
- * 🖥️ Setup and configure renderers
+ * 🖥️ Setup and configure renderers - FIXED: Only return what's used
  */
 export function setupRenderers(
 	THREE: any,
 	CSS2DRenderer: any,
 	container: HTMLElement
-): { renderer: any; labelRenderer: any; renderers: any[] } {
+): { renderer: any; renderers: any[] } {
 	const renderer = new THREE.WebGLRenderer();
 	const labelRenderer = new CSS2DRenderer();
 	const renderers = [renderer, labelRenderer];
@@ -66,7 +66,8 @@ export function setupRenderers(
 		container.appendChild(r.domElement);
 	});
 
-	return { renderer, labelRenderer, renderers };
+	// Return only renderer and renderers array (labelRenderer not needed separately)
+	return { renderer, renderers };
 }
 
 /**

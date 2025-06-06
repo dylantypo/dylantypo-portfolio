@@ -46,8 +46,10 @@
 	let threeModules: ThreeModules | null = null;
 	let globeModules: GlobeModules | null = null;
 
-	// Event handler storage
+	// Event handler storage - FIXED: Added proper cleanup tracking
 	let cleanupFn: (() => void) | undefined;
+	let intersectionObserver: IntersectionObserver | undefined;
+	let animationObserver: IntersectionObserver | undefined;
 
 	// Cache values
 	let lastWidth = browser ? window.innerWidth : 0;
@@ -224,8 +226,8 @@
 		container.setAttribute('role', 'region');
 		container.setAttribute('aria-label', "Interactive 3D Globe showing places I've lived");
 
-		// Setup intersection observer
-		const observer = new IntersectionObserver(
+		// Setup intersection observer - FIXED: Store reference for cleanup
+		intersectionObserver = new IntersectionObserver(
 			(entries) => {
 				if (entries[0].isIntersecting && !globeInitialized) {
 					globeInitialized = true;
@@ -234,7 +236,7 @@
 			},
 			{ rootMargin: '200px', threshold: 0.01 }
 		);
-		observer.observe(container);
+		intersectionObserver.observe(container);
 
 		async function initGlobe() {
 			if (!threeModules || !globeModules) return;
@@ -277,12 +279,8 @@
 				1000
 			);
 
-			// Setup renderers
-			const { renderer, labelRenderer, renderers } = setupRenderers(
-				THREE,
-				CSS2DRenderer,
-				container
-			);
+			// FIXED: Setup renderers - only use what we need
+			const { renderer, renderers } = setupRenderers(THREE, CSS2DRenderer, container);
 
 			// Setup lighting
 			setupLighting(THREE, scene);
@@ -423,7 +421,7 @@
 				isMobile ? 250 : 100
 			);
 
-			// Animation intersection observer
+			// Animation intersection observer - FIXED: Store reference
 			const handleIntersection = (entries: IntersectionObserverEntry[]) => {
 				entries.forEach((entry) => {
 					if (entry.isIntersecting) {
@@ -437,7 +435,7 @@
 				});
 			};
 
-			const animationObserver = new IntersectionObserver(handleIntersection, {
+			animationObserver = new IntersectionObserver(handleIntersection, {
 				root: null,
 				rootMargin: '0px',
 				threshold: 0.1
@@ -470,7 +468,7 @@
 			// Add event listeners
 			window.addEventListener('resize', handleResize);
 
-			// Setup cleanup
+			// FIXED: Improved cleanup with proper observer tracking
 			cleanupFn = () => {
 				if (animationFrameId) cancelAnimationFrame(animationFrameId);
 				window.removeEventListener('resize', handleResize);
@@ -495,13 +493,14 @@
 				}
 
 				if (container) container.innerHTML = '';
-				if (observer) observer.disconnect();
-				if (animationObserver) animationObserver.disconnect();
 			};
 		}
 	});
 
 	onDestroy(() => {
+		// FIXED: Proper cleanup of all observers
+		if (intersectionObserver) intersectionObserver.disconnect();
+		if (animationObserver) animationObserver.disconnect();
 		if (cleanupFn) cleanupFn();
 	});
 </script>
