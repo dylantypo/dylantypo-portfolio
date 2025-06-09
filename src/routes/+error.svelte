@@ -11,9 +11,15 @@
 </main>
 
 <style>
+	@font-face {
+		font-family: 'KenneyFuture';
+		src: url('/fonts/Kenney%20Future.woff2') format('woff2');
+		font-display: swap;
+	}
+
 	/* Global body styling */
 	main {
-		font-family: var(--font-family-base);
+		font-family: 'KenneyFuture', sans-serif;
 		background-color: var(--color-background);
 		width: 100%;
 		height: 100%;
