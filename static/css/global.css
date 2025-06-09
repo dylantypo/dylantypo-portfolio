@@ -45,7 +45,7 @@
 /* Font Face */
 @font-face {
 	font-family: 'KenneyFuture';
-	src: url('/fonts/Kenney Future.woff2') format('woff2');
+	src: url('/fonts/Kenney%20Future.woff2') format('woff2');
 	font-display: swap;
 }
 
