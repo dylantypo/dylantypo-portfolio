@@ -115,13 +115,6 @@
 </div>
 
 <style>
-	/* 🆕 Add OpenDyslexic font face */
-	@font-face {
-		font-family: 'OpenDyslexicMono';
-		src: url('/fonts/OpenDyslexicMono-Regular.woff2') format('woff2');
-		font-display: swap;
-	}
-
 	/* Base styles */
 	:global(body) {
 		margin: 0;
@@ -192,27 +185,20 @@
 		box-sizing: border-box;
 	}
 
-	/* 🆕 Conditional font family */
 	.resume-content.dyslexia-mode {
-		font-family: 'OpenDyslexicMono', monospace;
+		font-family: var(--font-family-dyslexic);
 	}
 
 	/* Typography styles */
 	:global(.resume-content) {
-		font-family:
-			'Inter',
-			-apple-system,
-			BlinkMacSystemFont,
-			'Segoe UI',
-			Roboto,
-			sans-serif;
+		font-family: var(--font-family-inter);
 		line-height: 1.25;
 		font-size: var(--font-size-base);
 	}
 
 	:global(.resume-content.dyslexia-mode) {
-		font-family: 'OpenDyslexicMono', monospace;
-		line-height: 1.4; /* Slightly increased for better readability */
+		font-family: var(--font-family-dyslexic);
+		line-height: 1.4;
 	}
 
 	:global(.resume-content h1) {
@@ -306,7 +292,7 @@
 
 	/* 🆕 Dyslexia button specific styles */
 	.dyslexia-button {
-		font-family: 'OpenDyslexicMono', monospace; /* Default font */
+		font-family: var(--font-family-dyslexic);
 		border: 2px solid transparent;
 		transition: all var(--transition-speed) ease;
 	}

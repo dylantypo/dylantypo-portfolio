@@ -106,6 +106,7 @@
 
 	/* 📄 Article */
 	.post-article {
+		font-family: var(--font-family-inter);
 		max-width: min(90vw, 800px);
 		margin: 0 auto;
 		background: rgba(255, 255, 255, 0.02);
