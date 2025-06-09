@@ -61,6 +61,12 @@
 </main>
 
 <style>
+	@font-face {
+		font-family: 'Inter';
+		src: url('/fonts/Inter-Regular.woff2') format('woff2');
+		font-display: swap;
+	}
+
 	.post-container {
 		min-height: 100vh;
 		background-color: var(--color-background);
@@ -106,7 +112,13 @@
 
 	/* 📄 Article */
 	.post-article {
-		font-family: var(--font-family-inter);
+		font-family:
+			'Inter',
+			-apple-system,
+			BlinkMacSystemFont,
+			'Segoe UI',
+			Roboto,
+			sans-serif;
 		max-width: min(90vw, 800px);
 		margin: 0 auto;
 		background: rgba(255, 255, 255, 0.02);

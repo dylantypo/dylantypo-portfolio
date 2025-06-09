@@ -115,6 +115,18 @@
 </div>
 
 <style>
+	@font-face {
+		font-family: 'Inter';
+		src: url('/fonts/Inter-Regular.woff2') format('woff2');
+		font-display: swap;
+	}
+
+	@font-face {
+		font-family: 'OpenDyslexicMono';
+		src: url('/fonts/OpenDyslexicMono-Regular.woff2') format('woff2');
+		font-display: swap;
+	}
+
 	/* Base styles */
 	:global(body) {
 		margin: 0;
@@ -186,18 +198,24 @@
 	}
 
 	.resume-content.dyslexia-mode {
-		font-family: var(--font-family-dyslexic);
+		font-family: 'OpenDyslexicMono', monospace;
 	}
 
 	/* Typography styles */
 	:global(.resume-content) {
-		font-family: var(--font-family-inter);
+		font-family:
+			'Inter',
+			-apple-system,
+			BlinkMacSystemFont,
+			'Segoe UI',
+			Roboto,
+			sans-serif;
 		line-height: 1.25;
 		font-size: var(--font-size-base);
 	}
 
 	:global(.resume-content.dyslexia-mode) {
-		font-family: var(--font-family-dyslexic);
+		font-family: 'OpenDyslexicMono', monospace;
 		line-height: 1.4;
 	}
 
@@ -292,7 +310,7 @@
 
 	/* 🆕 Dyslexia button specific styles */
 	.dyslexia-button {
-		font-family: var(--font-family-dyslexic);
+		font-family: 'OpenDyslexicMono', monospace;
 		border: 2px solid transparent;
 		transition: all var(--transition-speed) ease;
 	}
