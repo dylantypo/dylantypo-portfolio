@@ -13,13 +13,8 @@ export default defineConfig({
 		deps: {
 			optimizer: {
 				web: {
-					include: ['src/lib/utils/debounce', 'src/lib/utils/device-utils'],
-					exclude: [
-						'three',
-						'three-globe',
-						'src/lib/utils/three-helpers',
-						'src/lib/utils/module-loader'
-					]
+					include: [],
+					exclude: ['three', 'three-globe', '$lib/utils/three-helpers', '$lib/utils/module-loader']
 				}
 			}
 		},

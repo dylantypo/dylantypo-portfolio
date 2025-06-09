@@ -3,7 +3,6 @@
 	import { browser } from '$app/environment';
 	import ScrollIndicator from '$lib/components/ScrollIndicator.svelte';
 	import {
-		debounce,
 		categorizeDevice,
 		checkNetworkConditions,
 		getOptimizedTexturePath,

@@ -35,18 +35,26 @@ export async function loadThreeModules(): Promise<ThreeModules> {
  */
 export async function loadGlobeModules(): Promise<GlobeModules> {
 	try {
-		const [{ CSS2DRenderer }, { default: Globe }, { TrackballControls }, { gsap }, { CSSPlugin }] =
-			await Promise.all([
-				import('three/examples/jsm/renderers/CSS2DRenderer.js'),
-				import('three-globe'),
-				import('three/examples/jsm/controls/TrackballControls.js'),
-				import('gsap'),
-				import('gsap/CSSPlugin')
-			]);
+		// Import Globe differently to avoid frame-ticker issues
+		const [css2dModule, globeModule, controlsModule, gsapModule, cssModule] = await Promise.all([
+			import('three/examples/jsm/renderers/CSS2DRenderer.js'),
+			import('three-globe').catch(() => ({ default: null })),
+			import('three/examples/jsm/controls/TrackballControls.js'),
+			import('gsap'),
+			import('gsap/CSSPlugin')
+		]);
 
-		gsap.registerPlugin(CSSPlugin);
+		if (gsapModule.gsap && cssModule.CSSPlugin) {
+			gsapModule.gsap.registerPlugin(cssModule.CSSPlugin);
+		}
 
-		return { CSS2DRenderer, Globe, TrackballControls, gsap, CSSPlugin };
+		return {
+			CSS2DRenderer: css2dModule.CSS2DRenderer,
+			Globe: globeModule.default,
+			TrackballControls: controlsModule.TrackballControls,
+			gsap: gsapModule.gsap,
+			CSSPlugin: cssModule.CSSPlugin
+		};
 	} catch (error) {
 		console.error('❌ Failed to load globe modules:', error);
 		throw error;
