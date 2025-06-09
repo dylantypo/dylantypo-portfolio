@@ -67,8 +67,8 @@ export default defineConfig(({ mode, command }) => {
 		},
 
 		optimizeDeps: {
-			include: ['gsap', 'marked', 'dompurify'],
-			exclude: ['three', 'three-globe']
+			include: ['gsap', 'marked', 'dompurify', 'three-globe'],
+			exclude: ['three']
 		},
 
 		define: {

@@ -35,7 +35,6 @@ export async function loadThreeModules(): Promise<ThreeModules> {
  */
 export async function loadGlobeModules(): Promise<GlobeModules> {
 	try {
-		// Import Globe differently to avoid frame-ticker issues
 		const [css2dModule, globeModule, controlsModule, gsapModule, cssModule] = await Promise.all([
 			import('three/examples/jsm/renderers/CSS2DRenderer.js'),
 			import('three-globe').catch(() => ({ default: null })),
@@ -46,6 +45,12 @@ export async function loadGlobeModules(): Promise<GlobeModules> {
 
 		if (gsapModule.gsap && cssModule.CSSPlugin) {
 			gsapModule.gsap.registerPlugin(cssModule.CSSPlugin);
+		}
+
+		const Globe = globeModule.default || (globeModule as any).Globe || globeModule;
+
+		if (!Globe) {
+			throw new Error('Globe module not available');
 		}
 
 		return {

@@ -1,14 +1,11 @@
 <script lang="ts">
-	import Globe from '$lib/globe.svelte';
 	import { goto } from '$app/navigation';
-
-	let hero_text = ' Error 404: Page Not Found ';
 </script>
 
 <main>
 	<section class="message">
 		<button onclick={() => goto('/')}>
-			<h1>{hero_text}</h1>
+			<h1>Error 404: Page Not Found</h1>
 		</button>
 	</section>
 </main>
