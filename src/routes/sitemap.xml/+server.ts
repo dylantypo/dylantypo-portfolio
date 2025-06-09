@@ -5,7 +5,7 @@ export const prerender = true;
 
 export async function GET() {
 	const headers = {
-		'Cache-Control': 'max-age=0, s-maxage=3600', // 🚀 CDN cache for 1hr
+		'Cache-Control': 'max-age=0, s-maxage=86400',
 		'Content-Type': 'application/xml'
 	};
 
@@ -22,18 +22,13 @@ export async function GET() {
 }
 
 async function getSitemapXml(): Promise<string> {
-	const baseUrl = 'https://www.dylanposner.com';
+	const baseUrl = 'https://dylanposner.com';
 	const today = new Date().toISOString();
 
-	// 🚀 Structured XML with xmlbuilder2
 	const root = create({ version: '1.0', encoding: 'utf-8' }).ele('urlset', {
-		xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9',
-		'xmlns:xhtml': 'http://www.w3.org/1999/xhtml',
-		'xmlns:mobile': 'http://www.google.com/schemas/sitemap-mobile/1.0',
-		'xmlns:image': 'http://www.google.com/schemas/sitemap-image/1.1'
+		xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9'
 	});
 
-	// 📄 Static pages with priorities
 	const staticPages = [
 		{ url: '/', priority: '1.0', changefreq: 'monthly' },
 		{ url: '/resume', priority: '0.9', changefreq: 'monthly' },
@@ -58,7 +53,6 @@ async function getSitemapXml(): Promise<string> {
 			.up();
 	});
 
-	// 📝 Dynamic blog posts
 	try {
 		const allPosts = await getAllPosts();
 
@@ -86,14 +80,14 @@ async function getSitemapXml(): Promise<string> {
 		console.warn('⚠️ Failed to load blog posts for sitemap');
 	}
 
-	return root.end({ prettyPrint: false }); // 🚀 Compact output
+	return root.end({ prettyPrint: false });
 }
 
 function getFallbackSitemap(): string {
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://www.dylanposner.com/</loc>
+    <loc>https://dylanposner.com/</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
