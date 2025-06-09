@@ -42,11 +42,11 @@ export default defineConfig(({ mode, command }) => {
 						if (id.includes('/routes/blog/')) return 'route-blog';
 						if (id.includes('three/examples/')) return 'three-examples';
 						if (id.includes('three-globe') || id.includes('globe.svelte')) return 'globe';
-						if (id.includes('three') && !id.includes('three-globe')) return 'three-core';
 						if (id.includes('gsap')) return 'gsap';
 						if (id.includes('marked') || id.includes('dompurify')) return 'markdown';
 
 						if (id.includes('node_modules')) {
+							if (id.includes('three')) return 'vendor-three';
 							if (id.includes('firebase')) return 'vendor-firebase';
 							if (id.includes('xmlbuilder2')) return 'vendor-xml';
 							if (id.includes('protobufjs') || id.includes('open-simplex-noise')) {
