@@ -66,6 +66,24 @@
 						textShadow: '0 0 0px rgba(255,255,255,0)'
 					});
 
+					// 🚀 PRE-CALCULATE lighting intensities (performance fix)
+					const sectionRect = el.getBoundingClientRect();
+					const lightX = sectionRect.left + sectionRect.width * 0.2;
+					const lightY = sectionRect.top + sectionRect.height * 0.3;
+					const maxDistance = Math.sqrt(sectionRect.width ** 2 + sectionRect.height ** 2);
+
+					const lightingIntensities = Array.from(letters).map((letter) => {
+						const rect = letter.getBoundingClientRect();
+						const letterX = rect.left + rect.width / 2;
+						const letterY = rect.top + rect.height / 2;
+
+						const distance = Math.sqrt((letterX - lightX) ** 2 + (letterY - lightY) ** 2);
+						const normalizedDistance = distance / maxDistance;
+						const rawIntensity = Math.max(0.05, 1 - normalizedDistance);
+
+						return Math.pow(rawIntensity, 4.75) * 1.25;
+					});
+
 					// Scroll-triggered glow wave
 					const timeline = gsap.timeline({
 						scrollTrigger: {
@@ -76,36 +94,12 @@
 						}
 					});
 
-					// Calculate directional lighting intensity for each letter
-					const calculateLightIntensity = (letter: Element, index: number) => {
-						const rect = letter.getBoundingClientRect();
-						const sectionRect = el.getBoundingClientRect();
-
-						// Light source position (top-left, matching globe lighting)
-						const lightX = sectionRect.left + sectionRect.width * 0.2;
-						const lightY = sectionRect.top + sectionRect.height * 0.3;
-
-						// Letter position
-						const letterX = rect.left + rect.width / 2;
-						const letterY = rect.top + rect.height / 2;
-
-						// Distance from light source (normalized)
-						const distance = Math.sqrt((letterX - lightX) ** 2 + (letterY - lightY) ** 2);
-						const maxDistance = Math.sqrt(sectionRect.width ** 2 + sectionRect.height ** 2);
-						const normalizedDistance = distance / maxDistance;
-
-						// Closer to light = brighter (inverted distance with more contrast)
-						const rawIntensity = Math.max(0.05, 1 - normalizedDistance);
-						// Exaggerate the contrast curve
-						return Math.pow(rawIntensity, 5) * 2.5;
-					};
-
 					timeline.to(letters, {
-						textShadow: (index: number, target: Element) => {
-							const intensity = calculateLightIntensity(target, index);
-							const baseGlow = 20 * intensity;
+						textShadow: (index: number) => {
+							const intensity = lightingIntensities[index];
+							const baseGlow = 15 * intensity;
 							const midGlow = 25 * intensity;
-							const outerGlow = 3 * intensity;
+							const outerGlow = 35 * intensity;
 							const alpha1 = 0.35 * intensity;
 							const alpha2 = 0.4 * intensity;
 							const alpha3 = 0.2 * intensity;
@@ -114,7 +108,7 @@
 						},
 						stagger: {
 							amount: isLandscape ? 1.2 : 1.75,
-							from: 'start' // Sequential reveal like light sweeping across
+							from: 'start'
 						},
 						ease: 'waterRipple',
 						duration: 1.5
