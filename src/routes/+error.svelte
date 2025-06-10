@@ -19,7 +19,6 @@
 
 	/* Global body styling */
 	main {
-		font-family: 'KenneyFuture', sans-serif;
 		background-color: var(--color-background);
 		width: 100%;
 		height: 100%;
@@ -37,6 +36,7 @@
 	}
 
 	.message button {
+		font-family: 'KenneyFuture', sans-serif;
 		cursor: pointer !important;
 		display: flex;
 		justify-content: center;

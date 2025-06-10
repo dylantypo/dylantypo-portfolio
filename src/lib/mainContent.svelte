@@ -147,10 +147,13 @@
 		</p>
 		<button class="headshot" aria-label="View contact information">
 			<img
-				src="profile.webp"
-				width="200"
-				height="200"
+				srcset="/icons/profile-100.webp 100w, /icons/profile-200.webp 200w, /icons/profile-400.webp 400w"
+				sizes="(max-width: 480px) 50px, (max-width: 925px) 75px, 95px"
+				src="/icons/profile-200.webp"
+				width="95"
+				height="95"
 				alt="Stylized avatar headshot created by Midjourney"
+				loading="lazy"
 			/>
 		</button>
 	</footer>

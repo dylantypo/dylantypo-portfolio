@@ -280,8 +280,8 @@
 			const globe = new Globe()
 				.showAtmosphere(true)
 				.atmosphereAltitude(0.1)
-				.globeImageUrl(getOptimizedTexturePath('/geo/2_no_clouds_4k.jpg', devicePixelCategory))
-				.bumpImageUrl(getOptimizedTexturePath('/geo/elev_bump_4k.jpg', devicePixelCategory))
+				.globeImageUrl(getOptimizedTexturePath('/geo/2_no_clouds_4k.webp', devicePixelCategory))
+				.bumpImageUrl(getOptimizedTexturePath('/geo/elev_bump_4k.webp', devicePixelCategory))
 				.pointsData(labData)
 				.pointAltitude((d: any) => Math.max(MIN_ALTITUDE, d.years * 0.01))
 				.pointColor(() => 'rgba(255, 255, 255, 0.55)')
@@ -304,7 +304,7 @@
 			const Clouds = new THREE.Mesh(cloudsGeometry);
 
 			new THREE.TextureLoader().load(
-				getOptimizedTexturePath('/geo/fair_clouds_4k.png', devicePixelCategory),
+				getOptimizedTexturePath('/geo/fair_clouds_4k.webp', devicePixelCategory),
 				(cloudsTexture: any) => {
 					Clouds.material = new THREE.MeshPhongMaterial({
 						map: cloudsTexture,
