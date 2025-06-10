@@ -26,11 +26,32 @@
 			gsap.registerPlugin(ScrollTrigger, CustomEase);
 			viewportManager.init();
 
-			const handleViewportChange = (event: CustomEvent) => {
-				ScrollTrigger.refresh();
-			};
+			CustomEase.create('subtleGlow', 'M0,0 C0.3,0.6 0.7,0.9 1,1');
 
-			CustomEase.create('waterRipple', 'M0,0 C0.2,0.4 0.4,0.8 1,1');
+			function createLightingEffect(el: HTMLElement) {
+				const letters = el.querySelectorAll('.letter');
+				const viewport = viewportManager.getViewportInfo();
+				const isLandscape = viewport.height < 500 && viewport.width > viewport.height;
+
+				const sectionRect = el.getBoundingClientRect();
+				const lightX = sectionRect.left + sectionRect.width * 0.15;
+				const lightY = sectionRect.top + sectionRect.height * 0.25;
+				const maxDistance = Math.sqrt(sectionRect.width ** 2 + sectionRect.height ** 2);
+
+				const lightingIntensities = Array.from(letters).map((letter) => {
+					const rect = letter.getBoundingClientRect();
+					const letterX = rect.left + rect.width / 2;
+					const letterY = rect.top + rect.height / 2;
+
+					const distance = Math.sqrt((letterX - lightX) ** 2 + (letterY - lightY) ** 2);
+					const normalizedDistance = distance / maxDistance;
+					const rawIntensity = Math.max(0.1, 1 - normalizedDistance);
+
+					return Math.pow(rawIntensity, 5) * 1.5;
+				});
+
+				return { letters, lightingIntensities, isLandscape };
+			}
 
 			const ctx = gsap.context(() => {
 				elements = gsap.utils.toArray('.fade-in') as HTMLElement[];
@@ -54,67 +75,75 @@
 						}
 					});
 
-					const letters = el.querySelectorAll('.letter');
-					const viewport = viewportManager.getViewportInfo();
-					const isLandscape = viewport.height < 500 && viewport.width > viewport.height;
+					const { letters, lightingIntensities, isLandscape } = createLightingEffect(el);
 
-					// Text starts visible with no glow
 					gsap.set(letters, {
 						opacity: 1,
 						textShadow: '0 0 0px rgba(255,255,255,0)'
 					});
 
-					// 🚀 PRE-CALCULATE lighting intensities (performance fix)
-					const sectionRect = el.getBoundingClientRect();
-					const lightX = sectionRect.left + sectionRect.width * 0.2;
-					const lightY = sectionRect.top + sectionRect.height * 0.3;
-					const maxDistance = Math.sqrt(sectionRect.width ** 2 + sectionRect.height ** 2);
-
-					const lightingIntensities = Array.from(letters).map((letter) => {
-						const rect = letter.getBoundingClientRect();
-						const letterX = rect.left + rect.width / 2;
-						const letterY = rect.top + rect.height / 2;
-
-						const distance = Math.sqrt((letterX - lightX) ** 2 + (letterY - lightY) ** 2);
-						const normalizedDistance = distance / maxDistance;
-						const rawIntensity = Math.max(0.05, 1 - normalizedDistance);
-
-						return Math.pow(rawIntensity, 4.75) * 1.25;
+					gsap.set(el.querySelectorAll('.letter:not(.highlight)'), {
+						color: 'rgba(255,255,255,0.15)'
 					});
 
-					// Scroll-triggered glow wave
 					const timeline = gsap.timeline({
 						scrollTrigger: {
 							trigger: el,
 							start: isLandscape ? 'top 85%' : 'top 75%',
 							end: () => `+=${el.offsetHeight}`,
-							scrub: isLandscape ? 1.2 : 1.75
+							scrub: isLandscape ? 1.2 : 1.6
 						}
 					});
 
 					timeline.to(letters, {
 						textShadow: (index: number) => {
 							const intensity = lightingIntensities[index];
-							const baseGlow = 15 * intensity;
-							const midGlow = 25 * intensity;
-							const outerGlow = 35 * intensity;
-							const alpha1 = 0.35 * intensity;
-							const alpha2 = 0.4 * intensity;
-							const alpha3 = 0.2 * intensity;
 
-							return `0 0 ${baseGlow}px rgba(255,255,255,${alpha1}), 0 0 ${midGlow}px rgba(153,191,128,${alpha2}), 0 0 ${outerGlow}px rgba(191,153,128,${alpha3})`;
+							const sunCore = 8 * intensity;
+							const sunGlow = 12 * intensity;
+							const chromeSharp = 10 * intensity;
+							const chromeGlow = 15 * intensity;
+							const edgeWarm = 12 * intensity;
+							const edgeSoft = 18 * intensity;
+							const deepGlow = 75 * intensity;
+
+							const coreAlpha = Math.min(0.9, 0.7 * intensity);
+							const chromeAlpha = Math.min(0.7, 0.5 * intensity);
+							const edgeAlpha = Math.min(0.6, 0.45 * intensity);
+							const deepAlpha = Math.min(0.4, 0.3 * intensity);
+
+							return [
+								`0 0 ${sunCore}px rgba(255,255,255,${coreAlpha})`,
+								`0 0 ${sunGlow}px rgba(255,255,255,${coreAlpha * 0.6})`,
+								`0 0 ${chromeSharp}px rgba(0,200,255,${chromeAlpha})`,
+								`0 0 ${chromeGlow}px rgba(0,160,255,${chromeAlpha * 0.8})`,
+								`0 0 ${edgeWarm}px rgba(255,80,0,${edgeAlpha})`,
+								`0 0 ${edgeSoft}px rgba(255,40,0,${edgeAlpha * 0.9})`,
+								`0 0 ${deepGlow}px rgba(180,0,255,${deepAlpha})`
+							].join(', ');
+						},
+						color: (index: number, target: any) => {
+							return target.classList.contains('highlight') ? undefined : 'rgba(255,255,255,1.0)';
 						},
 						stagger: {
-							amount: isLandscape ? 1.2 : 1.75,
-							from: 'start'
+							amount: isLandscape ? 1.8 : 2.4,
+							from: 'start',
+							ease: 'power2.out'
 						},
-						ease: 'waterRipple',
-						duration: 1.5
+						ease: 'power2.out',
+						duration: 2.2
 					});
 				});
 
 				ScrollTrigger.refresh();
 			});
+
+			const handleViewportChange = (event: CustomEvent) => {
+				elements.forEach((el) => {
+					createLightingEffect(el);
+				});
+				ScrollTrigger.refresh();
+			};
 
 			window.addEventListener('viewport:resize', handleViewportChange as EventListener);
 
@@ -135,10 +164,9 @@
 		class="long-text fade-in"
 		aria-label="I'm a versatile data scientist, expertly crafting cutting-edge analytics that illuminate data from fresh and inventive perspectives."
 	>
-		I'm a versatile data scientist, expertly crafting <!-- First segment -->
+		I'm a versatile data scientist, expertly crafting
 		<span class="highlighted-text">cutting-edge</span>
-		<!-- Highlighted -->
-		analytics that illuminate data from fresh and inventive perspectives. <!-- Last segment -->
+		analytics that illuminate data from fresh and inventive perspectives.
 	</div>
 </article>
 
@@ -149,10 +177,9 @@
 		class="long-text fade-in"
 		aria-label="Nearly half a decade of diverse experience, enhancing data-driven decisions with a unique blend of creativity and innovation."
 	>
-		Nearly half a decade of diverse experience, enhancing <!-- First segment -->
+		Nearly half a decade of diverse experience, enhancing
 		<span class="highlighted-text">data-driven</span>
-		<!-- Highlighted -->
-		decisions with a unique blend of creativity and innovation. <!-- Last segment -->
+		decisions with a unique blend of creativity and innovation.
 	</div>
 </article>
 
@@ -187,8 +214,6 @@
 		color: var(--color-text-primary);
 		max-width: 100%;
 		font-family: var(--font-family-base);
-		transform-style: preserve-3d;
-		perspective: 2000px;
 		position: relative;
 		overflow: visible;
 		contain: layout style;
@@ -199,16 +224,15 @@
 
 	:global(.letter) {
 		display: inline-block;
-		transform-style: preserve-3d;
-		backface-visibility: hidden;
-		perspective: 1000px;
-		will-change: transform, opacity;
-		transition: color var(--transition-speed) ease;
+		will-change: text-shadow, color;
+		transition: none;
+		color: rgba(255, 255, 255, 0.15);
 	}
 
 	:global(.letter.highlight) {
-		color: var(--color-secondary);
-		text-shadow: 0 0 2px rgba(20, 184, 166, 0.3);
+		color: var(--color-secondary) !important;
+		text-shadow: 0 0 8px rgba(20, 184, 166, 0.8) !important;
+		font-weight: 700;
 	}
 
 	:global(.word-container) {
@@ -216,7 +240,6 @@
 		margin-right: clamp(0.15em, 0.3vw, 0.4em);
 		min-height: 1.3em;
 		vertical-align: middle;
-		perspective: 1000px;
 		overflow: visible;
 	}
 
@@ -272,10 +295,10 @@
 		}
 	}
 
-	/* Accessibility */
 	@media (prefers-reduced-motion: reduce) {
 		:global(.letter) {
 			transition: none;
+			will-change: auto;
 		}
 	}
 </style>
