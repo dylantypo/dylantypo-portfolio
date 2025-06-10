@@ -12,7 +12,7 @@ Chicago, IL | (202) 770-7698 | dylantylerposner@gmail.com | [dylanposner.com](ht
 
 ## Summary
 
-Data Scientist with 3+ years specializing in data visualization and automation. Experienced in building Tableau dashboards, ETL pipelines, cloud infrastructure, and Python-based validation frameworks. Track record of turning complex data into actionable insights through AWS, ML solutions, and agile methodologies.
+Data Scientist with 3+ years specializing in data visualization, automation, and real-time analytics. Experienced in building Tableau dashboards, ETL pipelines, cloud infrastructure, Splunk monitoring systems, and Python-based validation frameworks. Track record of turning complex data into actionable insights through AWS, ML solutions, cross-functional leadership, and agile methodologies.
 
 ---
 
@@ -22,11 +22,19 @@ Data Scientist with 3+ years specializing in data visualization and automation. 
 
 **Data Scientist (Senior Consultant)** | September 13, 2021 - Present
 
+#### LCMP KC-46
+
+- Architected 5+ real-time Tableau dashboards processing millions of AWS Athena records for high-visibility stakeholder decisions
+- Led dashboard development integrating complex client requirements for critical asset categorization and tracking
+- Developed real-time Splunk alerts and timeline visualizations with dynamic adjustments aligned to email notifications
+- Optimized data pipeline via DB Connect app, replacing static lookups with direct AWS connections, saving 5+ hours weekly
+- Built user-friendly repair tracking interfaces, streamlining status categorization and contributing factor analysis
+
 #### LCMP Sentinel
 
-- Architected and implemented a Python automation pipeline using Tkinter, reducing PowerPoint generation time from 3 days to 30 minutes and saving over 100 manual hours per quarter
-- Led development of AWS-integrated Middleweight Query Tool, processing over 10,000 checklist items monthly for data-driven decision making
-- Optimized Tableau dashboards and ETL scripts, improving data processing speed by 40% and enabling real-time analytics for 200+ users
+- Architected Python automation pipeline using Tkinter, reducing report generation from 3 days to 30 minutes, saving 100+ hours quarterly
+- Led development of AWS-integrated query tool processing 10,000+ checklist items monthly for data-driven decisions
+- Optimized Tableau dashboards and ETL scripts, improving processing speed by 40% and enabling real-time analytics for 200+ users
 - Processed and visualized quarterly survey data from 500+ respondents to drive strategic planning initiatives
 
 #### FinCen (FinLab)

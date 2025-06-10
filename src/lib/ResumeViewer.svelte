@@ -193,7 +193,7 @@
 	}
 
 	.resume-content {
-		padding: 4cqmin;
+		padding: 8cqmin;
 		box-sizing: border-box;
 	}
 
@@ -485,6 +485,7 @@
 
 		/* 📏 Force exact same font rendering */
 		:global(.resume-content *) {
+			font-family: 'Times New Roman', serif !important;
 			-webkit-font-smoothing: antialiased !important;
 			-moz-osx-font-smoothing: grayscale !important;
 			text-rendering: optimizeLegibility !important;
