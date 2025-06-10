@@ -64,8 +64,8 @@
 					const timeline = gsap.timeline({
 						scrollTrigger: {
 							trigger: el,
-							start: isLandscape ? 'top 85%' : 'top 75%',
-							end: isLandscape ? 'top 60%' : 'top 50%',
+							start: isLandscape ? 'top 88%' : 'top 78%',
+							end: isLandscape ? 'top 45%' : 'top 35%',
 							scrub: isLandscape ? 1 : 1.5
 						}
 					});
@@ -75,7 +75,7 @@
 							if (target.classList.contains('highlight')) return undefined;
 							return '0 0 15px rgba(255,255,255,0.8), 0 0 25px rgba(255,255,255,0.4)';
 						},
-						color: (index: number, target: any) => {
+						color: (_index: number, target: any) => {
 							return target.classList.contains('highlight') ? undefined : 'rgba(255,255,255,1)';
 						},
 						stagger: {
@@ -83,14 +83,14 @@
 							from: 'start'
 						},
 						ease: 'power2.out',
-						duration: 0.2
+						duration: 0.25
 					});
 
 					timeline.to(
 						letters,
 						{
 							textShadow: 'none',
-							color: (index: number, target: any) => {
+							color: (_index: number, target: any) => {
 								return target.classList.contains('highlight') ? undefined : '';
 							},
 							stagger: {
@@ -98,9 +98,9 @@
 								from: 'start'
 							},
 							ease: 'power2.out',
-							duration: 0.2
+							duration: 0.25
 						},
-						'-=0.1'
+						'-=0.15'
 					);
 				});
 
