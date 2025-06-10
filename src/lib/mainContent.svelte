@@ -60,6 +60,13 @@
 					const viewport = viewportManager.getViewportInfo();
 					const isLandscape = viewport.height < 500 && viewport.width > viewport.height;
 
+					// Text starts visible with no glow
+					gsap.set(letters, {
+						opacity: 1,
+						textShadow: '0 0 0px rgba(255,255,255,0)'
+					});
+
+					// Scroll-triggered glow wave
 					const timeline = gsap.timeline({
 						scrollTrigger: {
 							trigger: el,
@@ -69,28 +76,49 @@
 						}
 					});
 
-					timeline.fromTo(
-						letters,
-						{
-							opacity: 0,
-							y: '20%',
-							rotateX: '45deg',
-							transformOrigin: 'bottom',
-							scale: 0.5
+					// Calculate directional lighting intensity for each letter
+					const calculateLightIntensity = (letter: Element, index: number) => {
+						const rect = letter.getBoundingClientRect();
+						const sectionRect = el.getBoundingClientRect();
+
+						// Light source position (top-left, matching globe lighting)
+						const lightX = sectionRect.left + sectionRect.width * 0.2;
+						const lightY = sectionRect.top + sectionRect.height * 0.3;
+
+						// Letter position
+						const letterX = rect.left + rect.width / 2;
+						const letterY = rect.top + rect.height / 2;
+
+						// Distance from light source (normalized)
+						const distance = Math.sqrt((letterX - lightX) ** 2 + (letterY - lightY) ** 2);
+						const maxDistance = Math.sqrt(sectionRect.width ** 2 + sectionRect.height ** 2);
+						const normalizedDistance = distance / maxDistance;
+
+						// Closer to light = brighter (inverted distance with more contrast)
+						const rawIntensity = Math.max(0.05, 1 - normalizedDistance);
+						// Exaggerate the contrast curve
+						return Math.pow(rawIntensity, 5) * 2.5;
+					};
+
+					timeline.to(letters, {
+						textShadow: (index: number, target: Element) => {
+							const intensity = calculateLightIntensity(target, index);
+							const baseGlow = 20 * intensity;
+							const midGlow = 25 * intensity;
+							const outerGlow = 3 * intensity;
+							const alpha1 = 0.35 * intensity;
+							const alpha2 = 0.4 * intensity;
+							const alpha3 = 0.2 * intensity;
+
+							return `0 0 ${baseGlow}px rgba(255,255,255,${alpha1}), 0 0 ${midGlow}px rgba(153,191,128,${alpha2}), 0 0 ${outerGlow}px rgba(191,153,128,${alpha3})`;
 						},
-						{
-							opacity: 1,
-							y: '0%',
-							rotateX: '0deg',
-							scale: 1,
-							stagger: {
-								amount: isLandscape ? 1.2 : 1.75,
-								from: 'random'
-							},
-							ease: 'waterRipple',
-							duration: 1.5
-						}
-					);
+						stagger: {
+							amount: isLandscape ? 1.2 : 1.75,
+							from: 'start' // Sequential reveal like light sweeping across
+						},
+						ease: 'waterRipple',
+						duration: 1.5
+					});
 				});
 
 				ScrollTrigger.refresh();
