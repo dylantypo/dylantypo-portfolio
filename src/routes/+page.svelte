@@ -1,6 +1,9 @@
 <script lang="ts">
 	import LandingPage from '$lib/components/LandingPage.svelte';
-	import MainContent from '$lib/mainContent.svelte';
+	import IntroDetails from '$lib/components/introDetails.svelte';
+	import Skills from '$lib/components/skills.svelte';
+	import History from '$lib/components/history.svelte';
+	import Footer from '$lib/components/footer.svelte';
 	import { onMount } from 'svelte';
 
 	let hero_text = $state('Dylan Posner');
@@ -51,7 +54,15 @@
 				<GlobeComponent {hero_text} />
 			{/if}
 
-			<MainContent />
+			<span id="content">
+				<IntroDetails />
+
+				<History />
+
+				<Skills />
+
+				<Footer />
+			</span>
 		{/if}
 	</main>
 {/if}
@@ -63,6 +74,11 @@
 		min-height: 100dvh;
 		min-height: calc(var(--vh, 1vh) * 100);
 		background-color: var(--color-background);
+	}
+
+	#content {
+		color: var(--color-text-primary);
+		user-select: text;
 	}
 
 	.loading-skeleton {
