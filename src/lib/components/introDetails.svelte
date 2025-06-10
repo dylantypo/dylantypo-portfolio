@@ -21,37 +21,9 @@
 		const initializeAnimations = async () => {
 			const { gsap } = await loadGlobeModules();
 			const { ScrollTrigger } = await import('gsap/ScrollTrigger');
-			const { CustomEase } = await import('gsap/CustomEase');
 
-			gsap.registerPlugin(ScrollTrigger, CustomEase);
+			gsap.registerPlugin(ScrollTrigger);
 			viewportManager.init();
-
-			CustomEase.create('subtleGlow', 'M0,0 C0.3,0.6 0.7,0.9 1,1');
-
-			function createLightingEffect(el: HTMLElement) {
-				const letters = el.querySelectorAll('.letter');
-				const viewport = viewportManager.getViewportInfo();
-				const isLandscape = viewport.height < 500 && viewport.width > viewport.height;
-
-				const sectionRect = el.getBoundingClientRect();
-				const lightX = sectionRect.left + sectionRect.width * 0.15;
-				const lightY = sectionRect.top + sectionRect.height * 0.25;
-				const maxDistance = Math.sqrt(sectionRect.width ** 2 + sectionRect.height ** 2);
-
-				const lightingIntensities = Array.from(letters).map((letter) => {
-					const rect = letter.getBoundingClientRect();
-					const letterX = rect.left + rect.width / 2;
-					const letterY = rect.top + rect.height / 2;
-
-					const distance = Math.sqrt((letterX - lightX) ** 2 + (letterY - lightY) ** 2);
-					const normalizedDistance = distance / maxDistance;
-					const rawIntensity = Math.max(0.1, 1 - normalizedDistance);
-
-					return Math.pow(rawIntensity, 5) * 1.5;
-				});
-
-				return { letters, lightingIntensities, isLandscape };
-			}
 
 			const ctx = gsap.context(() => {
 				elements = gsap.utils.toArray('.fade-in') as HTMLElement[];
@@ -75,80 +47,74 @@
 						}
 					});
 
-					const { letters, lightingIntensities, isLandscape } = createLightingEffect(el);
+					const letters = el.querySelectorAll('.letter');
+					const viewport = viewportManager.getViewportInfo();
+					const isLandscape = viewport.height < 500 && viewport.width > viewport.height;
 
 					gsap.set(letters, {
 						opacity: 1,
-						textShadow: '0 0 0px rgba(255,255,255,0)'
-					});
-
-					gsap.set(el.querySelectorAll('.letter:not(.highlight)'), {
-						color: 'rgba(255,255,255,0.15)'
+						textShadow: 'none',
+						color: (_index: number, target: any) => {
+							return target.classList.contains('highlight')
+								? 'var(--color-secondary)'
+								: 'rgba(255,255,255,0.3)';
+						}
 					});
 
 					const timeline = gsap.timeline({
 						scrollTrigger: {
 							trigger: el,
 							start: isLandscape ? 'top 85%' : 'top 75%',
-							end: () => `+=${el.offsetHeight}`,
-							scrub: isLandscape ? 1.2 : 1.6
+							end: isLandscape ? 'top 60%' : 'top 50%',
+							scrub: isLandscape ? 1 : 1.5
 						}
 					});
 
 					timeline.to(letters, {
-						textShadow: (index: number) => {
-							const intensity = lightingIntensities[index];
-
-							const sunCore = 8 * intensity;
-							const sunGlow = 12 * intensity;
-							const chromeSharp = 10 * intensity;
-							const chromeGlow = 15 * intensity;
-							const edgeWarm = 12 * intensity;
-							const edgeSoft = 18 * intensity;
-							const deepGlow = 75 * intensity;
-
-							const coreAlpha = Math.min(0.9, 0.7 * intensity);
-							const chromeAlpha = Math.min(0.7, 0.5 * intensity);
-							const edgeAlpha = Math.min(0.6, 0.45 * intensity);
-							const deepAlpha = Math.min(0.4, 0.3 * intensity);
-
-							return [
-								`0 0 ${sunCore}px rgba(255,255,255,${coreAlpha})`,
-								`0 0 ${sunGlow}px rgba(255,255,255,${coreAlpha * 0.6})`,
-								`0 0 ${chromeSharp}px rgba(0,200,255,${chromeAlpha})`,
-								`0 0 ${chromeGlow}px rgba(0,160,255,${chromeAlpha * 0.8})`,
-								`0 0 ${edgeWarm}px rgba(255,80,0,${edgeAlpha})`,
-								`0 0 ${edgeSoft}px rgba(255,40,0,${edgeAlpha * 0.9})`,
-								`0 0 ${deepGlow}px rgba(180,0,255,${deepAlpha})`
-							].join(', ');
+						textShadow: (_index: number, target: any) => {
+							if (target.classList.contains('highlight')) return undefined;
+							return '0 0 15px rgba(255,255,255,0.8), 0 0 25px rgba(255,255,255,0.4)';
 						},
 						color: (index: number, target: any) => {
-							return target.classList.contains('highlight') ? undefined : 'rgba(255,255,255,1.0)';
+							return target.classList.contains('highlight') ? undefined : 'rgba(255,255,255,1)';
 						},
 						stagger: {
-							amount: isLandscape ? 1.8 : 2.4,
-							from: 'start',
-							ease: 'power2.out'
+							amount: isLandscape ? 1.2 : 1.6,
+							from: 'start'
 						},
 						ease: 'power2.out',
-						duration: 2.2
+						duration: 0.2
 					});
+
+					timeline.to(
+						letters,
+						{
+							textShadow: 'none',
+							color: (index: number, target: any) => {
+								return target.classList.contains('highlight') ? undefined : '';
+							},
+							stagger: {
+								amount: isLandscape ? 1.2 : 1.6,
+								from: 'start'
+							},
+							ease: 'power2.out',
+							duration: 0.2
+						},
+						'-=0.1'
+					);
 				});
 
 				ScrollTrigger.refresh();
 			});
 
-			const handleViewportChange = (event: CustomEvent) => {
-				elements.forEach((el) => {
-					createLightingEffect(el);
-				});
+			const handleViewportChange = () => {
 				ScrollTrigger.refresh();
 			};
 
-			window.addEventListener('viewport:resize', handleViewportChange as EventListener);
+			window.addEventListener('viewport:resize', handleViewportChange);
 
 			return () => {
-				window.removeEventListener('viewport:resize', handleViewportChange as EventListener);
+				window.removeEventListener('viewport:resize', handleViewportChange);
 				ctx.revert();
 			};
 		};
@@ -226,12 +192,11 @@
 		display: inline-block;
 		will-change: text-shadow, color;
 		transition: none;
-		color: rgba(255, 255, 255, 0.15);
 	}
 
 	:global(.letter.highlight) {
 		color: var(--color-secondary) !important;
-		text-shadow: 0 0 8px rgba(20, 184, 166, 0.8) !important;
+		text-shadow: 0 0 8px rgba(20, 184, 166, 0.4) !important;
 		font-weight: 700;
 	}
 
