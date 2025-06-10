@@ -128,11 +128,11 @@
 	<div
 		id="aboutMe-content"
 		class="long-text fade-in"
-		aria-label="I'm a versatile data scientist, expertly crafting cutting-edge analytics that illuminate data from fresh and inventive perspectives."
+		aria-label="I'm a creative thinker bringing global perspective to data science that makes real impact."
 	>
-		I'm a versatile data scientist, expertly crafting
-		<span class="highlighted-text">cutting-edge</span>
-		analytics that illuminate data from fresh and inventive perspectives.
+		I'm a creative thinker and problem solver bringing
+		<span class="highlighted-text">global</span>
+		perspective to data science that makes real impact.
 	</div>
 </article>
 
@@ -141,11 +141,11 @@
 	<div
 		id="experience-content"
 		class="long-text fade-in"
-		aria-label="Nearly half a decade of diverse experience, enhancing data-driven decisions with a unique blend of creativity and innovation."
+		aria-label="Nearly half a decade building cutting-edge infrastructure combining data science, automation, and modern web technologies."
 	>
-		Nearly half a decade of diverse experience, enhancing
-		<span class="highlighted-text">data-driven</span>
-		decisions with a unique blend of creativity and innovation.
+		Nearly half a decade building
+		<span class="highlighted-text">cutting-edge</span>
+		infrastructure combining data science, automation, and modern web technologies.
 	</div>
 </article>
 
