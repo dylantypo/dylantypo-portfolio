@@ -1,256 +1,211 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 
-	let canvas: HTMLCanvasElement;
-	let ctx: CanvasRenderingContext2D | null;
-	let animationId: number;
-	let staticStars: StaticStar[] = [];
-	let shootingStars: ShootingStar[] = [];
+	let starContainer: HTMLDivElement;
+	let mounted = false;
+	let hydrated = false;
+	let animationId: number = 0;
+	let stars: HTMLElement[] = [];
+	let shootingStars: HTMLElement[] = [];
 	let lastShootingStarTime = 0;
-	let isVisible = true;
-	let initialized = false;
 
-	type StaticStar = {
-		x: number;
-		y: number;
-		size: number;
-		brightness: number;
-		twinklePhase: number;
-		twinkleSpeed: number;
-		fadePhase: number;
-		fadeDirection: number;
-		nextFadeTime: number;
-	};
-
-	type ShootingStar = {
-		x: number;
-		y: number;
-		vx: number;
-		vy: number;
-		life: number;
-		maxLife: number;
-		size: number;
-		brightness: number;
-	};
-
-	function createStaticStar(): StaticStar {
-		return {
-			x: Math.random() * window.innerWidth,
-			y: Math.random() * window.innerHeight,
-			size: Math.random() * 1.5 + 0.5,
-			brightness: Math.random() * 0.6 + 0.4,
-			twinklePhase: Math.random() * 6.28,
-			twinkleSpeed: Math.random() * 0.02 + 0.01,
-			fadePhase: 1,
-			fadeDirection: 0,
-			nextFadeTime: Date.now() + Math.random() * 15000 + 5000
-		};
-	}
-
-	function createShootingStar(): ShootingStar {
-		const side = Math.floor(Math.random() * 4);
-		let x, y, vx, vy;
-		const width = window.innerWidth;
-		const height = window.innerHeight;
-
-		switch (side) {
-			case 0:
-				x = Math.random() * width;
-				y = -50;
-				vx = (Math.random() - 0.5) * 4;
-				vy = Math.random() * 3 + 2;
-				break;
-			case 1:
-				x = width + 50;
-				y = Math.random() * height;
-				vx = -(Math.random() * 3 + 2);
-				vy = (Math.random() - 0.5) * 4;
-				break;
-			case 2:
-				x = Math.random() * width;
-				y = height + 50;
-				vx = (Math.random() - 0.5) * 4;
-				vy = -(Math.random() * 3 + 2);
-				break;
-			default:
-				x = -50;
-				y = Math.random() * height;
-				vx = Math.random() * 3 + 2;
-				vy = (Math.random() - 0.5) * 4;
-		}
-
-		return {
-			x,
-			y,
-			vx,
-			vy,
-			life: 0,
-			maxLife: 60 + Math.random() * 80,
-			size: Math.random() * 2 + 1,
-			brightness: Math.random() * 0.4 + 0.6
-		};
-	}
-
-	function initStars() {
-		if (!canvas || !window || !window.innerWidth) return;
+	function generateInitialStars() {
+		if (!browser || !starContainer) return;
 
 		const isMobile = window.innerWidth < 768;
-		const starCount = isMobile ? 80 : 150;
+		const starCount = isMobile ? 60 : 120;
 
-		staticStars = Array.from({ length: starCount }, () => {
-			const star = createStaticStar();
-			star.nextFadeTime = Date.now() + Math.random() * 30000;
-			return star;
+		starContainer.innerHTML = '';
+		stars = [];
+
+		for (let i = 0; i < starCount; i++) {
+			const star = document.createElement('div');
+			star.className = 'star';
+
+			const x = Math.random() * 100;
+			const y = Math.random() * 100;
+			const size = Math.random() * 2 + 1;
+			const delay = Math.random() * 4;
+			const duration = Math.random() * 3 + 2;
+
+			star.style.cssText = `
+				left: ${x}%;
+				top: ${y}%;
+				width: ${size}px;
+				height: ${size}px;
+				animation-delay: ${delay}s;
+				animation-duration: ${duration}s;
+			`;
+
+			// Store fade time for JS enhancement
+			(star as any)._fadeTime = Date.now() + Math.random() * 30000 + 10000;
+			(star as any)._fading = false;
+
+			starContainer.appendChild(star);
+			stars.push(star);
+		}
+	}
+
+	function createShootingStar() {
+		if (!starContainer || !hydrated) return;
+
+		const shootingStar = document.createElement('div');
+		shootingStar.className = 'shooting-star dynamic';
+
+		const startSide = Math.floor(Math.random() * 4);
+		const width = window.innerWidth;
+		const height = window.innerHeight;
+		let startX, startY, endX, endY;
+
+		switch (startSide) {
+			case 0: // Top
+				startX = Math.random() * width;
+				startY = -50;
+				endX = startX + (Math.random() - 0.5) * 200;
+				endY = Math.random() * height * 0.7 + height * 0.3;
+				break;
+			case 1: // Right
+				startX = width + 50;
+				startY = Math.random() * height;
+				endX = Math.random() * width * 0.7;
+				endY = startY + (Math.random() - 0.5) * 200;
+				break;
+			case 2: // Bottom
+				startX = Math.random() * width;
+				startY = height + 50;
+				endX = startX + (Math.random() - 0.5) * 200;
+				endY = Math.random() * height * 0.7;
+				break;
+			default: // Left
+				startX = -50;
+				startY = Math.random() * height;
+				endX = Math.random() * width * 0.7 + width * 0.3;
+				endY = startY + (Math.random() - 0.5) * 200;
+		}
+
+		shootingStar.style.cssText = `
+			left: ${startX}px;
+			top: ${startY}px;
+			--end-x: ${endX}px;
+			--end-y: ${endY}px;
+		`;
+
+		(shootingStar as any)._startX = startX;
+		(shootingStar as any)._startY = startY;
+		(shootingStar as any)._endX = endX;
+		(shootingStar as any)._endY = endY;
+		(shootingStar as any)._life = 0;
+		(shootingStar as any)._maxLife = 120;
+
+		starContainer.appendChild(shootingStar);
+		shootingStars.push(shootingStar);
+	}
+
+	function updateStars() {
+		if (!hydrated || !mounted) return;
+
+		const now = Date.now();
+
+		// Update static stars for fade/relocate
+		stars.forEach((star) => {
+			const starEl = star as any;
+
+			if (!starEl._fading && now >= starEl._fadeTime) {
+				starEl._fading = true;
+				star.style.animation = 'twinkle 2s ease-in-out infinite, fadeOut 2s ease-out';
+
+				setTimeout(() => {
+					if (!mounted) return;
+
+					// Relocate star
+					const x = Math.random() * 100;
+					const y = Math.random() * 100;
+					star.style.left = `${x}%`;
+					star.style.top = `${y}%`;
+					star.style.animation = 'twinkle 2s ease-in-out infinite, fadeIn 2s ease-in';
+
+					starEl._fading = false;
+					starEl._fadeTime = now + Math.random() * 25000 + 15000;
+				}, 2000);
+			}
 		});
-		shootingStars = [];
-		initialized = true;
-	}
 
-	function updateStaticStar(star: StaticStar) {
-		star.twinklePhase += star.twinkleSpeed;
-		if (star.twinklePhase > 6.28) star.twinklePhase -= 6.28;
-
-		const now = Date.now();
-
-		if (star.fadeDirection === 0 && now >= star.nextFadeTime) {
-			star.fadeDirection = -1;
-		}
-
-		if (star.fadeDirection !== 0) {
-			star.fadePhase += star.fadeDirection * 0.02;
-
-			if (star.fadePhase <= 0) {
-				star.x = Math.random() * window.innerWidth;
-				star.y = Math.random() * window.innerHeight;
-				star.fadeDirection = 1;
-				star.fadePhase = 0;
-			} else if (star.fadePhase >= 1) {
-				star.fadePhase = 1;
-				star.fadeDirection = 0;
-				star.nextFadeTime = now + Math.random() * 20000 + 10000;
-			}
-		}
-	}
-
-	function animate() {
-		if (!ctx || !canvas || !isVisible || !initialized) return;
-
-		ctx.fillStyle = 'rgba(24, 24, 27, 0.02)';
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-		for (let i = 0; i < staticStars.length; i++) {
-			updateStaticStar(staticStars[i]);
-			drawStaticStar(staticStars[i]);
-		}
-
-		const now = Date.now();
-		if (now - lastShootingStarTime > 3000 + Math.random() * 7000) {
-			if (Math.random() < 0.3) {
-				shootingStars.push(createShootingStar());
-				lastShootingStarTime = now;
-			}
-		}
-
+		// Update shooting stars
 		for (let i = shootingStars.length - 1; i >= 0; i--) {
-			const star = shootingStars[i];
-			star.x += star.vx;
-			star.y += star.vy;
-			star.life++;
-			drawShootingStar(star);
+			const star = shootingStars[i] as any;
+			star._life++;
 
-			if (
-				star.life >= star.maxLife ||
-				star.x < -100 ||
-				star.x > canvas.width + 100 ||
-				star.y < -100 ||
-				star.y > canvas.height + 100
-			) {
+			const progress = star._life / star._maxLife;
+			const x = star._startX + (star._endX - star._startX) * progress;
+			const y = star._startY + (star._endY - star._startY) * progress;
+			const opacity = Math.sin(progress * Math.PI) * 0.8;
+
+			star.style.transform = `translate(${x - star._startX}px, ${y - star._startY}px)`;
+			star.style.opacity = opacity;
+
+			if (star._life >= star._maxLife) {
+				star.remove();
 				shootingStars.splice(i, 1);
 			}
 		}
 
-		animationId = requestAnimationFrame(animate);
+		// Create new shooting stars
+		if (now - lastShootingStarTime > 4000 + Math.random() * 6000) {
+			if (Math.random() < 0.3) {
+				createShootingStar();
+				lastShootingStarTime = now;
+			}
+		}
+
+		if (mounted) {
+			animationId = requestAnimationFrame(updateStars);
+		}
 	}
 
-	function drawStaticStar(star: StaticStar) {
-		if (!ctx) return;
-
-		const twinkle = 0.6 + 0.4 * Math.sin(star.twinklePhase);
-		const opacity = star.brightness * twinkle * star.fadePhase;
-
-		if (opacity <= 0.01) return;
-
-		ctx.globalAlpha = opacity;
-		ctx.fillStyle = '#ffffff';
-		ctx.beginPath();
-		ctx.arc(star.x, star.y, star.size, 0, 6.28);
-		ctx.fill();
-	}
-
-	function drawShootingStar(star: ShootingStar) {
-		if (!ctx) return;
-
-		const fadeOut = Math.max(0, 1 - star.life / star.maxLife);
-		const opacity = star.brightness * fadeOut;
-
-		ctx.globalAlpha = opacity;
-		ctx.fillStyle = '#ffffff';
-		ctx.beginPath();
-		ctx.arc(star.x, star.y, star.size, 0, 6.28);
-		ctx.fill();
-	}
-
-	function resize() {
-		if (!canvas || !ctx) return;
-
-		canvas.width = window.innerWidth;
-		canvas.height = window.innerHeight;
-
-		initStars();
-		lastShootingStarTime = Date.now();
-	}
-
-	function handleVisibilityChange() {
-		isVisible = !document.hidden;
-		if (isVisible && initialized && !animationId) {
-			animate();
-		} else if (!isVisible && animationId) {
-			cancelAnimationFrame(animationId);
-			animationId = 0;
+	function handleResize() {
+		if (mounted && hydrated) {
+			// Only regenerate on significant size changes
+			setTimeout(() => {
+				if (mounted) {
+					generateInitialStars();
+				}
+			}, 100);
 		}
 	}
 
 	onMount(() => {
 		if (!browser) return;
 
-		ctx = canvas.getContext('2d');
-		if (!ctx) return;
+		mounted = true;
 
-		requestAnimationFrame(() => {
-			resize();
-			animate();
-		});
+		// Phase 1: Generate static CSS stars immediately
+		generateInitialStars();
 
-		const handleResize = () => resize();
+		// Phase 2: Enable JS enhancements after hydration
+		setTimeout(() => {
+			if (mounted) {
+				hydrated = true;
+				lastShootingStarTime = Date.now();
+				updateStars();
+			}
+		}, 500);
 
-		window.addEventListener('resize', handleResize);
-		document.addEventListener('visibilitychange', handleVisibilityChange);
+		window.addEventListener('resize', handleResize, { passive: true });
 
 		return () => {
+			mounted = false;
+			hydrated = false;
+			if (animationId) {
+				cancelAnimationFrame(animationId);
+				animationId = 0;
+			}
 			window.removeEventListener('resize', handleResize);
-			document.removeEventListener('visibilitychange', handleVisibilityChange);
 		};
-	});
-
-	onDestroy(() => {
-		if (animationId) {
-			cancelAnimationFrame(animationId);
-		}
 	});
 </script>
 
-<canvas bind:this={canvas} class="starfield" aria-hidden="true"></canvas>
+<div bind:this={starContainer} class="starfield" aria-hidden="true"></div>
 
 <style>
 	.starfield {
@@ -262,12 +217,82 @@
 		z-index: -9999;
 		background: #18181b;
 		pointer-events: none;
-		will-change: transform;
+		overflow: hidden;
+	}
+
+	:global(.star) {
+		position: absolute;
+		background: #ffffff;
+		border-radius: 50%;
+		animation: twinkle infinite ease-in-out;
+		will-change: opacity, transform;
+	}
+
+	:global(.shooting-star) {
+		position: absolute;
+		width: 2px;
+		height: 2px;
+		background: #ffffff;
+		border-radius: 50%;
+		will-change: transform, opacity;
+	}
+
+	:global(.shooting-star::before) {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 15px;
+		height: 1px;
+		background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), transparent);
+		transform: translateX(-13px) rotate(-45deg);
+		transform-origin: right center;
+	}
+
+	:global(.shooting-star.dynamic) {
+		opacity: 0;
+		transition: none;
+	}
+
+	@keyframes twinkle {
+		0%,
+		100% {
+			opacity: 0.3;
+			transform: scale(0.8);
+		}
+		50% {
+			opacity: 1;
+			transform: scale(1.2);
+		}
+	}
+
+	@keyframes fadeOut {
+		0% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0;
+		}
+	}
+
+	@keyframes fadeIn {
+		0% {
+			opacity: 0;
+		}
+		100% {
+			opacity: 1;
+		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
 		.starfield {
 			display: none;
+		}
+	}
+
+	@media (max-width: 768px) {
+		:global(.star) {
+			animation-duration: 4s !important;
 		}
 	}
 </style>
