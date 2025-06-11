@@ -472,7 +472,6 @@
 		height: 100vh;
 		height: calc(var(--vh, 1vh) * 100);
 		overflow: hidden;
-		background-color: var(--color-background);
 		touch-action: pan-y;
 		-webkit-overflow-scrolling: touch;
 		contain: paint layout;
