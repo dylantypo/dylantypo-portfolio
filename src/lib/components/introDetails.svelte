@@ -57,7 +57,7 @@
 						color: (_index: number, target: any) => {
 							return target.classList.contains('highlight')
 								? 'var(--color-secondary)'
-								: 'rgba(255,255,255,0.15)';
+								: 'rgba(255,255,255,0.1)';
 						}
 					});
 
@@ -73,7 +73,7 @@
 					timeline.to(letters, {
 						textShadow: (_index: number, target: any) => {
 							if (target.classList.contains('highlight')) return undefined;
-							return '2px -2px 12px rgba(255,80,80,0.8), -2px 2px 20px rgba(80,120,255,0.6), 3px 3px 28px rgba(255,255,80,0.4), -3px -3px 36px rgba(255,255,255,0.3)';
+							return '1px -1px 2px rgba(255,250,250,0.4), -1px 1px 8px rgba(250,250,255,0.3), 1px 1px 10px rgba(255,255,250,0.3)';
 						},
 						color: (_index: number, target: any) => {
 							return target.classList.contains('highlight') ? undefined : 'rgba(255,255,255,1)';
@@ -127,11 +127,11 @@
 	<div
 		id="aboutMe-content"
 		class="long-text fade-in"
-		aria-label="I'm a creative thinker bringing my unique global perspective to solve problems that matter."
+		aria-label="I'm a creative problem solver with a unique global perspective, dedicated to solving tomorrow's problems today."
 	>
-		I'm a creative thinker bringing my unique
+		I'm a creative problem solver with a unique
 		<span class="highlighted-text">global</span>
-		perspective to solve problems that matter.
+		perspective, dedicated to solving tomorrow's problems today.
 	</div>
 </article>
 
