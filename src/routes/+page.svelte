@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Starfield from '$lib/components/starfield.svelte';
 	import LandingPage from '$lib/components/LandingPage.svelte';
 	import IntroDetails from '$lib/components/introDetails.svelte';
 	import Skills from '$lib/components/skills.svelte';
@@ -35,6 +36,8 @@
 		window.scrollTo(0, 0);
 	});
 </script>
+
+<Starfield />
 
 {#if showLanding}
 	<LandingPage onEnter={handleEnter} />
