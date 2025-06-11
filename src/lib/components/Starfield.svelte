@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
-	import { viewportManager } from '$lib/utils';
 
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D | null;
@@ -9,6 +8,8 @@
 	let staticStars: StaticStar[] = [];
 	let shootingStars: ShootingStar[] = [];
 	let lastShootingStarTime = 0;
+	let isVisible = true;
+	let initialized = false;
 
 	type StaticStar = {
 		x: number;
@@ -35,8 +36,8 @@
 
 	function createStaticStar(): StaticStar {
 		return {
-			x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
-			y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1000),
+			x: Math.random() * window.innerWidth,
+			y: Math.random() * window.innerHeight,
 			size: Math.random() * 1.5 + 0.5,
 			brightness: Math.random() * 0.6 + 0.4,
 			twinklePhase: Math.random() * 6.28,
@@ -50,29 +51,29 @@
 	function createShootingStar(): ShootingStar {
 		const side = Math.floor(Math.random() * 4);
 		let x, y, vx, vy;
-		const width = typeof window !== 'undefined' ? window.innerWidth : 1000;
-		const height = typeof window !== 'undefined' ? window.innerHeight : 1000;
+		const width = window.innerWidth;
+		const height = window.innerHeight;
 
 		switch (side) {
-			case 0: // Top
+			case 0:
 				x = Math.random() * width;
 				y = -50;
 				vx = (Math.random() - 0.5) * 4;
 				vy = Math.random() * 3 + 2;
 				break;
-			case 1: // Right
+			case 1:
 				x = width + 50;
 				y = Math.random() * height;
 				vx = -(Math.random() * 3 + 2);
 				vy = (Math.random() - 0.5) * 4;
 				break;
-			case 2: // Bottom
+			case 2:
 				x = Math.random() * width;
 				y = height + 50;
 				vx = (Math.random() - 0.5) * 4;
 				vy = -(Math.random() * 3 + 2);
 				break;
-			default: // Left
+			default:
 				x = -50;
 				y = Math.random() * height;
 				vx = Math.random() * 3 + 2;
@@ -92,8 +93,10 @@
 	}
 
 	function initStars() {
-		const viewport = viewportManager.getViewportInfo();
-		const starCount = viewport.isMobile ? 80 : 150;
+		if (!canvas || !window) return;
+
+		const isMobile = window.innerWidth < 768;
+		const starCount = isMobile ? 80 : 150;
 
 		staticStars = Array.from({ length: starCount }, () => {
 			const star = createStaticStar();
@@ -101,6 +104,7 @@
 			return star;
 		});
 		shootingStars = [];
+		initialized = true;
 	}
 
 	function updateStaticStar(star: StaticStar) {
@@ -129,10 +133,44 @@
 		}
 	}
 
-	function updateShootingStar(star: ShootingStar) {
-		star.x += star.vx;
-		star.y += star.vy;
-		star.life++;
+	function animate() {
+		if (!ctx || !canvas || !isVisible || !initialized) return;
+
+		ctx.fillStyle = 'rgba(24, 24, 27, 0.02)';
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+		for (let i = 0; i < staticStars.length; i++) {
+			updateStaticStar(staticStars[i]);
+			drawStaticStar(staticStars[i]);
+		}
+
+		const now = Date.now();
+		if (now - lastShootingStarTime > 3000 + Math.random() * 7000) {
+			if (Math.random() < 0.3) {
+				shootingStars.push(createShootingStar());
+				lastShootingStarTime = now;
+			}
+		}
+
+		for (let i = shootingStars.length - 1; i >= 0; i--) {
+			const star = shootingStars[i];
+			star.x += star.vx;
+			star.y += star.vy;
+			star.life++;
+			drawShootingStar(star);
+
+			if (
+				star.life >= star.maxLife ||
+				star.x < -100 ||
+				star.x > canvas.width + 100 ||
+				star.y < -100 ||
+				star.y > canvas.height + 100
+			) {
+				shootingStars.splice(i, 1);
+			}
+		}
+
+		animationId = requestAnimationFrame(animate);
 	}
 
 	function drawStaticStar(star: StaticStar) {
@@ -163,53 +201,24 @@
 		ctx.fill();
 	}
 
-	function animate() {
-		if (!ctx || !canvas) return;
-
-		ctx.fillStyle = 'rgba(24, 24, 27, 0.02)';
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-		for (let i = 0; i < staticStars.length; i++) {
-			updateStaticStar(staticStars[i]);
-			drawStaticStar(staticStars[i]);
-		}
-
-		const now = Date.now();
-		if (now - lastShootingStarTime > 3000 + Math.random() * 7000) {
-			if (Math.random() < 0.3) {
-				shootingStars.push(createShootingStar());
-				lastShootingStarTime = now;
-			}
-		}
-
-		for (let i = shootingStars.length - 1; i >= 0; i--) {
-			const star = shootingStars[i];
-			updateShootingStar(star);
-			drawShootingStar(star);
-
-			if (
-				star.life >= star.maxLife ||
-				star.x < -100 ||
-				star.x > canvas.width + 100 ||
-				star.y < -100 ||
-				star.y > canvas.height + 100
-			) {
-				shootingStars.splice(i, 1);
-			}
-		}
-
-		animationId = requestAnimationFrame(animate);
-	}
-
 	function resize() {
 		if (!canvas || !ctx) return;
 
 		canvas.width = window.innerWidth;
 		canvas.height = window.innerHeight;
 
-		// Restart everything for clean viewport adjustment
 		initStars();
 		lastShootingStarTime = Date.now();
+	}
+
+	function handleVisibilityChange() {
+		isVisible = !document.hidden;
+		if (isVisible && initialized && !animationId) {
+			animate();
+		} else if (!isVisible && animationId) {
+			cancelAnimationFrame(animationId);
+			animationId = 0;
+		}
 	}
 
 	onMount(() => {
@@ -218,19 +227,19 @@
 		ctx = canvas.getContext('2d');
 		if (!ctx) return;
 
-		viewportManager.init();
-		resize();
-		initStars();
-		animate();
-
-		const handleResize = () => {
+		setTimeout(() => {
 			resize();
-		};
+			animate();
+		}, 100);
+
+		const handleResize = () => resize();
 
 		window.addEventListener('resize', handleResize);
+		document.addEventListener('visibilitychange', handleVisibilityChange);
 
 		return () => {
 			window.removeEventListener('resize', handleResize);
+			document.removeEventListener('visibilitychange', handleVisibilityChange);
 		};
 	});
 
@@ -251,7 +260,7 @@
 		width: 100vw;
 		height: 100vh;
 		z-index: -9999;
-		background: var(--color-primary);
+		background: #18181b;
 		pointer-events: none;
 		will-change: transform;
 	}
