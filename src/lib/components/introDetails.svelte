@@ -57,7 +57,7 @@
 						color: (_index: number, target: any) => {
 							return target.classList.contains('highlight')
 								? 'var(--color-secondary)'
-								: 'rgba(255,255,255,0.3)';
+								: 'rgba(255,255,255,0.15)';
 						}
 					});
 
@@ -73,7 +73,7 @@
 					timeline.to(letters, {
 						textShadow: (_index: number, target: any) => {
 							if (target.classList.contains('highlight')) return undefined;
-							return '0 0 15px rgba(255,255,255,0.8), 0 0 25px rgba(255,255,255,0.4)';
+							return '2px -2px 12px rgba(255,80,80,0.8), -2px 2px 20px rgba(80,120,255,0.6), 3px 3px 28px rgba(255,255,80,0.4), -3px -3px 36px rgba(255,255,255,0.3)';
 						},
 						color: (_index: number, target: any) => {
 							return target.classList.contains('highlight') ? undefined : 'rgba(255,255,255,1)';
@@ -86,22 +86,21 @@
 						duration: 0.25
 					});
 
-					timeline.to(
-						letters,
-						{
-							textShadow: 'none',
-							color: (_index: number, target: any) => {
-								return target.classList.contains('highlight') ? undefined : '';
-							},
-							stagger: {
-								amount: isLandscape ? 1.2 : 1.6,
-								from: 'start'
-							},
-							ease: 'power2.out',
-							duration: 0.25
+					timeline.to(letters, {
+						textShadow: (_index: number, target: any) => {
+							if (target.classList.contains('highlight')) return undefined;
+							return 'none';
 						},
-						'-=0.15'
-					);
+						color: (_index: number, target: any) => {
+							return target.classList.contains('highlight') ? undefined : 'rgba(255,255,255,1)';
+						},
+						stagger: {
+							amount: isLandscape ? 1.2 : 1.6,
+							from: 'start'
+						},
+						ease: 'power2.out',
+						duration: 0.25
+					});
 				});
 
 				ScrollTrigger.refresh();
@@ -128,11 +127,11 @@
 	<div
 		id="aboutMe-content"
 		class="long-text fade-in"
-		aria-label="I'm a creative thinker bringing global perspective to data science that makes real impact."
+		aria-label="I'm a creative thinker bringing my unique global perspective to solve problems that matter."
 	>
-		I'm a creative thinker and problem solver bringing
+		I'm a creative thinker bringing my unique
 		<span class="highlighted-text">global</span>
-		perspective to data science that makes real impact.
+		perspective to solve problems that matter.
 	</div>
 </article>
 
@@ -145,7 +144,7 @@
 	>
 		Nearly half a decade building
 		<span class="highlighted-text">cutting-edge</span>
-		infrastructure combining data science, automation, and modern web technologies.
+		infrastructure combining data science and modern web technologies.
 	</div>
 </article>
 
@@ -196,7 +195,6 @@
 
 	:global(.letter.highlight) {
 		color: var(--color-secondary) !important;
-		text-shadow: 0 0 8px rgba(20, 184, 166, 0.4) !important;
 		font-weight: 700;
 	}
 
