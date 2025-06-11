@@ -5,7 +5,7 @@
 	--color-secondary: #14b8a6;
 	--color-text-primary: #ffffff;
 	--color-text-secondary: #27272a;
-	--color-background: var(--color-primary);
+	--color-background: transparent;
 	--color-hover: rgba(255, 255, 255, 0.15);
 	--color-fill: rgba(175, 175, 175, 0.055);
 	--color-focus: var(--color-secondary);
@@ -47,12 +47,12 @@
 	font-display: swap;
 }
 
-/* Global Reset */
+/* Global Reset - Transparent for starfield */
 html {
 	scrollbar-width: none;
 	width: 100vw;
 	height: 100%;
-	background-color: var(--color-background) !important;
+	background: transparent !important;
 	font-family: var(--font-family-base);
 	font-size: var(--font-size-base);
 	min-height: 100vh;
@@ -63,7 +63,7 @@ body {
 	margin: 0;
 	padding: 0;
 	line-height: 1.35;
-	background-color: var(--color-background) !important;
+	background: transparent !important;
 	min-height: 100vh;
 	min-height: 100svh;
 }
@@ -89,6 +89,54 @@ body {
 :focus-visible {
 	outline: 3px solid var(--color-focus);
 	outline-offset: 2px;
+}
+
+/* 🌟 Starfield Background Support */
+/* Make main containers transparent */
+.blog-container,
+.post-container,
+.landing-container,
+.globe-container,
+main {
+	background: transparent !important;
+}
+
+/* Semi-transparent overlays for readability */
+.post-article,
+.resume-container {
+	background: rgba(24, 24, 27, 0.85) !important;
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.control-button {
+	background: rgba(255, 255, 255, 0.9) !important;
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+}
+
+/* Text content backgrounds */
+.post-content,
+.resume-content {
+	background: rgba(24, 24, 27, 0.9) !important;
+}
+
+/* Enhanced glass effect for important UI */
+.toolbar {
+	background: rgba(20, 184, 166, 0.8) !important;
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+}
+
+/* 🌍 Globe component overrides */
+.globe-viewer canvas {
+	background: transparent !important;
+}
+
+/* Globe scene transparency */
+.globe-container {
+	background: transparent !important;
 }
 
 /* Common Media Queries - Update current padding */

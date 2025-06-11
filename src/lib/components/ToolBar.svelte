@@ -119,7 +119,7 @@
 			height 0.6s var(--transition-ease),
 			border-radius 1s var(--transition-ease),
 			opacity 1s var(--transition-speed);
-		color: var(--color-background);
+		color: var(--color-primary);
 		display: flex;
 		justify-content: center;
 		align-items: center;

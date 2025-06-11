@@ -252,7 +252,7 @@
 			});
 
 			const scene = new THREE.Scene();
-			scene.background = new THREE.Color('#18181b');
+			scene.background = null;
 			const camera = new THREE.PerspectiveCamera(
 				60,
 				window.innerWidth / window.innerHeight,

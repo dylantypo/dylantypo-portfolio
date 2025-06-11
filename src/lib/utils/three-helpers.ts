@@ -43,7 +43,11 @@ export function setupRenderers(
 	CSS2DRenderer: any,
 	container: HTMLElement
 ): { renderer: any; renderers: any[] } {
-	const renderer = new THREE.WebGLRenderer();
+	const renderer = new THREE.WebGLRenderer({
+		alpha: true,
+		premultipliedAlpha: false
+	});
+	renderer.setClearColor(0x000000, 0);
 	const labelRenderer = new CSS2DRenderer();
 	const renderers = [renderer, labelRenderer];
 
