@@ -250,7 +250,7 @@
 		left: 0;
 		width: 100vw;
 		height: 100vh;
-		z-index: -1;
+		z-index: -9999;
 		background: var(--color-primary);
 		pointer-events: none;
 		will-change: transform;

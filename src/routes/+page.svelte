@@ -74,6 +74,7 @@
 		min-height: 100dvh;
 		min-height: calc(var(--vh, 1vh) * 100);
 		background-color: var(--color-background);
+		z-index: 1;
 	}
 
 	#content {

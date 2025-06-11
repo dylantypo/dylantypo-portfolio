@@ -7,7 +7,7 @@
 	--color-text-secondary: #27272a;
 	--color-background: transparent;
 	--color-hover: rgba(255, 255, 255, 0.15);
-	--color-fill: rgba(175, 175, 175, 0.055);
+	--color-fill: rgba(175, 175, 175, 0.09);
 	--color-focus: var(--color-secondary);
 
 	/* Typography */
