@@ -95,7 +95,7 @@
 	}
 
 	function initStars() {
-		if (!canvas || !window) return;
+		if (!canvas || !window || !window.innerWidth) return;
 
 		const isMobile = window.innerWidth < 768;
 		const starCount = isMobile ? 80 : 150;
@@ -229,10 +229,10 @@
 		ctx = canvas.getContext('2d');
 		if (!ctx) return;
 
-		setTimeout(() => {
+		requestAnimationFrame(() => {
 			resize();
 			animate();
-		}, 100);
+		});
 
 		const handleResize = () => resize();
 
