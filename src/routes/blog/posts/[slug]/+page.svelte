@@ -69,7 +69,7 @@
 
 	.post-container {
 		min-height: 100vh;
-		background-color: var(--color-background);
+		background-color: var(--color-primary);
 		color: var(--color-text-primary);
 		font-family: var(--font-family-base);
 		padding: clamp(1rem, 4vw, 2rem);

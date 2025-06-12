@@ -170,7 +170,7 @@
 		min-height: 100vh;
 		width: 100%;
 		max-width: 100vw;
-		background-color: var(--color-background);
+		background-color: var(--color-primary);
 		color: var(--color-text-primary);
 		font-family: var(--font-family-base);
 		overflow-x: hidden;
