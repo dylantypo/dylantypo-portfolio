@@ -1,57 +1,131 @@
 <script lang="ts">
 	import gsap from 'gsap';
+	import { Draggable } from 'gsap/Draggable';
 	import { onMount, onDestroy } from 'svelte';
 
 	let expandedTool = $state(false);
-
 	let isTouchDevice = $state(false);
 
-	let toolbar: HTMLElement; // Declare the variable toolbar
+	let toolbar: HTMLElement;
+	let draggableInstance: any;
 
-	// Toggle function for toolbar
 	function toggleToolbar() {
 		expandedTool = !expandedTool;
+		updateDraggable();
 	}
 
-	// Close toolbar when mouse leaves
 	function handleCloseToolbar() {
 		expandedTool = false;
+		updateDraggable();
 	}
 
-	// Keypress functions for each bubble
 	function handleKeydown(event: { key: string }) {
 		if (event.key === 'Enter' || event.key === ' ') {
 			toggleToolbar();
 		}
 	}
 
-	function handleOutsideTouch(event: TouchEvent) {
+	function handleOutsideClick(event: Event) {
 		if (toolbar && expandedTool && !toolbar.contains(event.target as Node)) {
 			expandedTool = false;
+			updateDraggable();
+		}
+	}
+
+	function updateDraggable() {
+		if (draggableInstance) {
+			if (expandedTool) {
+				draggableInstance.disable();
+			} else {
+				draggableInstance.enable();
+			}
 		}
 	}
 
 	onMount(async () => {
-		isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-		gsap.fromTo(toolbar, { x: '200' }, { delay: 1.05, duration: 2.75, x: '0', ease: 'back' });
+		gsap.registerPlugin(Draggable);
 
+		isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+		// Original animation
+		gsap.fromTo(
+			toolbar,
+			{ x: '200' },
+			{
+				delay: 1.05,
+				duration: 2,
+				x: '0',
+				ease: 'back',
+				onComplete: () => {
+					// Create proxy for consistent positioning
+					const proxy = document.createElement('div');
+					gsap.set(proxy, { x: 0, y: 0 });
+
+					draggableInstance = Draggable.create(proxy, {
+						type: 'x,y',
+						trigger: toolbar,
+						dragResistance: 0.75,
+						edgeResistance: 1,
+						cursor: 'grab',
+						activeCursor: 'grabbing',
+						minimumMovement: 3,
+						clickableTest: function (element) {
+							// Make toolbar-content and its children clickable (not draggable)
+							return element.closest('.toolbar-content') !== null;
+						},
+						onClick: function () {
+							// Only toggle if clicking the main toolbar (gear), not content
+							if (!expandedTool) {
+								toggleToolbar();
+							}
+						},
+						onDrag: function () {
+							gsap.set(toolbar, { x: this.x, y: this.y });
+						},
+						onDragEnd: function () {
+							gsap.set(this.target, { x: 0, y: 0 });
+							gsap.to(toolbar, {
+								x: 0,
+								y: 0,
+								duration: 0.5,
+								ease: 'elastic.out(1, 0.5)'
+							});
+						},
+						snap: {
+							x: function (value: number) {
+								return 0;
+							},
+							y: function (value: number) {
+								return 0;
+							}
+						},
+						enabled: !expandedTool
+					})[0];
+				}
+			}
+		);
+
+		document.addEventListener('click', handleOutsideClick);
 		if (isTouchDevice) {
-			document.addEventListener('touchstart', handleOutsideTouch);
+			document.addEventListener('touchstart', handleOutsideClick);
 		}
 	});
 
 	onDestroy(() => {
+		document.removeEventListener('click', handleOutsideClick);
 		if (isTouchDevice) {
-			document.removeEventListener('touchstart', handleOutsideTouch);
+			document.removeEventListener('touchstart', handleOutsideClick);
+		}
+		if (draggableInstance) {
+			draggableInstance.kill();
 		}
 	});
 </script>
 
-<!-- Connections Bubble -->
+<!-- Toolbar -->
 <div
 	bind:this={toolbar}
 	class="toolbar {expandedTool ? 'expandedTool' : ''}"
-	onclick={toggleToolbar}
 	onkeydown={handleKeydown}
 	onmouseleave={isTouchDevice ? undefined : handleCloseToolbar}
 	tabindex="0"
@@ -79,13 +153,15 @@
 		<a href="/resume" target="_blank" class="toolbar-link" aria-label="Download Dylan's Resume">
 			<div class="wrapper"><i class="fa-solid fa-file fa-2xl" aria-hidden="true"></i></div>
 		</a>
-		<div class="wrapper">
-			<i
-				class="fa-solid fa-angle-down fa-beat-fade fa-2xl"
-				style="--fa-animation-delay: 3s"
-				aria-hidden="true"
-			></i>
-		</div>
+		<button class="close-button" onclick={toggleToolbar} aria-label="Close toolbar">
+			<div class="wrapper">
+				<i
+					class="fa-solid fa-angle-down fa-beat-fade fa-2xl"
+					style="--fa-animation-delay: 3s"
+					aria-hidden="true"
+				></i>
+			</div>
+		</button>
 	</div>
 	{#if !expandedTool}
 		<i
@@ -154,6 +230,20 @@
 		outline-offset: 2px;
 	}
 
+	.close-button {
+		background: none;
+		border: none;
+		padding: 0;
+		color: var(--color-primary);
+		cursor: pointer;
+	}
+
+	.close-button:focus-visible {
+		border-radius: 50%;
+		outline: 3px solid var(--color-focus);
+		outline-offset: 2px;
+	}
+
 	@media (max-width: 1030px) {
 		.toolbar {
 			opacity: 50%;
@@ -162,6 +252,7 @@
 			width: 45px;
 			height: 45px;
 		}
+
 		.toolbar.expandedTool {
 			opacity: 100%;
 		}
