@@ -3,104 +3,96 @@
 	import { viewportManager, loadGlobeModules } from '$lib/utils';
 
 	let elements: HTMLElement[] = [];
-
-	function splitTextIntoLetters(text: string, highlight: boolean = false): string {
-		return text
-			.split(' ')
-			.map(
-				(word) =>
-					`<span class="word-container">${word
-						.split('')
-						.map((char) => `<span class="letter${highlight ? ' highlight' : ''}">${char}</span>`)
-						.join('')}</span> `
-			)
-			.join('');
-	}
+	let splitInstances: any[] = [];
 
 	onMount(() => {
 		const initializeAnimations = async () => {
 			const { gsap } = await loadGlobeModules();
 			const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+			const { SplitText } = await import('gsap/SplitText');
 
-			gsap.registerPlugin(ScrollTrigger);
+			gsap.registerPlugin(ScrollTrigger, SplitText);
 			viewportManager.init();
 
 			const ctx = gsap.context(() => {
 				elements = gsap.utils.toArray('.fade-in') as HTMLElement[];
 
 				elements.forEach((el) => {
-					const nodes = Array.from(el.childNodes);
-					el.innerHTML = '';
-					const originalContent = el.textContent;
-					el.setAttribute('aria-label', originalContent || '');
+					const split = SplitText.create(el, {
+						type: 'words,chars',
+						wordsClass: 'word-container',
+						charsClass: 'letter',
+						aria: 'auto',
+						autoSplit: true,
+						onSplit: (self: any) => {
+							const letters = self.chars;
+							const viewport = viewportManager.getViewportInfo();
+							const isLandscape = viewport.height < 500 && viewport.width > viewport.height;
 
-					nodes.forEach((node) => {
-						if (node.nodeType === Node.TEXT_NODE) {
-							const text = node.textContent || '';
-							el.insertAdjacentHTML('beforeend', splitTextIntoLetters(text));
-						} else if (
-							node.nodeType === Node.ELEMENT_NODE &&
-							(node as Element).classList.contains('highlighted-text')
-						) {
-							const text = node.textContent || '';
-							el.insertAdjacentHTML('beforeend', splitTextIntoLetters(text, true));
+							// Apply highlight class to chars in highlighted spans
+							letters.forEach((char: HTMLElement) => {
+								const parentSpan = char.closest('.highlighted-text');
+								if (parentSpan) {
+									char.classList.add('highlight');
+								}
+							});
+
+							gsap.set(letters, {
+								opacity: 1,
+								textShadow: 'none',
+								color: (_index: number, target: any) => {
+									return target.classList.contains('highlight')
+										? 'var(--color-secondary)'
+										: 'rgba(255,255,255,0.1)';
+								}
+							});
+
+							const timeline = gsap.timeline({
+								scrollTrigger: {
+									trigger: el,
+									start: isLandscape ? 'top 88%' : 'top 78%',
+									end: isLandscape ? 'top 45%' : 'top 35%',
+									scrub: isLandscape ? 1 : 1.5
+								}
+							});
+
+							timeline.to(letters, {
+								textShadow: (_index: number, target: any) => {
+									if (target.classList.contains('highlight')) return undefined;
+									return '1px -1px 2px rgba(255,250,250,0.4), -1px 1px 8px rgba(250,250,255,0.3), 1px 1px 10px rgba(255,255,250,0.3)';
+								},
+								color: (_index: number, target: any) => {
+									return target.classList.contains('highlight') ? undefined : 'rgba(255,255,255,1)';
+								},
+								stagger: {
+									amount: isLandscape ? 1.2 : 1.6,
+									from: 'start'
+								},
+								ease: 'power2.out',
+								duration: 0.25
+							});
+
+							timeline.to(letters, {
+								textShadow: (_index: number, target: any) => {
+									if (target.classList.contains('highlight')) return undefined;
+									return 'none';
+								},
+								color: (_index: number, target: any) => {
+									return target.classList.contains('highlight') ? undefined : 'rgba(255,255,255,1)';
+								},
+								stagger: {
+									amount: isLandscape ? 1.2 : 1.6,
+									from: 'start'
+								},
+								ease: 'power2.out',
+								duration: 0.25
+							});
+
+							return timeline;
 						}
 					});
 
-					const letters = el.querySelectorAll('.letter');
-					const viewport = viewportManager.getViewportInfo();
-					const isLandscape = viewport.height < 500 && viewport.width > viewport.height;
-
-					gsap.set(letters, {
-						opacity: 1,
-						textShadow: 'none',
-						color: (_index: number, target: any) => {
-							return target.classList.contains('highlight')
-								? 'var(--color-secondary)'
-								: 'rgba(255,255,255,0.1)';
-						}
-					});
-
-					const timeline = gsap.timeline({
-						scrollTrigger: {
-							trigger: el,
-							start: isLandscape ? 'top 88%' : 'top 78%',
-							end: isLandscape ? 'top 45%' : 'top 35%',
-							scrub: isLandscape ? 1 : 1.5
-						}
-					});
-
-					timeline.to(letters, {
-						textShadow: (_index: number, target: any) => {
-							if (target.classList.contains('highlight')) return undefined;
-							return '1px -1px 2px rgba(255,250,250,0.4), -1px 1px 8px rgba(250,250,255,0.3), 1px 1px 10px rgba(255,255,250,0.3)';
-						},
-						color: (_index: number, target: any) => {
-							return target.classList.contains('highlight') ? undefined : 'rgba(255,255,255,1)';
-						},
-						stagger: {
-							amount: isLandscape ? 1.2 : 1.6,
-							from: 'start'
-						},
-						ease: 'power2.out',
-						duration: 0.25
-					});
-
-					timeline.to(letters, {
-						textShadow: (_index: number, target: any) => {
-							if (target.classList.contains('highlight')) return undefined;
-							return 'none';
-						},
-						color: (_index: number, target: any) => {
-							return target.classList.contains('highlight') ? undefined : 'rgba(255,255,255,1)';
-						},
-						stagger: {
-							amount: isLandscape ? 1.2 : 1.6,
-							from: 'start'
-						},
-						ease: 'power2.out',
-						duration: 0.25
-					});
+					splitInstances.push(split);
 				});
 
 				ScrollTrigger.refresh();
@@ -114,6 +106,8 @@
 
 			return () => {
 				window.removeEventListener('viewport:resize', handleViewportChange);
+				splitInstances.forEach((split) => split.revert());
+				splitInstances = [];
 				ctx.revert();
 			};
 		};
@@ -124,11 +118,7 @@
 
 <article class="section" id="aboutMe" role="region" aria-labelledby="aboutMe-header">
 	<h2 id="aboutMe-header" class="header">About Me</h2>
-	<div
-		id="aboutMe-content"
-		class="long-text fade-in"
-		aria-label="I'm a creative problem solver with a unique global perspective, dedicated to solving tomorrow's problems today."
-	>
+	<div id="aboutMe-content" class="long-text fade-in">
 		I'm a creative problem solver with a unique
 		<span class="highlighted-text">global</span>
 		perspective, dedicated to solving tomorrow's problems today.
@@ -137,11 +127,7 @@
 
 <article class="section" id="experience" role="region" aria-labelledby="experience-header">
 	<h2 id="experience-header" class="header">Experience</h2>
-	<div
-		id="experience-content"
-		class="long-text fade-in"
-		aria-label="Nearly half a decade building cutting-edge infrastructure combining data science, automation, and modern web technologies."
-	>
+	<div id="experience-content" class="long-text fade-in">
 		Nearly half a decade building
 		<span class="highlighted-text">cutting-edge</span>
 		infrastructure combining data science and modern web technologies.
