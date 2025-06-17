@@ -1,5 +1,4 @@
 // src/lib/utils/index.ts
-export { debounce } from './debounce';
 
 export {
 	categorizeDevice,

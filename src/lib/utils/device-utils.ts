@@ -53,17 +53,25 @@ export function getSharpFontSize(): number {
 
 	const width = window.innerWidth;
 	const height = window.innerHeight;
-	const pixelRatio = Math.min(window.devicePixelRatio, 2.5);
-
 	const smallestDimension = Math.min(width, height);
-	const baseFontSize =
-		smallestDimension < 400
-			? 0.25
-			: smallestDimension < 600
-				? 0.35
-				: smallestDimension < 768
-					? 0.45
-					: 0.7;
 
-	return baseFontSize * pixelRatio;
+	// 📱 Device detection
+	// const isLandscape = width > height;
+	const isMobile = width < 768;
+	const isTablet = width >= 768 && width < 1024;
+
+	let baseFontSize: number;
+
+	if (isMobile) {
+		// 📱 Mobile portrait - medium text
+		baseFontSize = smallestDimension < 400 ? 0.6 : 0.8;
+	} else if (isTablet) {
+		// 📱 Tablet - balanced size
+		baseFontSize = 0.9;
+	} else {
+		// 🖥️ Desktop - standard size
+		baseFontSize = smallestDimension < 1200 ? 0.7 : 0.85;
+	}
+
+	return baseFontSize;
 }

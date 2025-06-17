@@ -1,5 +1,4 @@
 // src/lib/utils/viewport-manager.ts
-import { debounce } from './debounce';
 
 class ViewportManager {
 	private static instance: ViewportManager;

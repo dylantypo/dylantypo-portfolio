@@ -197,6 +197,62 @@
 		return wrapper;
 	}
 
+	function hideOverlappingMarkers() {
+		const markers = Array.from(document.querySelectorAll('.location-marker')) as HTMLElement[];
+		if (markers.length === 0) return;
+
+		// Reset all markers to visible first
+		markers.forEach((marker) => {
+			marker.style.display = '';
+			marker.classList.remove('location-hidden');
+		});
+
+		// Wait for render to complete
+		requestAnimationFrame(() => {
+			const sorted = markers
+				.filter((marker) => {
+					const rect = marker.getBoundingClientRect();
+					return rect.width > 0 && rect.height > 0; // Only process visible markers
+				})
+				.sort((a, b) => {
+					const yearsA = parseFloat(a.dataset.years || '0');
+					const yearsB = parseFloat(b.dataset.years || '0');
+					if (yearsA !== yearsB) return yearsB - yearsA;
+					return (a.textContent || '').localeCompare(b.textContent || '');
+				});
+
+			const visible: HTMLElement[] = [];
+			const buffer =
+				window.innerWidth < 768
+					? 35
+					: window.innerWidth < 1200
+						? 18
+						: window.innerWidth < 1600
+							? 12
+							: 10;
+
+			for (const marker of sorted) {
+				const rect = marker.getBoundingClientRect();
+				const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+
+				const tooClose = visible.some((v) => {
+					const vRect = v.getBoundingClientRect();
+					const vCenter = { x: vRect.left + vRect.width / 2, y: vRect.top + vRect.height / 2 };
+					const distance = Math.sqrt(
+						Math.pow(center.x - vCenter.x, 2) + Math.pow(center.y - vCenter.y, 2)
+					);
+					return distance < buffer;
+				});
+
+				if (!tooClose) {
+					visible.push(marker);
+				} else {
+					marker.classList.add('location-hidden');
+				}
+			}
+		});
+	}
+
 	onMount(async () => {
 		if (!browser) return;
 
@@ -274,6 +330,14 @@
 				isUserInteracting = false;
 			});
 
+			const waitForLayout = (callback: () => void) => {
+				requestAnimationFrame(() => {
+					requestAnimationFrame(() => {
+						requestAnimationFrame(callback);
+					});
+				});
+			};
+
 			const labData = processRegionsData(regionsLived);
 			const MIN_ALTITUDE = 0.0125;
 
@@ -296,7 +360,7 @@
 				.htmlElementsData(labData)
 				.htmlLat((d: any) => d.lat)
 				.htmlLng((d: any) => d.lng)
-				.htmlAltitude((d: any) => (window.innerWidth < 768 ? 0.03 : 0.055))
+				.htmlAltitude((d: any) => (window.innerWidth < 768 ? 0.055 : 0.085))
 				.htmlElement((data: any) => createLocationMarker(data, setFocusedLocationName));
 
 			const isMobile = window.innerWidth < 768;
@@ -373,6 +437,7 @@
 				requestAnimationFrame(() => {
 					resizeRenderers();
 					adjustCamera(viewport);
+					waitForLayout(hideOverlappingMarkers);
 				});
 			};
 
@@ -444,6 +509,9 @@
 			resizeRenderers();
 			adjustCamera(initialViewport, focusedCity);
 			CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(initialViewport.isMobile);
+			waitForLayout(() => {
+				setTimeout(() => hideOverlappingMarkers(), 200);
+			});
 		}
 	});
 
@@ -571,10 +639,6 @@
 	@media (max-height: 500px) and (orientation: landscape) {
 		.globe-container {
 			height: calc(var(--vh, 1vh) * 100);
-		}
-
-		:global(.location-marker) {
-			font-size: 0.25rem !important;
 		}
 
 		:global(.location-marker.location-focused),

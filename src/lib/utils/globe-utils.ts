@@ -43,9 +43,20 @@ export function calculateIdealDistance(
 	cameraFov: number,
 	isMobile: boolean
 ): number {
-	const baseFactor = 1.95;
+	const baseFactor = 1.6;
 	const mobileAdjustment = isMobile ? 3 : 1.5;
-	return globeRadius / Math.tan(((cameraFov / (baseFactor + mobileAdjustment)) * Math.PI) / 180);
+
+	// 📱 Extra boost for landscape mobile
+	const isLandscape =
+		typeof window !== 'undefined' &&
+		window.innerHeight < 500 &&
+		window.innerWidth > window.innerHeight;
+	const landscapeBoost = isLandscape ? 0.7 : 1;
+
+	return (
+		(globeRadius / Math.tan(((cameraFov / (baseFactor + mobileAdjustment)) * Math.PI) / 180)) *
+		landscapeBoost
+	);
 }
 
 /**
