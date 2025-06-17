@@ -41,21 +41,37 @@ export function calculateCloudsRotationSpeed(isMobile: boolean): number {
 export function calculateIdealDistance(
 	globeRadius: number,
 	cameraFov: number,
-	isMobile: boolean
+	isMobile: boolean,
+	viewportManager?: any
 ): number {
-	const baseFactor = 1.6;
+	const baseFactor = 1.95;
 	const mobileAdjustment = isMobile ? 3 : 1.5;
 
+	// 🎯 Get viewport info (fallback to window if no manager)
+	let width, height;
+	if (viewportManager) {
+		const viewport = viewportManager.getViewportInfo();
+		width = viewport.width;
+		height = viewport.height;
+	} else if (typeof window !== 'undefined') {
+		width = window.innerWidth;
+		height = window.innerHeight;
+	} else {
+		return globeRadius * 2.5; // SSR fallback
+	}
+
 	// 📱 Extra boost for landscape mobile
-	const isLandscape =
-		typeof window !== 'undefined' &&
-		window.innerHeight < 500 &&
-		window.innerWidth > window.innerHeight;
-	const landscapeBoost = isLandscape ? 0.69 : 1;
+	const isLandscape = height < 500 && width > height;
+	const landscapeBoost = isLandscape ? 0.75 : 1;
+
+	// 📐 Aspect ratio adjustment for very tall screens
+	const aspectRatio = width / height;
+	const aspectBoost = aspectRatio < 0.7 ? 1.3 : 1;
 
 	return (
 		(globeRadius / Math.tan(((cameraFov / (baseFactor + mobileAdjustment)) * Math.PI) / 180)) *
-		landscapeBoost
+		landscapeBoost *
+		aspectBoost
 	);
 }
 

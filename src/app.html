@@ -3,31 +3,76 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-		<meta name="theme-color" content="#18181b" media="(prefers-color-scheme: dark)" />
-		<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
 
+		<!-- 🎯 Critical CSS Inline (extract above-fold styles) -->
+		<style>
+			:root {
+				--color-primary: #18181b;
+				--color-secondary: #14b8a6;
+				--color-text-primary: #fff;
+			}
+			html,
+			body {
+				margin: 0;
+				padding: 0;
+				background: var(--color-primary);
+				color: var(--color-text-primary);
+				font-family:
+					system-ui,
+					-apple-system,
+					sans-serif;
+			}
+			.landing-container {
+				position: fixed;
+				inset: 0;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+				z-index: 1000;
+			}
+		</style>
+
+		<!-- 🔒 Security & DNS -->
 		<meta http-equiv="X-Content-Type-Options" content="nosniff" />
 		<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
 		<meta http-equiv="x-dns-prefetch-control" content="on" />
-
 		<link rel="dns-prefetch" href="//cdnjs.cloudflare.com" />
 		<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
 
+		<!-- 🏆 PRIORITY 1: Critical Fonts -->
+		<link
+			rel="preload"
+			href="/fonts/Kenney%20Future.woff2"
+			as="font"
+			type="font/woff2"
+			crossorigin
+			fetchpriority="high"
+		/>
+
+		<!-- 🏆 PRIORITY 2: Critical CSS -->
 		<link rel="preload" href="/css/global.css" as="style" fetchpriority="high" />
 		<link rel="stylesheet" href="/css/global.css" />
+
+		<!-- ⚡ Non-blocking CSS -->
 		<link
 			rel="preload"
 			href="/css/fa-subset.css"
 			as="style"
 			onload="this.onload=null;this.rel='stylesheet'"
 		/>
+		<noscript>
+			<link rel="stylesheet" href="/css/global.css" />
+			<link rel="stylesheet" href="/css/fa-subset.css" />
+		</noscript>
 
+		<!-- 📊 Core Meta -->
 		<title>Dylan Posner | Data Scientist</title>
 		<meta name="title" content="Dylan Posner | Data Scientist" />
 		<meta name="author" content="Dylan Posner" />
 		<meta
 			name="description"
-			content="🚀 Data Scientist with 3+ years experience. Python | AWS | Tableau expert."
+			content="Data Scientist with 3+ years experience. Python | AWS | Tableau expert."
 		/>
 		<meta
 			name="keywords"
@@ -35,14 +80,11 @@
 		/>
 		<link rel="icon" href="%sveltekit.assets%/icons/favicon.ico" />
 		<link rel="canonical" href="https://dylanposner.com" />
-
 		<link rel="alternate" type="application/rss+xml" title="Dylan Posner - Blog" href="/rss.xml" />
 
-		<noscript>
-			<link rel="stylesheet" href="/css/global.css" />
-			<link rel="stylesheet" href="/css/fa-subset.css" />
-		</noscript>
-
+		<!-- 📱 PWA & Mobile -->
+		<meta name="theme-color" content="#18181b" media="(prefers-color-scheme: dark)" />
+		<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
 		<meta name="mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
@@ -50,6 +92,7 @@
 		<meta name="format-detection" content="telephone=no" />
 		<meta name="msapplication-tap-highlight" content="no" />
 
+		<!-- 🔗 Open Graph -->
 		<meta property="og:type" content="profile" />
 		<meta property="og:url" content="https://dylanposner.com" />
 		<meta property="og:title" content="Dylan Posner - Data Scientist & Developer" />
@@ -59,12 +102,13 @@
 		<meta property="og:image:alt" content="Dylan Posner - Professional headshot" />
 		<meta
 			property="og:description"
-			content="🚀 Data Scientist building ML pipelines, dashboards & web apps. Python | AWS | Tableau expert with 3+ years experience."
+			content="Data Scientist building ML pipelines, dashboards & web apps. Python | AWS | Tableau expert with 3+ years experience."
 		/>
 		<meta property="og:site_name" content="Dylan Posner Portfolio" />
 		<meta property="profile:first_name" content="Dylan" />
 		<meta property="profile:last_name" content="Posner" />
 
+		<!-- 🐦 Twitter -->
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:site" content="@superdopedylan" />
 		<meta name="twitter:creator" content="@superdopedylan" />
@@ -76,17 +120,17 @@
 			content="Dylan Posner: Data scientist with 3+ years experience in ML, AWS, and web development."
 		/>
 
+		<!-- 🤖 SEO & Validation -->
 		<meta
 			name="robots"
 			content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
 		/>
 		<meta name="googlebot" content="index, follow" />
-
 		<meta name="displaydate" content="2025-01-29" />
 		<link rel="author" href="https://dylanposner.com" />
-
 		<meta name="msvalidate.01" content="D5221F0F4DF353FEF4690B6AAF24CF49" />
 
+		<!-- 🎯 Structured Data -->
 		<script type="application/ld+json">
 			{
 				"@context": "https://schema.org",

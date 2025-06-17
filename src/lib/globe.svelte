@@ -391,7 +391,8 @@
 			const initialIdealDistance = calculateIdealDistance(
 				globe.getGlobeRadius(),
 				camera.fov,
-				isMobile
+				isMobile,
+				viewportManager
 			);
 			controls.maxDistance = initialIdealDistance * 1.1;
 			controls.minDistance = initialIdealDistance * 0.9;
@@ -407,7 +408,8 @@
 				const idealDistance = calculateIdealDistance(
 					globe.getGlobeRadius(),
 					camera.fov,
-					viewport.isMobile
+					viewport.isMobile,
+					viewportManager
 				);
 
 				controls.maxDistance = idealDistance * 1.1;
