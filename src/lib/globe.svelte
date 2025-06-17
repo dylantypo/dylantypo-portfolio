@@ -196,75 +196,6 @@
 		return wrapper;
 	}
 
-	async function hideOverlappingMarkers() {
-		const markers = Array.from(document.querySelectorAll('.location-marker')) as HTMLElement[];
-		if (markers.length === 0) return;
-
-		// Wait for all markers to be fully rendered
-		await new Promise((resolve) => {
-			const checkReady = () => {
-				const allReady = markers.every((marker) => {
-					const rect = marker.getBoundingClientRect();
-					return rect.width > 0 && rect.height > 0 && marker.offsetParent !== null;
-				});
-				if (allReady) resolve(undefined);
-				else requestAnimationFrame(checkReady);
-			};
-			checkReady();
-		});
-
-		// Reset all markers to visible first
-		markers.forEach((marker) => {
-			marker.style.opacity = '1';
-			marker.classList.remove('location-hidden');
-		});
-
-		// Wait one more frame for the reset to take effect
-		await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)));
-
-		const sorted = markers
-			.filter((marker) => {
-				const rect = marker.getBoundingClientRect();
-				return rect.width > 0 && rect.height > 0;
-			})
-			.sort((a, b) => {
-				const yearsA = parseFloat(a.dataset.years || '0');
-				const yearsB = parseFloat(b.dataset.years || '0');
-				if (yearsA !== yearsB) return yearsB - yearsA;
-				return (a.textContent || '').localeCompare(b.textContent || '');
-			});
-
-		const visible: HTMLElement[] = [];
-		const buffer =
-			window.innerWidth < 768
-				? 35
-				: window.innerWidth < 1200
-					? 18
-					: window.innerWidth < 1600
-						? 12
-						: 10;
-
-		for (const marker of sorted) {
-			const rect = marker.getBoundingClientRect();
-			const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-
-			const tooClose = visible.some((v) => {
-				const vRect = v.getBoundingClientRect();
-				const vCenter = { x: vRect.left + vRect.width / 2, y: vRect.top + vRect.height / 2 };
-				const distance = Math.sqrt(
-					Math.pow(center.x - vCenter.x, 2) + Math.pow(center.y - vCenter.y, 2)
-				);
-				return distance < buffer;
-			});
-
-			if (!tooClose) {
-				visible.push(marker);
-			} else {
-				marker.classList.add('location-hidden');
-			}
-		}
-	}
-
 	onMount(async () => {
 		if (!browser) return;
 
@@ -340,7 +271,6 @@
 			});
 			controls.addEventListener('end', () => {
 				isUserInteracting = false;
-				setTimeout(() => hideOverlappingMarkers(), 300);
 			});
 
 			const labData = processRegionsData(regionsLived);
@@ -365,7 +295,7 @@
 				.htmlElementsData(labData)
 				.htmlLat((d: any) => d.lat)
 				.htmlLng((d: any) => d.lng)
-				.htmlAltitude((d: any) => (window.innerWidth < 768 ? 0.055 : 0.085))
+				.htmlAltitude((d: any) => Math.max(MIN_ALTITUDE, d.years * 0.01) + 0.0075)
 				.htmlElement((data: any) => createLocationMarker(data, setFocusedLocationName));
 
 			const isMobile = window.innerWidth < 768;
@@ -444,7 +374,6 @@
 				requestAnimationFrame(() => {
 					resizeRenderers();
 					adjustCamera(viewport);
-					hideOverlappingMarkers();
 				});
 			};
 
@@ -518,7 +447,6 @@
 			resizeRenderers();
 			adjustCamera(initialViewport, focusedCity);
 			CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(initialViewport.isMobile);
-			setTimeout(() => hideOverlappingMarkers(), 1000);
 		}
 	});
 
