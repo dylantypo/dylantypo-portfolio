@@ -51,7 +51,7 @@ export function calculateIdealDistance(
 		typeof window !== 'undefined' &&
 		window.innerHeight < 500 &&
 		window.innerWidth > window.innerHeight;
-	const landscapeBoost = isLandscape ? 0.74 : 1;
+	const landscapeBoost = isLandscape ? 0.69 : 1;
 
 	return (
 		(globeRadius / Math.tan(((cameraFov / (baseFactor + mobileAdjustment)) * Math.PI) / 180)) *
