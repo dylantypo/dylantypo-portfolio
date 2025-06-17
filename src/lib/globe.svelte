@@ -196,60 +196,73 @@
 		return wrapper;
 	}
 
-	function hideOverlappingMarkers() {
+	async function hideOverlappingMarkers() {
 		const markers = Array.from(document.querySelectorAll('.location-marker')) as HTMLElement[];
 		if (markers.length === 0) return;
 
+		// Wait for all markers to be fully rendered
+		await new Promise((resolve) => {
+			const checkReady = () => {
+				const allReady = markers.every((marker) => {
+					const rect = marker.getBoundingClientRect();
+					return rect.width > 0 && rect.height > 0 && marker.offsetParent !== null;
+				});
+				if (allReady) resolve(undefined);
+				else requestAnimationFrame(checkReady);
+			};
+			checkReady();
+		});
+
 		// Reset all markers to visible first
 		markers.forEach((marker) => {
-			marker.style.display = '';
+			marker.style.opacity = '1';
 			marker.classList.remove('location-hidden');
 		});
 
-		// Wait for render to complete
-		requestAnimationFrame(() => {
-			const sorted = markers
-				.filter((marker) => {
-					const rect = marker.getBoundingClientRect();
-					return rect.width > 0 && rect.height > 0; // Only process visible markers
-				})
-				.sort((a, b) => {
-					const yearsA = parseFloat(a.dataset.years || '0');
-					const yearsB = parseFloat(b.dataset.years || '0');
-					if (yearsA !== yearsB) return yearsB - yearsA;
-					return (a.textContent || '').localeCompare(b.textContent || '');
-				});
+		// Wait one more frame for the reset to take effect
+		await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)));
 
-			const visible: HTMLElement[] = [];
-			const buffer =
-				window.innerWidth < 768
-					? 35
-					: window.innerWidth < 1200
-						? 18
-						: window.innerWidth < 1600
-							? 12
-							: 10;
-
-			for (const marker of sorted) {
+		const sorted = markers
+			.filter((marker) => {
 				const rect = marker.getBoundingClientRect();
-				const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+				return rect.width > 0 && rect.height > 0;
+			})
+			.sort((a, b) => {
+				const yearsA = parseFloat(a.dataset.years || '0');
+				const yearsB = parseFloat(b.dataset.years || '0');
+				if (yearsA !== yearsB) return yearsB - yearsA;
+				return (a.textContent || '').localeCompare(b.textContent || '');
+			});
 
-				const tooClose = visible.some((v) => {
-					const vRect = v.getBoundingClientRect();
-					const vCenter = { x: vRect.left + vRect.width / 2, y: vRect.top + vRect.height / 2 };
-					const distance = Math.sqrt(
-						Math.pow(center.x - vCenter.x, 2) + Math.pow(center.y - vCenter.y, 2)
-					);
-					return distance < buffer;
-				});
+		const visible: HTMLElement[] = [];
+		const buffer =
+			window.innerWidth < 768
+				? 35
+				: window.innerWidth < 1200
+					? 18
+					: window.innerWidth < 1600
+						? 12
+						: 10;
 
-				if (!tooClose) {
-					visible.push(marker);
-				} else {
-					marker.classList.add('location-hidden');
-				}
+		for (const marker of sorted) {
+			const rect = marker.getBoundingClientRect();
+			const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+
+			const tooClose = visible.some((v) => {
+				const vRect = v.getBoundingClientRect();
+				const vCenter = { x: vRect.left + vRect.width / 2, y: vRect.top + vRect.height / 2 };
+				const distance = Math.sqrt(
+					Math.pow(center.x - vCenter.x, 2) + Math.pow(center.y - vCenter.y, 2)
+				);
+				return distance < buffer;
+			});
+
+			if (!tooClose) {
+				visible.push(marker);
+			} else {
+				marker.classList.add('location-hidden');
 			}
-		});
+		}
 	}
 
 	onMount(async () => {
@@ -327,15 +340,8 @@
 			});
 			controls.addEventListener('end', () => {
 				isUserInteracting = false;
+				setTimeout(() => hideOverlappingMarkers(), 300);
 			});
-
-			const waitForLayout = (callback: () => void) => {
-				requestAnimationFrame(() => {
-					requestAnimationFrame(() => {
-						requestAnimationFrame(callback);
-					});
-				});
-			};
 
 			const labData = processRegionsData(regionsLived);
 			const MIN_ALTITUDE = 0.0125;
@@ -436,7 +442,7 @@
 				requestAnimationFrame(() => {
 					resizeRenderers();
 					adjustCamera(viewport);
-					waitForLayout(hideOverlappingMarkers);
+					hideOverlappingMarkers();
 				});
 			};
 
@@ -510,9 +516,7 @@
 			resizeRenderers();
 			adjustCamera(initialViewport, focusedCity);
 			CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(initialViewport.isMobile);
-			waitForLayout(() => {
-				setTimeout(() => hideOverlappingMarkers(), 200);
-			});
+			setTimeout(() => hideOverlappingMarkers(), 1000);
 		}
 	});
 
