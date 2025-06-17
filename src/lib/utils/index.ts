@@ -14,7 +14,6 @@ export {
 	calculateIdealDistance,
 	setCameraPosition,
 	updateCameraAspect,
-	findFocusedCity,
 	type Region,
 	type ProcessedLocationData
 } from './globe-utils';

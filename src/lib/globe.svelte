@@ -12,7 +12,6 @@
 		calculateIdealDistance,
 		setCameraPosition,
 		updateCameraAspect,
-		findFocusedCity,
 		setupLighting,
 		setupRenderers,
 		createCloudsGeometry,
@@ -505,7 +504,9 @@
 			};
 
 			const initialViewport = viewportManager.getViewportInfo();
-			const focusedCity = findFocusedCity(regionsLived, 'Arlington');
+			const focusedCity = regionsLived
+				.flatMap((region) => region.states)
+				.find((state) => state.name === 'Arlington');
 			resizeRenderers();
 			adjustCamera(initialViewport, focusedCity);
 			CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(initialViewport.isMobile);

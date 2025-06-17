@@ -88,10 +88,3 @@ export function updateCameraAspect(camera: any): void {
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
 }
-
-/**
- * 🎭 Find focused city from regions data
- */
-export function findFocusedCity(regionsLived: Region[], cityName: string) {
-	return regionsLived.flatMap((region) => region.states).find((state) => state.name === cityName);
-}
