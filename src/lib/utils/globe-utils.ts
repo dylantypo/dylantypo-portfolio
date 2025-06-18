@@ -32,7 +32,7 @@ export function processRegionsData(regionsLived: Region[]): ProcessedLocationDat
  */
 export function calculateCloudsRotationSpeed(isMobile: boolean): number {
 	const BASE_SPEED = -0.015;
-	return isMobile ? BASE_SPEED * 1.25 : BASE_SPEED;
+	return isMobile ? BASE_SPEED * 1.15 : BASE_SPEED;
 }
 
 /**

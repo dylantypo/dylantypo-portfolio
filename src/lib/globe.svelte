@@ -47,6 +47,9 @@
 
 	let devicePixelCategory: DeviceCategory = 'low';
 
+	let visibleLabels = $state<Set<string>>(new Set());
+	let labData: any[] = [];
+
 	const regionsLived: Region[] = [
 		{
 			country: 'United States',
@@ -114,6 +117,61 @@
 	const setFocusedLocationName = (name: string | null) => {
 		focusedLocationName = name;
 	};
+
+	function checkLabelOverlaps() {
+		const viewport = viewportManager.getViewportInfo();
+		if (!viewport.isMobile) {
+			visibleLabels = new Set(labData.map((d) => d.name));
+			updateLabelVisibility();
+			return;
+		}
+
+		const markers = document.querySelectorAll('.location-marker');
+		const rects = Array.from(markers).map((el) => ({
+			element: el as HTMLElement,
+			rect: el.getBoundingClientRect(),
+			name: el.textContent || ''
+		}));
+
+		const newVisible = new Set<string>();
+		const sortedData = [...labData].sort((a, b) => b.years - a.years);
+
+		for (const data of sortedData) {
+			const marker = rects.find((r) => r.name === data.name);
+			if (!marker) continue;
+
+			const hasOverlap = Array.from(newVisible).some((visibleName) => {
+				const visibleMarker = rects.find((r) => r.name === visibleName);
+				if (!visibleMarker) return false;
+
+				const buffer = 20;
+				return !(
+					marker.rect.right + buffer < visibleMarker.rect.left ||
+					marker.rect.left - buffer > visibleMarker.rect.right ||
+					marker.rect.bottom + buffer < visibleMarker.rect.top ||
+					marker.rect.top - buffer > visibleMarker.rect.bottom
+				);
+			});
+
+			if (!hasOverlap) {
+				newVisible.add(data.name);
+			}
+		}
+
+		visibleLabels = newVisible;
+		updateLabelVisibility();
+	}
+
+	function updateLabelVisibility() {
+		document.querySelectorAll('.location-marker').forEach((marker) => {
+			const name = marker.textContent || '';
+			if (visibleLabels.has(name)) {
+				marker.classList.remove('location-hidden');
+			} else {
+				marker.classList.add('location-hidden');
+			}
+		});
+	}
 
 	function createLocationMarker(data: any, setFocused: (name: string | null) => void): HTMLElement {
 		const wrapper = document.createElement('div');
@@ -271,9 +329,17 @@
 			});
 			controls.addEventListener('end', () => {
 				isUserInteracting = false;
+				requestAnimationFrame(() => {
+					if (window.innerWidth < 768) {
+						setTimeout(checkLabelOverlaps, 200);
+					} else {
+						visibleLabels = new Set(labData.map((d) => d.name));
+						updateLabelVisibility();
+					}
+				});
 			});
 
-			const labData = processRegionsData(regionsLived);
+			labData = processRegionsData(regionsLived);
 			const MIN_ALTITUDE = 0.0125;
 
 			const globe = new Globe()
@@ -374,6 +440,12 @@
 				requestAnimationFrame(() => {
 					resizeRenderers();
 					adjustCamera(viewport);
+					if (viewport.isMobile) {
+						setTimeout(checkLabelOverlaps, 100);
+					} else {
+						visibleLabels = new Set(labData.map((d) => d.name));
+						updateLabelVisibility();
+					}
 				});
 			};
 
@@ -447,6 +519,8 @@
 			resizeRenderers();
 			adjustCamera(initialViewport, focusedCity);
 			CLOUDS_ROTATION_SPEED = calculateCloudsRotationSpeed(initialViewport.isMobile);
+
+			setTimeout(() => checkLabelOverlaps(), 200);
 		}
 	});
 
@@ -520,7 +594,7 @@
 		padding: 4px 8px !important;
 		border-radius: 4px !important;
 		opacity: 1 !important;
-		transition: transform 0.15s ease !important;
+		transition: opacity 0.3s ease !important;
 		margin: 0 !important;
 		border: none !important;
 		background: transparent !important;
