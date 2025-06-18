@@ -64,7 +64,7 @@ export function getSharpFontSize(): number {
 
 	if (isMobile) {
 		// 📱 Mobile portrait - medium text
-		baseFontSize = smallestDimension < 400 ? 0.6 : 0.8;
+		baseFontSize = smallestDimension < 400 ? 0.65 : 0.85;
 	} else if (isTablet) {
 		// 📱 Tablet - balanced size
 		baseFontSize = 0.9;
