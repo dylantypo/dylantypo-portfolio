@@ -3,7 +3,7 @@
 		{
 			year: 'Now',
 			company: 'Booz Allen Hamilton',
-			role: 'Data Scientist (Senior Consultant)  ',
+			role: 'Senior Data Scientist',
 			description:
 				'Developed Python-based tools and automated workflows, integrating AWS and Tableau to improve data analysis and visualization  ',
 			showDescription: false
@@ -11,7 +11,7 @@
 		{
 			year: '2019',
 			company: 'Interos',
-			role: 'Data Analytics Intern  ',
+			role: 'Data Analytics Intern',
 			description:
 				'Used Snowflake and SQL to organize data and developed efficient pipelines for supply chain analysis  ',
 			showDescription: false
@@ -19,7 +19,7 @@
 		{
 			year: '2018',
 			company: 'The Phoenix Team',
-			role: 'Product Development Intern  ',
+			role: 'Product Development Intern',
 			description:
 				'Leveraged agile practices to support product design and coordinated efforts to deliver a client-focused white paper  ',
 			showDescription: false
