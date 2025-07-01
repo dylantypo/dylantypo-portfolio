@@ -320,7 +320,7 @@
 		border-radius: var(--spacing-base);
 		padding: var(--spacing-xl);
 		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-		backdrop-filter: blur(1px);
+		backdrop-filter: blur(4px);
 		border: 1px solid rgba(255, 255, 255, 0.1);
 		width: 100%;
 		max-width: 100%;
