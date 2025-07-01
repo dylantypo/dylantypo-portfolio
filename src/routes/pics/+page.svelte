@@ -49,7 +49,8 @@
 					service: formData.service,
 					message: formData.details,
 					_subject: `📸 Photography Inquiry - ${formData.service}`,
-					_replyto: formData.contact // Enables reply directly to client
+					_replyto: formData.contact, // Enables reply directly to client
+					_format: 'json'
 				})
 			});
 
