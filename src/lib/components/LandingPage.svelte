@@ -125,7 +125,6 @@
 		justify-content: center;
 		gap: 0.5rem;
 		backdrop-filter: blur(4px);
-		-webkit-backdrop-filter: blur(4px);
 		touch-action: manipulation;
 	}
 

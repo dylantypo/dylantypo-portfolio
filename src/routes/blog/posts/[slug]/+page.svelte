@@ -126,7 +126,6 @@
 		padding: clamp(1.5rem, 5vw, 3rem);
 		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 		backdrop-filter: blur(8px);
-		-webkit-backdrop-filter: blur(8px);
 		border: 1px solid rgba(255, 255, 255, 0.1);
 	}
 
@@ -282,7 +281,6 @@
 		border: 1px solid rgba(255, 255, 255, 0.1);
 		transition: all 0.2s ease;
 		backdrop-filter: blur(4px);
-		-webkit-backdrop-filter: blur(4px);
 	}
 
 	.back-to-blog:hover {

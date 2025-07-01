@@ -146,7 +146,6 @@
 		padding: 0.75rem 1.5rem;
 		border-radius: var(--spacing-lg);
 		backdrop-filter: blur(4px);
-		-webkit-backdrop-filter: blur(4px);
 		transform: translateZ(0);
 		will-change: transform;
 	}

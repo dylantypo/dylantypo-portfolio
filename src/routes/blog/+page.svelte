@@ -223,7 +223,6 @@
 		border-radius: clamp(0.5rem, 2vw, 1rem);
 		transition: all 0.3s ease;
 		backdrop-filter: blur(8px);
-		-webkit-backdrop-filter: blur(8px);
 	}
 
 	.search-wrapper:focus-within {

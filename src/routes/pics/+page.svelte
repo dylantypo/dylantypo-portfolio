@@ -14,6 +14,9 @@
 	let submitMessage = $state('');
 	let messageType = $state<'success' | 'error' | ''>('');
 
+	// Custom dropdown state
+	let dropdownOpen = $state(false);
+
 	// Service options
 	const services = ['📸 Portraits', '🐕 Pet Pictures', '🎉 Events', '✨ Other'];
 
@@ -35,21 +38,20 @@
 		submitMessage = '';
 
 		try {
-			// For now, using mailto - you can replace with Formspree
 			const subject = `Photography Inquiry - ${formData.service}`;
 			const body = `
-                        New photography inquiry:
+New photography inquiry:
 
-                        Name: ${formData.name}
-                        Contact: ${formData.contact}
-                        Service: ${formData.service}
+Name: ${formData.name}
+Contact: ${formData.contact}
+Service: ${formData.service}
 
-                        Details:
-                        ${formData.details || 'No additional details provided'}
+Details:
+${formData.details || 'No additional details provided'}
 
-                        ---
-                        Sent from dylanposner.com/pics
-			            `.trim();
+---
+Sent from dylanposner.com/pics
+			`.trim();
 
 			const mailtoLink = `mailto:dylantylerposner@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 			window.location.href = mailtoLink;
@@ -71,16 +73,36 @@
 		}
 	}
 
-	onMount(() => {
-		window.scrollTo(0, 0);
-		// Prevent horizontal scroll like your blog page
-		document.body.style.overflowX = 'hidden';
-		document.documentElement.style.overflowX = 'hidden';
+	// Close dropdown when clicking outside
+	function handleClickOutside(event: Event) {
+		const target = event.target as HTMLElement;
+		if (!target.closest('.custom-select')) {
+			dropdownOpen = false;
+		}
+	}
+
+	// Handle keyboard navigation
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape') {
+			dropdownOpen = false;
+		}
+	}
+
+	// Dropdown effect
+	$effect(() => {
+		if (dropdownOpen) {
+			document.addEventListener('click', handleClickOutside);
+			document.addEventListener('keydown', handleKeydown);
+		}
 
 		return () => {
-			document.body.style.overflowX = '';
-			document.documentElement.style.overflowX = '';
+			document.removeEventListener('click', handleClickOutside);
+			document.removeEventListener('keydown', handleKeydown);
 		};
+	});
+
+	onMount(() => {
+		window.scrollTo(0, 0);
 	});
 </script>
 
@@ -136,7 +158,7 @@
 						id="contact"
 						bind:value={formData.contact}
 						class="form-input"
-						placeholder="Preferred Contact Method"
+						placeholder="Preferred Contact"
 						required
 					/>
 				</div>
@@ -145,21 +167,62 @@
 					<label for="service" class="form-label">
 						Service Type <span class="required">*</span>
 					</label>
-					<select id="service" bind:value={formData.service} class="form-select" required>
-						<option value="">Select a service...</option>
-						{#each services as service}
-							<option value={service}>{service}</option>
-						{/each}
-					</select>
+
+					<div class="custom-select" class:open={dropdownOpen}>
+						<button
+							type="button"
+							class="select-button"
+							onclick={() => (dropdownOpen = !dropdownOpen)}
+							aria-haspopup="listbox"
+							aria-expanded={dropdownOpen}
+							aria-labelledby="service-label"
+							id="service"
+						>
+							<span class="select-text">
+								{formData.service || 'Select a service...'}
+							</span>
+							<svg
+								class="select-arrow"
+								class:rotated={dropdownOpen}
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+							>
+								<polyline points="6 9 12 15 18 9"></polyline>
+							</svg>
+						</button>
+
+						{#if dropdownOpen}
+							<div class="select-options" role="listbox">
+								{#each services as service}
+									<button
+										type="button"
+										class="select-option"
+										class:selected={formData.service === service}
+										onclick={() => {
+											formData.service = service;
+											dropdownOpen = false;
+										}}
+										role="option"
+										aria-selected={formData.service === service}
+										tabindex="0"
+									>
+										{service}
+									</button>
+								{/each}
+							</div>
+						{/if}
+					</div>
 				</div>
 
 				<div class="form-group">
-					<label for="details" class="form-label">💭 Tell me about your vision</label>
+					<label for="details" class="form-label">💭 What am I capturing?</label>
 					<textarea
 						id="details"
 						bind:value={formData.details}
 						class="form-textarea"
-						placeholder="What am I capturing? Don't hold back!"
+						placeholder="Tell me about your vision..."
 						rows="5"
 					></textarea>
 				</div>
@@ -237,7 +300,7 @@
 	/* Form Section */
 	.form-section {
 		width: 100%;
-		padding-bottom: var(--spacing-xl);
+		padding-bottom: var(--spacing-base) - 50px;
 	}
 
 	.form-container {
@@ -255,12 +318,10 @@
 	}
 
 	.contact-form {
-		background: var(--color-fill);
 		border-radius: var(--spacing-base);
 		padding: var(--spacing-xl);
 		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-		backdrop-filter: blur(8px);
-		-webkit-backdrop-filter: blur(8px);
+		backdrop-filter: blur(1px);
 		border: 1px solid rgba(255, 255, 255, 0.1);
 		width: 100%;
 		max-width: 100%;
@@ -289,15 +350,14 @@
 	}
 
 	.form-input,
-	.form-select,
-	.form-textarea {
+	.form-textarea,
+	.select-button {
 		width: 100%;
 		padding: var(--spacing-base);
 		border: 1px solid rgba(255, 255, 255, 0.2);
 		border-radius: calc(var(--spacing-base) * 0.75);
 		background: var(--color-hover);
 		backdrop-filter: blur(8px);
-		-webkit-backdrop-filter: blur(8px);
 		color: var(--color-text-primary);
 		font-family: var(--font-family-base);
 		font-size: var(--font-size-base);
@@ -306,7 +366,6 @@
 	}
 
 	.form-input:focus,
-	.form-select:focus,
 	.form-textarea:focus {
 		outline: none;
 		border-color: var(--color-secondary);
@@ -322,6 +381,110 @@
 	.form-textarea {
 		resize: vertical;
 		min-height: 120px;
+	}
+
+	/* Custom Select Styles */
+	.custom-select {
+		position: relative;
+		width: 100%;
+	}
+
+	.select-button {
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		text-align: left;
+	}
+
+	.select-button:focus {
+		outline: none;
+		border-color: var(--color-secondary);
+		box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+		background: rgba(255, 255, 255, 0.15);
+	}
+
+	.select-text {
+		color: var(--color-text-primary);
+		opacity: 1;
+	}
+
+	.select-button:not([aria-expanded='true']) .select-text {
+		opacity: 0.7;
+	}
+
+	.custom-select.open .select-button {
+		border-color: var(--color-secondary);
+		background: rgba(255, 255, 255, 0.15);
+	}
+
+	.select-arrow {
+		width: 20px;
+		height: 20px;
+		transition: transform var(--transition-speed) ease;
+		color: var(--color-text-primary);
+		opacity: 0.7;
+	}
+
+	.select-arrow.rotated {
+		transform: rotate(180deg);
+	}
+
+	.select-options {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		right: 0;
+		z-index: 100;
+		background: var(--color-primary);
+		backdrop-filter: blur(12px);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		border-radius: calc(var(--spacing-base) * 0.75);
+		margin-top: 4px;
+		overflow: hidden;
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+
+		animation: dropdownFadeIn 0.2s ease-out;
+	}
+
+	@keyframes dropdownFadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(-8px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.select-option {
+		width: 100%;
+		padding: var(--spacing-base);
+		border: none;
+		background: var(--color-hover);
+		color: var(--color-text-primary);
+		font-family: var(--font-family-base);
+		font-size: var(--font-size-base);
+		text-align: left;
+		cursor: pointer;
+		transition: all var(--transition-speed) ease;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.select-option:last-child {
+		border-bottom: none;
+	}
+
+	.select-option:hover,
+	.select-option:focus {
+		background: rgba(255, 255, 255, 0.1);
+		outline: none;
+	}
+
+	.select-option.selected {
+		background: rgba(20, 184, 166, 0.2);
+		color: var(--color-secondary);
 	}
 
 	.submit-button {
@@ -358,7 +521,6 @@
 		font-size: var(--font-size-base);
 		margin-top: var(--spacing-base);
 		backdrop-filter: blur(8px);
-		-webkit-backdrop-filter: blur(8px);
 	}
 
 	.form-message.success {
@@ -405,7 +567,6 @@
 		border: 1px solid rgba(255, 255, 255, 0.1);
 		border-radius: calc(var(--spacing-base) * 0.75);
 		backdrop-filter: blur(4px);
-		-webkit-backdrop-filter: blur(4px);
 		transition: all var(--transition-speed) ease;
 		margin-top: var(--spacing-base);
 	}
@@ -445,19 +606,32 @@
 		}
 	}
 
+	/* Mobile optimizations */
+	@media (max-width: 768px) {
+		.select-options {
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+		}
+	}
+
 	/* Accessibility */
 	@media (prefers-reduced-motion: reduce) {
 		.submit-button,
 		.back-home,
 		.form-input,
-		.form-select,
-		.form-textarea {
+		.form-textarea,
+		.select-arrow,
+		.select-button,
+		.select-option {
 			transition: none;
 		}
 
 		.submit-button:hover,
 		.back-home:hover {
 			transform: none;
+		}
+
+		.select-options {
+			animation: none;
 		}
 	}
 </style>
