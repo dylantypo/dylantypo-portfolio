@@ -38,35 +38,32 @@
 		submitMessage = '';
 
 		try {
-			const subject = `Photography Inquiry - ${formData.service}`;
-			const body = `
-New photography inquiry:
+			const response = await fetch('https://formspree.io/f/mrbkjvly', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					name: formData.name,
+					contact: formData.contact,
+					service: formData.service,
+					details: formData.details,
+					_subject: `📸 Photography Inquiry - ${formData.service}`,
+					_replyto: formData.contact // Enables reply directly to client
+				})
+			});
 
-Name: ${formData.name}
-Contact: ${formData.contact}
-Service: ${formData.service}
+			if (response.ok) {
+				submitMessage = '✅ Message sent successfully!';
+				messageType = 'success';
 
-Details:
-${formData.details || 'No additional details provided'}
-
----
-Sent from dylanposner.com/pics
-			`.trim();
-
-			const mailtoLink = `mailto:dylantylerposner@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-			window.location.href = mailtoLink;
-
-			submitMessage = '✅ Email opened! Send when ready.';
-			messageType = 'success';
-
-			// Reset form after delay
-			setTimeout(() => {
+				// Reset form
 				formData = { name: '', contact: '', service: '', details: '' };
-				submitMessage = '';
-				messageType = '';
-			}, 3000);
+			} else {
+				throw new Error('Failed to send');
+			}
 		} catch (error) {
-			submitMessage = '❌ Something went wrong. Please try again.';
+			submitMessage = '❌ Failed to send. Please try again.';
 			messageType = 'error';
 		} finally {
 			isSubmitting = false;
