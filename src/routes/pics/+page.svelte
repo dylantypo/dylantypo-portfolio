@@ -358,8 +358,12 @@
 		color: var(--color-text-primary);
 		font-family: var(--font-family-base);
 		font-size: var(--font-size-base);
-		transition: all var(--transition-speed) ease;
 		box-sizing: border-box;
+	}
+
+	.form-input,
+	.select-button {
+		transition: all var(--transition-speed) ease;
 	}
 
 	.form-input:focus,
@@ -377,7 +381,7 @@
 
 	.form-textarea {
 		resize: vertical;
-		min-height: 120px;
+		min-height: 100px;
 	}
 
 	/* Custom Select Styles */
