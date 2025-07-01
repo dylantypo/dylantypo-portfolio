@@ -212,13 +212,13 @@
 				</div>
 
 				<div class="form-group">
-					<label for="details" class="form-label">💭 What am I capturing?</label>
+					<label for="details" class="form-label">💭 Details</label>
 					<textarea
 						id="details"
 						bind:value={formData.details}
 						class="form-textarea"
-						placeholder="Tell me about your vision..."
-						rows="5"
+						placeholder="date, location, special requests, etc."
+						rows="2"
 					></textarea>
 				</div>
 
@@ -241,8 +241,7 @@
 
 	<footer class="pics-footer">
 		<div class="footer-content">
-			<p>📧 Direct: <a href="mailto:dylantylerposner@gmail.com">dylantylerposner@gmail.com</a></p>
-			<a href="/" class="back-home">🏠 Back to Portfolio</a>
+			<p>📧 My Email: <a href="mailto:dylantylerposner@gmail.com">dylantylerposner@gmail.com</a></p>
 		</div>
 	</footer>
 </main>
@@ -615,7 +614,6 @@
 	/* Accessibility */
 	@media (prefers-reduced-motion: reduce) {
 		.submit-button,
-		.back-home,
 		.form-input,
 		.form-textarea,
 		.select-arrow,
@@ -624,8 +622,7 @@
 			transition: none;
 		}
 
-		.submit-button:hover,
-		.back-home:hover {
+		.submit-button:hover {
 			transform: none;
 		}
 

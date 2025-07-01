@@ -28,7 +28,7 @@ export async function load({ url, route }) {
 			preloadHints.push({ href: '/fonts/Inter-Regular.woff2', as: 'font', type: 'font/woff2' });
 			break;
 
-		case '/pics':
+		case '/contact':
 			// Contact form: Basic resources only
 			break;
 

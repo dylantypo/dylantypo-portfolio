@@ -33,7 +33,7 @@ async function getSitemapXml(): Promise<string> {
 		{ url: '/', priority: '1.0', changefreq: 'monthly' },
 		{ url: '/resume', priority: '0.9', changefreq: 'monthly' },
 		{ url: '/blog', priority: '0.8', changefreq: 'weekly' },
-		{ url: '/pics', priority: '0.8', changefreq: 'monthly' }
+		{ url: '/contact', priority: '0.8', changefreq: 'monthly' }
 	];
 
 	staticPages.forEach((page) => {
