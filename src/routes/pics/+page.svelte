@@ -1,0 +1,463 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import Starfield from '$lib/components/starfield.svelte';
+
+	// Form state using Svelte 5 runes
+	let formData = $state({
+		name: '',
+		contact: '',
+		service: '',
+		details: ''
+	});
+
+	let isSubmitting = $state(false);
+	let submitMessage = $state('');
+	let messageType = $state<'success' | 'error' | ''>('');
+
+	// Service options
+	const services = ['📸 Portraits', '🐕 Pet Pictures', '🎉 Events', '✨ Other'];
+
+	// Form validation
+	const isValid = $derived(
+		formData.name.trim() !== '' && formData.contact.trim() !== '' && formData.service !== ''
+	);
+
+	async function handleSubmit(event: Event) {
+		event.preventDefault();
+
+		if (!isValid) {
+			submitMessage = '⚠️ Please fill in required fields';
+			messageType = 'error';
+			return;
+		}
+
+		isSubmitting = true;
+		submitMessage = '';
+
+		try {
+			// For now, using mailto - you can replace with Formspree
+			const subject = `Photography Inquiry - ${formData.service}`;
+			const body = `
+                        New photography inquiry:
+
+                        Name: ${formData.name}
+                        Contact: ${formData.contact}
+                        Service: ${formData.service}
+
+                        Details:
+                        ${formData.details || 'No additional details provided'}
+
+                        ---
+                        Sent from dylanposner.com/pics
+			            `.trim();
+
+			const mailtoLink = `mailto:dylantylerposner@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+			window.location.href = mailtoLink;
+
+			submitMessage = '✅ Email opened! Send when ready.';
+			messageType = 'success';
+
+			// Reset form after delay
+			setTimeout(() => {
+				formData = { name: '', contact: '', service: '', details: '' };
+				submitMessage = '';
+				messageType = '';
+			}, 3000);
+		} catch (error) {
+			submitMessage = '❌ Something went wrong. Please try again.';
+			messageType = 'error';
+		} finally {
+			isSubmitting = false;
+		}
+	}
+
+	onMount(() => {
+		window.scrollTo(0, 0);
+		// Prevent horizontal scroll like your blog page
+		document.body.style.overflowX = 'hidden';
+		document.documentElement.style.overflowX = 'hidden';
+
+		return () => {
+			document.body.style.overflowX = '';
+			document.documentElement.style.overflowX = '';
+		};
+	});
+</script>
+
+<svelte:head>
+	<title>Contact | Dylan Posner</title>
+	<meta
+		name="description"
+		content="Book a photography session with Dylan Posner. Professional portraits, pet photos, events, and custom shoots in Chicago."
+	/>
+	<meta property="og:title" content="Contact | Dylan Posner" />
+	<meta
+		property="og:description"
+		content="Professional photography services - portraits, pets, events & more"
+	/>
+</svelte:head>
+
+<!-- Stars background like homepage -->
+<Starfield />
+
+<main class="pics-container">
+	<nav class="breadcrumb">
+		<a href="/">🏠 Home</a>
+		<span class="separator">→</span>
+		<span class="current">📸 Photography</span>
+	</nav>
+
+	<section class="form-section">
+		<div class="form-container">
+			<h2 class="form-title">📋 Let's Plan Your Shoot</h2>
+
+			<form onsubmit={handleSubmit} class="contact-form">
+				<div class="form-group">
+					<label for="name" class="form-label">
+						Name <span class="required">*</span>
+					</label>
+					<input
+						type="text"
+						id="name"
+						bind:value={formData.name}
+						class="form-input"
+						placeholder="Preferred Name"
+						required
+						autocomplete="name"
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="contact" class="form-label">
+						Email or Phone Number<span class="required">*</span>
+					</label>
+					<input
+						type="text"
+						id="contact"
+						bind:value={formData.contact}
+						class="form-input"
+						placeholder="Preferred Contact Method"
+						required
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="service" class="form-label">
+						Service Type <span class="required">*</span>
+					</label>
+					<select id="service" bind:value={formData.service} class="form-select" required>
+						<option value="">Select a service...</option>
+						{#each services as service}
+							<option value={service}>{service}</option>
+						{/each}
+					</select>
+				</div>
+
+				<div class="form-group">
+					<label for="details" class="form-label">💭 Tell me about your vision</label>
+					<textarea
+						id="details"
+						bind:value={formData.details}
+						class="form-textarea"
+						placeholder="What am I capturing? Don't hold back!"
+						rows="5"
+					></textarea>
+				</div>
+
+				<button type="submit" class="submit-button" disabled={!isValid || isSubmitting}>
+					{#if isSubmitting}
+						⏳ Sending...
+					{:else}
+						📤 Send Inquiry
+					{/if}
+				</button>
+
+				{#if submitMessage}
+					<div class="form-message {messageType}">
+						{submitMessage}
+					</div>
+				{/if}
+			</form>
+		</div>
+	</section>
+
+	<footer class="pics-footer">
+		<div class="footer-content">
+			<p>📧 Direct: <a href="mailto:dylantylerposner@gmail.com">dylantylerposner@gmail.com</a></p>
+			<a href="/" class="back-home">🏠 Back to Portfolio</a>
+		</div>
+	</footer>
+</main>
+
+<style>
+	.pics-container {
+		min-height: 100vh;
+		width: 100%;
+		max-width: 100vw;
+		color: var(--color-text-primary);
+		font-family: var(--font-family-base);
+		overflow-x: hidden;
+		box-sizing: border-box;
+		padding: var(--spacing-base) 0;
+	}
+
+	/* Breadcrumb */
+	.breadcrumb {
+		max-width: min(90vw, 800px);
+		margin: 0 auto var(--spacing-xl);
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: var(--spacing-sm);
+		font-size: var(--font-size-base);
+		opacity: 0.8;
+		padding: 0 var(--spacing-lg);
+	}
+
+	.breadcrumb a {
+		color: var(--color-secondary);
+		text-decoration: none;
+		transition: opacity var(--transition-speed) ease;
+	}
+
+	.breadcrumb a:hover {
+		opacity: 0.8;
+	}
+
+	.separator {
+		color: rgba(255, 255, 255, 0.4);
+		font-size: 0.8em;
+	}
+
+	.current {
+		color: var(--color-text-primary);
+		font-weight: 500;
+	}
+
+	/* Form Section */
+	.form-section {
+		width: 100%;
+		padding-bottom: var(--spacing-xl);
+	}
+
+	.form-container {
+		max-width: min(90vw, 600px);
+		margin: 0 auto;
+		padding: 0 var(--spacing-lg);
+		box-sizing: border-box;
+	}
+
+	.form-title {
+		font-size: var(--font-size-lg);
+		margin-bottom: var(--spacing-xl);
+		text-align: center;
+		color: var(--color-text-primary);
+	}
+
+	.contact-form {
+		background: var(--color-fill);
+		border-radius: var(--spacing-base);
+		padding: var(--spacing-xl);
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-lg);
+	}
+
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: calc(var(--spacing-base) * 0.5);
+		width: 100%;
+		max-width: 100%;
+	}
+
+	.form-label {
+		font-size: var(--font-size-base);
+		font-weight: 500;
+		color: var(--color-text-primary);
+	}
+
+	.required {
+		color: var(--color-secondary);
+	}
+
+	.form-input,
+	.form-select,
+	.form-textarea {
+		width: 100%;
+		padding: var(--spacing-base);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		border-radius: calc(var(--spacing-base) * 0.75);
+		background: var(--color-hover);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+		color: var(--color-text-primary);
+		font-family: var(--font-family-base);
+		font-size: var(--font-size-base);
+		transition: all var(--transition-speed) ease;
+		box-sizing: border-box;
+	}
+
+	.form-input:focus,
+	.form-select:focus,
+	.form-textarea:focus {
+		outline: none;
+		border-color: var(--color-secondary);
+		box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+		background: rgba(255, 255, 255, 0.15);
+	}
+
+	.form-input::placeholder,
+	.form-textarea::placeholder {
+		color: rgba(255, 255, 255, 0.5);
+	}
+
+	.form-textarea {
+		resize: vertical;
+		min-height: 120px;
+	}
+
+	.submit-button {
+		background: var(--color-secondary);
+		color: white;
+		border: none;
+		border-radius: calc(var(--spacing-base) * 0.75);
+		padding: var(--spacing-base) var(--spacing-lg);
+		font-family: var(--font-family-base);
+		font-size: var(--font-size-base);
+		font-weight: 500;
+		cursor: pointer;
+		transition: all var(--transition-speed) ease;
+		margin-top: var(--spacing-base);
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.submit-button:hover:not(:disabled) {
+		opacity: 0.8;
+		transform: translateY(-1px);
+	}
+
+	.submit-button:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+		transform: none;
+	}
+
+	.form-message {
+		text-align: center;
+		padding: var(--spacing-base);
+		border-radius: calc(var(--spacing-base) * 0.75);
+		font-size: var(--font-size-base);
+		margin-top: var(--spacing-base);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+	}
+
+	.form-message.success {
+		background: rgba(16, 185, 129, 0.1);
+		border: 1px solid rgba(16, 185, 129, 0.3);
+		color: #10b981;
+	}
+
+	.form-message.error {
+		background: rgba(239, 68, 68, 0.1);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		color: #ef4444;
+	}
+
+	/* Footer */
+	.pics-footer {
+		text-align: center;
+		padding: var(--spacing-xl) var(--spacing-lg);
+		margin-top: auto;
+	}
+
+	.footer-content {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-base);
+		opacity: 0.7;
+		font-size: var(--font-size-base);
+	}
+
+	.footer-content a {
+		color: var(--color-secondary);
+		text-decoration: none;
+		transition: opacity var(--transition-speed) ease;
+		display: inline-block;
+	}
+
+	.footer-content a:hover {
+		opacity: 0.8;
+	}
+
+	.back-home {
+		padding: calc(var(--spacing-base) * 0.75);
+		background: var(--color-fill);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: calc(var(--spacing-base) * 0.75);
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
+		transition: all var(--transition-speed) ease;
+		margin-top: var(--spacing-base);
+	}
+
+	.back-home:hover {
+		background: var(--color-hover);
+		transform: translateY(-1px);
+	}
+
+	.back-home:focus-visible {
+		outline: 2px solid var(--color-focus);
+		outline-offset: 2px;
+	}
+
+	/* Responsive adjustments using existing breakpoints */
+	@media (max-width: 925px) {
+		.form-container {
+			padding: 0 var(--content-padding-current);
+		}
+
+		.contact-form {
+			padding: var(--spacing-lg);
+		}
+
+		.breadcrumb {
+			padding: 0 var(--content-padding-current);
+		}
+	}
+
+	@media (max-width: 610px) {
+		.breadcrumb {
+			font-size: 0.8rem;
+		}
+
+		.contact-form {
+			padding: var(--spacing-base);
+		}
+	}
+
+	/* Accessibility */
+	@media (prefers-reduced-motion: reduce) {
+		.submit-button,
+		.back-home,
+		.form-input,
+		.form-select,
+		.form-textarea {
+			transition: none;
+		}
+
+		.submit-button:hover,
+		.back-home:hover {
+			transform: none;
+		}
+	}
+</style>
