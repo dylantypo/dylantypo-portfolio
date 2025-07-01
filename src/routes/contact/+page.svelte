@@ -241,6 +241,11 @@
 
 	<footer class="pics-footer">
 		<div class="footer-content">
+			<p>
+				📸 My Work: <a href="https://www.instagram.com/dylanposnerphoto/" target="_blank"
+					>@dylanposnerphoto</a
+				>
+			</p>
 			<p>📧 My Email: <a href="mailto:dylantylerposner@gmail.com">dylantylerposner@gmail.com</a></p>
 		</div>
 	</footer>
