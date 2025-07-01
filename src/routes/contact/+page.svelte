@@ -114,6 +114,8 @@
 	/>
 </svelte:head>
 
+<Starfield />
+
 <main class="pics-container">
 	<nav class="breadcrumb">
 		<a href="/">🏠 Home</a>
@@ -317,9 +319,8 @@
 	.contact-form {
 		border-radius: var(--spacing-base);
 		padding: var(--spacing-xl);
-		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-		background: var(--color-primary);
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		box-shadow: 0 4px 20px var(--color-focus);
+		border: 1px solid var(--color-hover);
 		width: 100%;
 		max-width: 100%;
 		box-sizing: border-box;
