@@ -38,28 +38,22 @@
 		submitMessage = '';
 
 		try {
+			const form = new FormData();
+			form.append('name', formData.name);
+			form.append('email', formData.contact);
+			form.append('service', formData.service);
+			form.append('message', formData.details);
+			form.append('_subject', `📸 Photography Inquiry - ${formData.service}`);
+			form.append('_replyto', formData.contact);
+
 			const response = await fetch('https://formspree.io/f/mrbkjvly', {
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Accept: 'application/json'
-				},
-				body: JSON.stringify({
-					name: formData.name,
-					email: formData.contact,
-					service: formData.service,
-					message: formData.details,
-					_subject: `📸 Photography Inquiry - ${formData.service}`,
-					_replyto: formData.contact, // Enables reply directly to client
-					_format: 'json'
-				})
+				body: form
 			});
 
-			if (response.ok) {
+			if (response.status >= 200 && response.status < 400) {
 				submitMessage = '✅ Message sent successfully!';
 				messageType = 'success';
-
-				// Reset form
 				formData = { name: '', contact: '', service: '', details: '' };
 			} else {
 				throw new Error('Failed to send');
