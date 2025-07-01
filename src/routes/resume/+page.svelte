@@ -31,6 +31,19 @@
 	});
 </script>
 
+<svelte:head>
+	<title>Resume | Dylan Posner</title>
+	<meta
+		name="description"
+		content="Data Scientist with 3+ years experience. Python | AWS | Tableau expert."
+	/>
+	<meta property="og:title" content="Resume | Dylan Posner" />
+	<meta
+		property="og:description"
+		content="Data Scientist with 3+ years experience. Python | AWS | Tableau expert."
+	/>
+</svelte:head>
+
 {#if isLoading}
 	<div class="flex justify-center items-center min-h-screen">
 		<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
