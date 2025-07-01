@@ -45,9 +45,9 @@
 				},
 				body: JSON.stringify({
 					name: formData.name,
-					contact: formData.contact,
+					email: formData.contact,
 					service: formData.service,
-					details: formData.details,
+					message: formData.details,
 					_subject: `📸 Photography Inquiry - ${formData.service}`,
 					_replyto: formData.contact // Enables reply directly to client
 				})
