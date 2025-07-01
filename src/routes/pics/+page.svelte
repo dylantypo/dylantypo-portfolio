@@ -43,8 +43,8 @@
 			form.append('email', formData.contact);
 			form.append('service', formData.service);
 			form.append('message', formData.details);
-			form.append('_subject', `📸 Photography Inquiry - ${formData.service}`);
-			form.append('_replyto', formData.contact);
+			form.append('_subject', `Photography Inquiry: ${formData.service} - ${formData.name}`);
+			form.append('_next', 'false');
 
 			const response = await fetch('https://formspree.io/f/mrbkjvly', {
 				method: 'POST',
