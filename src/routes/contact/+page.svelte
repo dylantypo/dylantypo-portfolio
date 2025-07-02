@@ -38,6 +38,13 @@
 		submitMessage = '';
 
 		try {
+			console.log('Form data being sent:', {
+				name: formData.name,
+				email: formData.contact,
+				service: formData.service,
+				message: formData.details
+			});
+
 			const form = new FormData();
 			form.append('name', formData.name);
 			form.append('email', formData.contact);
@@ -47,20 +54,20 @@
 
 			const response = await fetch('https://formspree.io/f/mrbkjvly', {
 				method: 'POST',
-				headers: {
-					Accept: 'application/json'
-				},
 				body: form
 			});
 
-			if (response.status >= 200 && response.status < 400) {
+			if (response.ok) {
 				submitMessage = '✅ Message sent successfully!';
 				messageType = 'success';
 				formData = { name: '', contact: '', service: '', details: '' };
 			} else {
-				throw new Error('Failed to send');
+				const errorData = await response.json();
+				console.error('Formspree error:', errorData);
+				throw new Error(`Failed to send: ${response.status}`);
 			}
 		} catch (error) {
+			console.error('Submit error:', error);
 			submitMessage = '❌ Failed to send. Please try again.';
 			messageType = 'error';
 		} finally {
@@ -83,12 +90,12 @@
 		}
 	}
 
-	// Dropdown effect
+	// FIXED: Proper $effect cleanup
 	$effect(() => {
-		if (dropdownOpen) {
-			document.addEventListener('click', handleClickOutside);
-			document.addEventListener('keydown', handleKeydown);
-		}
+		if (!dropdownOpen) return;
+
+		document.addEventListener('click', handleClickOutside);
+		document.addEventListener('keydown', handleKeydown);
 
 		return () => {
 			document.removeEventListener('click', handleClickOutside);
