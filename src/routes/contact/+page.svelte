@@ -20,16 +20,40 @@
 	// Service options
 	const services = ['📸 Portraits', '🐕 Pet Pictures', '🎉 Events', '✨ Other'];
 
-	// Form validation
-	const isValid = $derived(
-		formData.name.trim() !== '' && formData.contact.trim() !== '' && formData.service !== ''
-	);
+	// Simple email validation
+	function isValidEmail(email: string): boolean {
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		return emailRegex.test(email);
+	}
+
+	// Form validation with detailed messages
+	const validationState = $derived.by(() => {
+		const issues = [];
+
+		if (formData.name.trim() === '') issues.push('name');
+		if (formData.contact.trim() === '') issues.push('email-empty');
+		else if (!isValidEmail(formData.contact)) issues.push('email-invalid');
+		if (formData.service === '') issues.push('service');
+
+		return {
+			isValid: issues.length === 0,
+			issues
+		};
+	});
+
+	function getErrorMessage(issues: string[]): string {
+		if (issues.includes('name')) return '⚠️ Please enter your name';
+		if (issues.includes('email-empty')) return '⚠️ Please enter your email address';
+		if (issues.includes('email-invalid')) return '⚠️ Please enter a valid email address';
+		if (issues.includes('service')) return '⚠️ Please select a service type';
+		return '⚠️ Please fill in required fields';
+	}
 
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
 
-		if (!isValid) {
-			submitMessage = '⚠️ Please fill in required fields';
+		if (!validationState.isValid) {
+			submitMessage = getErrorMessage(validationState.issues);
 			messageType = 'error';
 			return;
 		}
@@ -38,19 +62,11 @@
 		submitMessage = '';
 
 		try {
-			console.log('Form data being sent:', {
-				name: formData.name,
-				email: formData.contact,
-				service: formData.service,
-				message: formData.details
-			});
-
 			const form = new FormData();
 			form.append('name', formData.name);
 			form.append('email', formData.contact);
 			form.append('service', formData.service);
 			form.append('message', formData.details);
-			form.append('_subject', `Photography Inquiry: ${formData.service} - ${formData.name}`);
 
 			const response = await fetch('https://formspree.io/f/mrbkjvly', {
 				method: 'POST',
@@ -59,14 +75,15 @@
 				},
 				body: form
 			});
+
 			if (response.ok) {
 				submitMessage = '✅ Message sent successfully!';
 				messageType = 'success';
 				formData = { name: '', contact: '', service: '', details: '' };
 			} else {
-				const errorData = await response.json();
-				console.error('Formspree error:', errorData);
-				throw new Error(`Failed to send: ${response.status}`);
+				const errorText = await response.text();
+				console.error('Full Formspree response:', errorText);
+				throw new Error(`Server returned: ${response.status}`);
 			}
 		} catch (error) {
 			console.error('Submit error:', error);
@@ -136,6 +153,7 @@
 		<div class="form-container">
 			<h2 class="form-title">📋 Let's Plan Your Shoot</h2>
 
+			<!-- FIXED: Use onsubmit handler directly -->
 			<form onsubmit={handleSubmit} class="contact-form">
 				<div class="form-group">
 					<label for="name" class="form-label">
@@ -154,16 +172,21 @@
 
 				<div class="form-group">
 					<label for="contact" class="form-label">
-						Email or Phone Number<span class="required">*</span>
+						Email Address <span class="required">*</span>
 					</label>
 					<input
-						type="text"
+						type="email"
 						id="contact"
 						bind:value={formData.contact}
 						class="form-input"
-						placeholder="Preferred Contact"
+						class:error={formData.contact.trim() !== '' && !isValidEmail(formData.contact)}
+						placeholder="your@email.com"
 						required
+						autocomplete="email"
 					/>
+					{#if formData.contact.trim() !== '' && !isValidEmail(formData.contact)}
+						<div class="input-hint error">📧 Must be a valid email</div>
+					{/if}
 				</div>
 
 				<div class="form-group">
@@ -230,7 +253,11 @@
 					></textarea>
 				</div>
 
-				<button type="submit" class="submit-button" disabled={!isValid || isSubmitting}>
+				<button
+					type="submit"
+					class="submit-button"
+					disabled={!validationState.isValid || isSubmitting}
+				>
 					{#if isSubmitting}
 						⏳ Sending...
 					{:else}
