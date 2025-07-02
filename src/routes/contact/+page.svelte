@@ -54,9 +54,11 @@
 
 			const response = await fetch('https://formspree.io/f/mrbkjvly', {
 				method: 'POST',
+				headers: {
+					Accept: 'application/json'
+				},
 				body: form
 			});
-
 			if (response.ok) {
 				submitMessage = '✅ Message sent successfully!';
 				messageType = 'success';
