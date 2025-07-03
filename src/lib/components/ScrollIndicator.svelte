@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { viewportManager } from '$lib/utils';
+	import ArrowDown from '$lib/icons/ArrowDown.svelte';
 
 	let {
 		targetId = 'aboutMe',
@@ -98,20 +99,7 @@
 
 <button class="scroll-indicator" onclick={handleScrollClick} aria-label={ariaLabel}>
 	<div class="scroll-icon">
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			width="24"
-			height="24"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="2"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-			aria-hidden="true"
-		>
-			<path d="M12 5v14M19 12l-7 7-7-7" />
-		</svg>
+		<ArrowDown size={24} />
 	</div>
 </button>
 

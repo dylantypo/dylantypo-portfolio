@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
+	import Printer from '$lib/icons/Printer.svelte';
+	import Download from '$lib/icons/Download.svelte';
+	import Eye from '$lib/icons/Eye.svelte';
 
 	let { markdownContent = '', fileName = 'resume.md' } = $props<{
 		markdownContent: string;
@@ -40,40 +43,12 @@
 	<!-- Controls -->
 	<div class="controls">
 		<button onclick={handlePrint} class="control-button">
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="16"
-				height="16"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<polyline points="6 9 6 2 18 2 18 9"></polyline>
-				<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-				<rect x="6" y="14" width="12" height="8"></rect>
-			</svg>
+			<Printer size={16} />
 			Print PDF
 		</button>
 
 		<button onclick={handleDownload} class="control-button">
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="16"
-				height="16"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-				<polyline points="7 10 12 15 17 10"></polyline>
-				<line x1="12" y1="15" x2="12" y2="3"></line>
-			</svg>
+			<Download size={16} />
 			Download MD
 		</button>
 
@@ -85,21 +60,7 @@
 			aria-pressed={isDyslexiaMode}
 			title={isDyslexiaMode ? 'Disable dyslexia-friendly font' : 'Enable dyslexia-friendly font'}
 		>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="16"
-				height="16"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<path
-					d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"
-				></path>
-			</svg>
+			<Eye size={16} />
 			Dyslexia Mode
 		</button>
 	</div>

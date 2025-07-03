@@ -1,4 +1,7 @@
 <script lang="ts">
+	import ChevronUp from '$lib/icons/ChevronUp.svelte';
+	import ChevronDown from '$lib/icons/ChevronDown.svelte';
+
 	let jobs = $state([
 		{
 			year: 'Now',
@@ -26,49 +29,35 @@
 		}
 	]);
 
-	// Helper function to close all descriptions
 	function closeAllDescriptions() {
 		jobs.forEach((job) => {
 			job.showDescription = false;
 		});
-		jobs = [...jobs]; // Trigger reactivity
+		jobs = [...jobs];
 	}
 
 	function toggleDescription(index: number, event?: Event) {
 		const wasOpen = jobs[index].showDescription;
 
-		// Only close other jobs if opening a new one
 		if (!wasOpen) {
 			jobs.forEach((job, i) => {
-				// Only close other jobs, not the clicked one
 				if (i !== index) {
 					job.showDescription = false;
 				}
 			});
 		}
 
-		// Toggle the clicked job
 		jobs[index].showDescription = !wasOpen;
-
-		// Trigger reactivity
 		jobs = [...jobs];
 	}
 
-	function handleFocus(index: number) {}
-
-	function handleBlur(index: number) {}
-
-	// Handle mouse leave for desktop
 	function handleMouseLeave() {
-		// Only handle mouse leave if device supports hover
 		if (window.matchMedia('(hover: hover)').matches) {
 			closeAllDescriptions();
 		}
 	}
 
-	// Document click handler
 	$effect(() => {
-		// Touch handler with scroll detection
 		let touchStartY = 0;
 		let isScrolling = false;
 		let touchStartTime = 0;
@@ -85,17 +74,14 @@
 			const touchCurrentY = e.touches[0].clientY;
 			const deltaY = Math.abs(touchCurrentY - touchStartY);
 
-			// If moved more than 10px vertically, consider it scrolling
 			if (deltaY > 10) {
 				isScrolling = true;
 			}
 		}
 
 		function handleTouchEnd(e: TouchEvent) {
-			// If we were scrolling, don't process as a tap
 			if (isScrolling) return;
 
-			// Check if this was a quick tap (less than 300ms)
 			const touchEndTime = Date.now();
 			const touchDuration = touchEndTime - touchStartTime;
 
@@ -104,13 +90,11 @@
 			const target = e.target as HTMLElement;
 			const jobButton = target.closest('.job') as HTMLButtonElement;
 
-			// Only handle touch end if it's directly on a job button
 			if (jobButton && target.closest('.section')) {
-				// Add check for within section
 				const index = parseInt(jobButton.dataset.index || '-1');
 				if (index >= 0) {
-					e.preventDefault(); // Prevent any default behavior
-					e.stopPropagation(); // Stop event from bubbling
+					e.preventDefault();
+					e.stopPropagation();
 					toggleDescription(index, e);
 				}
 			}
@@ -120,7 +104,6 @@
 		document.addEventListener('touchmove', handleTouchMove, { passive: true });
 		document.addEventListener('touchend', handleTouchEnd, { passive: false });
 
-		// Cleanup
 		return () => {
 			document.removeEventListener('touchstart', handleTouchStart);
 			document.removeEventListener('touchmove', handleTouchMove);
@@ -135,10 +118,8 @@
 		<button
 			class="job"
 			data-index={i}
-			onfocus={() => handleFocus(i)}
-			onblur={() => handleBlur(i)}
 			onclick={(e) => {
-				e.stopPropagation(); // Stop event from bubbling up
+				e.stopPropagation();
 				toggleDescription(i, e);
 			}}
 			onmouseleave={() => handleMouseLeave()}
@@ -159,14 +140,14 @@
 					<div id={`job-description-${i}`} class="description" aria-live="polite">
 						<p>
 							{job.description}
-							<i class="fa-solid fa-caret-up fa-fade" aria-hidden="true"></i>
+							<ChevronUp size={16} class="icon-fade" />
 						</p>
 					</div>
 				{:else}
 					<div class="role-text">
 						<p>
 							{job.role}
-							<i class="fa-solid fa-caret-down fa-beat" aria-hidden="true"></i>
+							<ChevronDown size={16} class="icon-fade" />
 						</p>
 					</div>
 				{/if}
@@ -232,6 +213,13 @@
 		margin-top: var(--spacing-base);
 	}
 
+	.role-text p {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin: 0;
+	}
+
 	.text-wrapper {
 		position: relative;
 		width: 100%;
@@ -278,6 +266,13 @@
 		margin-top: var(--spacing-base);
 	}
 
+	.description p {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin: 0;
+	}
+
 	.background {
 		position: absolute;
 		left: 0;
@@ -292,7 +287,17 @@
 		z-index: 1;
 	}
 
-	/* Desktop hover animations */
+	/* Icon Animations */
+	:global(.icon-fade) {
+		animation: fade 2s infinite;
+	}
+
+	@keyframes fade {
+		50% {
+			opacity: 0.4;
+		}
+	}
+
 	@media (hover: hover) {
 		button.job:hover .background {
 			transform: scaleY(1);
@@ -307,7 +312,6 @@
 		}
 	}
 
-	/* Touch device animations and states */
 	@media (hover: none) {
 		button.job[aria-expanded='true'] {
 			color: var(--color-text-primary);
@@ -358,6 +362,12 @@
 		.description {
 			padding-left: var(--content-padding-current);
 			padding-right: var(--content-padding-current);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		:global(.icon-fade) {
+			animation: none;
 		}
 	}
 </style>

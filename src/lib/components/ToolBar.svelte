@@ -2,6 +2,11 @@
 	import gsap from 'gsap';
 	import { Draggable } from 'gsap/Draggable';
 	import { onMount, onDestroy } from 'svelte';
+	import Linkedin from '$lib/icons/Linkedin.svelte';
+	import Github from '$lib/icons/Github.svelte';
+	import File from '$lib/icons/File.svelte';
+	import Settings from '$lib/icons/Settings.svelte';
+	import ChevronDown from '$lib/icons/ChevronDown.svelte';
 
 	let expandedTool = $state(false);
 	let isTouchDevice = $state(false);
@@ -47,7 +52,6 @@
 
 		isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-		// Original animation
 		gsap.fromTo(
 			toolbar,
 			{ x: '200' },
@@ -57,7 +61,6 @@
 				x: '0',
 				ease: 'back',
 				onComplete: () => {
-					// Create proxy for consistent positioning
 					const proxy = document.createElement('div');
 					gsap.set(proxy, { x: 0, y: 0 });
 
@@ -70,11 +73,9 @@
 						activeCursor: 'grabbing',
 						minimumMovement: 3,
 						clickableTest: function (element) {
-							// Make toolbar-content and its children clickable (not draggable)
 							return element.closest('.toolbar-content') !== null;
 						},
 						onClick: function () {
-							// Only toggle if clicking the main toolbar (gear), not content
 							if (!expandedTool) {
 								toggleToolbar();
 							}
@@ -92,10 +93,10 @@
 							});
 						},
 						snap: {
-							x: function (value: number) {
+							x: function () {
 								return 0;
 							},
-							y: function (value: number) {
+							y: function () {
 								return 0;
 							}
 						},
@@ -122,7 +123,6 @@
 	});
 </script>
 
-<!-- Toolbar -->
 <div
 	bind:this={toolbar}
 	class="toolbar {expandedTool ? 'expandedTool' : ''}"
@@ -140,7 +140,9 @@
 			class="toolbar-link"
 			aria-label="Visit Dylan's LinkedIn profile"
 		>
-			<div class="wrapper"><i class="fab fa-linkedin-in fa-2xl" aria-hidden="true"></i></div>
+			<div class="wrapper">
+				<Linkedin size={32} />
+			</div>
 		</a>
 		<a
 			href="https://github.com/dylantypo/dylantypo.github.io"
@@ -148,27 +150,23 @@
 			class="toolbar-link"
 			aria-label="Visit Dylan's GitHub repository"
 		>
-			<div class="wrapper"><i class="fab fa-github fa-2xl" aria-hidden="true"></i></div>
+			<div class="wrapper">
+				<Github size={32} />
+			</div>
 		</a>
 		<a href="/resume" target="_blank" class="toolbar-link" aria-label="Download Dylan's Resume">
-			<div class="wrapper"><i class="fa-solid fa-file fa-2xl" aria-hidden="true"></i></div>
+			<div class="wrapper">
+				<File size={32} />
+			</div>
 		</a>
 		<button class="close-button" onclick={toggleToolbar} aria-label="Close toolbar">
 			<div class="wrapper">
-				<i
-					class="fa-solid fa-angle-down fa-beat-fade fa-2xl"
-					style="--fa-animation-delay: 3s"
-					aria-hidden="true"
-				></i>
+				<ChevronDown size={32} class="icon-beat-fade" />
 			</div>
 		</button>
 	</div>
 	{#if !expandedTool}
-		<i
-			class="fa-solid fa-gear fa-spin fa-2xl"
-			style="--fa-animation-duration: 10s"
-			aria-hidden="true"
-		></i>
+		<Settings size={32} class="icon-spin-slow" />
 	{/if}
 </div>
 
@@ -244,6 +242,37 @@
 		outline-offset: 2px;
 	}
 
+	/* Icon Animations */
+	:global(.icon-spin-slow) {
+		animation: spin 10s linear infinite;
+	}
+
+	:global(.icon-beat-fade) {
+		animation: beat-fade 2s infinite;
+		animation-delay: 3s;
+	}
+
+	@keyframes spin {
+		from {
+			transform: rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	@keyframes beat-fade {
+		0%,
+		100% {
+			opacity: 1;
+			transform: scale(1);
+		}
+		50% {
+			opacity: 0.4;
+			transform: scale(1.125);
+		}
+	}
+
 	@media (max-width: 1030px) {
 		.toolbar {
 			opacity: 50%;
@@ -255,6 +284,14 @@
 
 		.toolbar.expandedTool {
 			opacity: 100%;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		:global(.icon-spin),
+		:global(.icon-spin-slow),
+		:global(.icon-beat-fade) {
+			animation: none;
 		}
 	}
 </style>

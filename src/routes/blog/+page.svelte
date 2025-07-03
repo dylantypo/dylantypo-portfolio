@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import Search from '$lib/icons/Search.svelte';
+	import X from '$lib/icons/X.svelte';
 
 	// 🎯 Define types
 	type BlogPost = {
@@ -58,21 +60,9 @@
 			{#if posts && posts.length > 0}
 				<div class="search-container">
 					<div class="search-wrapper">
-						<svg
-							class="search-icon"
-							xmlns="http://www.w3.org/2000/svg"
-							width="20"
-							height="20"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
-							<circle cx="11" cy="11" r="8"></circle>
-							<path d="m21 21-4.35-4.35"></path>
-						</svg>
+						<div class="search-icon">
+							<Search size={20} />
+						</div>
 						<input
 							type="text"
 							placeholder="Search posts..."
@@ -85,20 +75,7 @@
 								onclick={() => (searchTerm = '')}
 								aria-label="Clear search"
 							>
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									width="16"
-									height="16"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<line x1="18" y1="6" x2="6" y2="18"></line>
-									<line x1="6" y1="6" x2="18" y2="18"></line>
-								</svg>
+								<X size={16} />
 							</button>
 						{/if}
 					</div>
@@ -233,7 +210,8 @@
 
 	.search-icon {
 		position: absolute;
-		left: clamp(0.75rem, 3vw, 1rem);
+		top: clamp(0.75rem, 3vw, 1rem);
+		left: clamp(0.7rem, 3vw, 0.5rem);
 		color: rgba(255, 255, 255, 0.6);
 		pointer-events: none;
 		z-index: 2;
