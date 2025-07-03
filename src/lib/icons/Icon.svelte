@@ -20,7 +20,6 @@
 	stroke-linecap="round"
 	stroke-linejoin="round"
 	class={className}
-	style="display: inline; vertical-align: middle;"
 >
 	{@render children()}
 </svg>

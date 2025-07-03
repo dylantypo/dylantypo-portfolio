@@ -269,7 +269,7 @@
 		}
 		50% {
 			opacity: 0.4;
-			transform: scale(1.125);
+			transform: scale(1.25);
 		}
 	}
 

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import ChevronUp from '$lib/icons/ChevronUp.svelte';
 	import ChevronDown from '$lib/icons/ChevronDown.svelte';
 
 	let jobs = $state([
@@ -140,14 +139,14 @@
 					<div id={`job-description-${i}`} class="description" aria-live="polite">
 						<p>
 							{job.description}
-							<ChevronUp size={16} class="icon-fade" />
+							<span class="chevron-icon beat-fade"><ChevronDown size={24} /></span>
 						</p>
 					</div>
 				{:else}
 					<div class="role-text">
 						<p>
 							{job.role}
-							<ChevronDown size={16} class="icon-fade" />
+							<ChevronDown size={16} class="chevron-icon" />
 						</p>
 					</div>
 				{/if}
@@ -287,15 +286,25 @@
 		z-index: 1;
 	}
 
-	/* Icon Animations */
-	:global(.icon-fade) {
-		animation: fade 2s infinite;
+	:global(.beat-fade) {
+		animation: beat-fade 2s infinite ease-in-out;
 	}
 
-	@keyframes fade {
+	@keyframes beat-fade {
+		0%,
+		100% {
+			opacity: 1;
+			transform: rotate(180deg);
+		}
 		50% {
 			opacity: 0.4;
 		}
+	}
+
+	/* Icon Animations */
+	:global(.chevron-icon) {
+		transition: transform 0.3s ease;
+		transform-origin: center;
 	}
 
 	@media (hover: hover) {
