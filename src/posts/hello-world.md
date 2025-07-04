@@ -1,9 +1,8 @@
 ---
-title: Hello World - Markdown Demo
-description: A complete demo of all markdown possibilities for creative blog posts
-date: 2025-06-04
+title: Markdown Demo
+description: Demo of all markdown possibilities
 readTime: 3 min read
-excerpt: A complete demo of all markdown possibilities for creative blog posts
+excerpt: Demo of all markdown possibilities
 ---
 
 # Hello World - Markdown Demo 🎨

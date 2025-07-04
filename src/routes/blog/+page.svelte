@@ -111,7 +111,7 @@
 				<div class="posts-grid">
 					{#each filteredPosts as post (post?.slug || Math.random())}
 						{#if post && post.slug}
-							<article class="post-card">
+							<article class="post-card" tabindex="-1">
 								<a href="/blog/posts/{post.slug}" class="post-link">
 									<div class="post-content">
 										<h2 class="post-title">📄 {post.title || 'Untitled'}</h2>
@@ -210,11 +210,15 @@
 
 	.search-icon {
 		position: absolute;
-		top: clamp(0.75rem, 3vw, 1rem);
-		left: clamp(0.7rem, 3vw, 0.5rem);
+		top: 50%;
+		left: clamp(0.75rem, 3vw, 1rem);
+		transform: translateY(-50%);
 		color: rgba(255, 255, 255, 0.6);
 		pointer-events: none;
 		z-index: 2;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.search-input {
@@ -282,6 +286,7 @@
 		grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
 		gap: clamp(1rem, 3vw, 2rem);
 		width: 100%;
+		contain: layout;
 	}
 
 	/* 🎭 Empty State */
@@ -334,26 +339,13 @@
 	.post-card {
 		background-color: var(--color-fill);
 		border-radius: clamp(0.5rem, 2vw, 1rem);
-		overflow: hidden;
-		transition:
-			background-color var(--transition-speed) ease,
-			box-shadow var(--transition-speed) ease,
-			transform var(--transition-speed) ease;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-		width: 100%;
-		max-width: 100%;
-		box-sizing: border-box;
+		transition: all var(--transition-speed) ease;
 	}
 
 	.post-card:hover {
 		background-color: var(--color-hover);
-		box-shadow:
-			inset 0 2px 0 rgba(20, 184, 166, 0.3),
-			inset 0 -2px 0 rgba(20, 184, 166, 0.2),
-			inset 2px 0 0 rgba(20, 184, 166, 0.2),
-			inset -2px 0 0 rgba(20, 184, 166, 0.2),
-			0 8px 25px rgba(0, 0, 0, 0.15);
-		transform: translateY(-2px);
+		box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 	}
 
 	.post-link {
@@ -361,13 +353,19 @@
 		text-decoration: none;
 		color: inherit;
 		padding: clamp(1rem, 4vw, 1.5rem);
-		width: 100%;
-		box-sizing: border-box;
 	}
 
 	.post-content {
-		width: 100%;
-		max-width: 100%;
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* Remove ALL focus styles */
+	.post-card:focus,
+	.post-card:focus-visible,
+	.post-link:focus,
+	.post-link:focus-visible {
+		outline: none !important;
 	}
 
 	.post-title {
