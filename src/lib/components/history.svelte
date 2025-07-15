@@ -140,14 +140,14 @@
 					<div id={`job-description-${i}`} class="description" aria-live="polite">
 						<p>
 							{job.description}
-							<span class="chevron-icon beat-fade"><ChevronUp size={24} /></span>
+							<span class="chevron-icon beat-fade"><ChevronUp size={16} /></span>
 						</p>
 					</div>
 				{:else}
 					<div class="role-text">
 						<p>
 							{job.role}
-							<span class="chevron-icon"><ChevronDown size={20} /></span>
+							<span class="chevron-icon"><ChevronDown size={16} /></span>
 						</p>
 					</div>
 				{/if}
@@ -251,7 +251,8 @@
 	}
 
 	.description {
-		font-size: 3vmin;
+		font-size: 2.75vmin;
+		line-height: 1.5;
 		padding-left: var(--content-padding-current);
 		padding-right: var(--content-padding-current);
 		color: var(--color-text-primary);
@@ -267,7 +268,7 @@
 	}
 
 	.description p {
-		display: inline;
+		display: inline-flexbox;
 		align-items: center;
 		gap: 0.5rem;
 		margin: 0;
@@ -295,7 +296,6 @@
 		0%,
 		100% {
 			opacity: 1;
-			transform: rotate(180deg);
 		}
 		50% {
 			opacity: 0.4;
