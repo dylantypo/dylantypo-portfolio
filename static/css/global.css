@@ -17,6 +17,7 @@
 	--font-size-xl: 7vmin;
 
 	/* Spacing */
+	--spacing-sm: 0.5rem;
 	--spacing-base: 1rem;
 	--spacing-lg: 2rem;
 	--spacing-xl: 4rem;
