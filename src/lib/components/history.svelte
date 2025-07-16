@@ -202,7 +202,7 @@
 	}
 
 	.role-text {
-		font-size: clamp(1.25rem, 3.5vmin, 1.5rem);
+		font-size: 3vmin;
 		padding-left: var(--content-padding-current);
 		padding-right: var(--content-padding-current);
 		font-style: italic;
@@ -243,7 +243,7 @@
 	}
 
 	.description {
-		font-size: clamp(1.25rem, 3.5vmin, 1.5rem);
+		font-size: 2.5vmin;
 		padding-left: var(--content-padding-current);
 		padding-right: var(--content-padding-current);
 		color: var(--color-text-primary);
@@ -255,6 +255,7 @@
 		transform: scale(1);
 		z-index: 2;
 		text-align: left;
+		text-wrap: balance;
 		margin-top: var(--spacing-base);
 	}
 
@@ -329,21 +330,26 @@
 			padding-left: 0;
 		}
 
+		.text-wrapper {
+			align-items: center;
+			justify-content: center;
+		}
+
 		button.job {
 			flex-direction: column;
 			align-items: center;
 		}
-		.role-text {
+		.role-text,
+		.description {
 			padding-left: var(--content-padding-current);
 			padding-right: var(--content-padding-current);
+			text-align: center;
+			font-size: 1rem;
 		}
 		.year {
 			padding: 2vh 0 0 0;
 			font-size: 3vmin;
 			margin-bottom: var(--spacing-base);
-		}
-		.company {
-			margin-bottom: 0.75rem;
 		}
 		.background {
 			top: 0;
