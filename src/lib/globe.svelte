@@ -89,7 +89,7 @@
 					description: 'Lived in Chicago',
 					lat: 41.8781,
 					lng: -87.6298,
-					years: 0.5
+					years: 1
 				},
 				{ name: 'Atlanta', description: 'Lived in Atlanta', lat: 33.749, lng: -84.388, years: 4 }
 			]

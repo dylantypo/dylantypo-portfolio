@@ -252,7 +252,6 @@
 
 	.description {
 		font-size: 2.75vmin;
-		line-height: 1.5;
 		padding-left: var(--content-padding-current);
 		padding-right: var(--content-padding-current);
 		color: var(--color-text-primary);
@@ -268,9 +267,8 @@
 	}
 
 	.description p {
-		display: inline-flexbox;
+		line-height: 1.5rem;
 		align-items: center;
-		gap: 0.5rem;
 		margin: 0;
 	}
 
