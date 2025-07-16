@@ -209,6 +209,7 @@
 		transition: opacity var(--transition-speed) ease-in-out;
 		opacity: 1;
 		text-align: left;
+		text-wrap: nowrap;
 		margin-top: var(--spacing-base);
 	}
 

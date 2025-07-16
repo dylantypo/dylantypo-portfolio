@@ -86,6 +86,7 @@
 		height: 100vh;
 		height: calc(var(--vh, 1vh) * 100);
 		background-color: var(--color-background);
+		backdrop-filter: blur(1.25px);
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
