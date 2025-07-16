@@ -202,8 +202,7 @@
 	}
 
 	.role-text {
-		overflow: hidden;
-		font-size: 3vmin;
+		font-size: clamp(1.25rem, 3.5vmin, 1.5rem);
 		padding-left: var(--content-padding-current);
 		padding-right: var(--content-padding-current);
 		font-style: italic;
@@ -211,13 +210,6 @@
 		opacity: 1;
 		text-align: left;
 		margin-top: var(--spacing-base);
-	}
-
-	.role-text p {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		margin: 0;
 	}
 
 	.text-wrapper {
@@ -251,7 +243,7 @@
 	}
 
 	.description {
-		font-size: 2.75vmin;
+		font-size: clamp(1.25rem, 3.5vmin, 1.5rem);
 		padding-left: var(--content-padding-current);
 		padding-right: var(--content-padding-current);
 		color: var(--color-text-primary);
@@ -266,10 +258,10 @@
 		margin-top: var(--spacing-base);
 	}
 
+	.role-text p,
 	.description p {
-		line-height: 1.5rem;
-		align-items: center;
-		margin: 0;
+		line-height: 2.15rem;
+		margin: var(--spacing-base) 0;
 	}
 
 	.background {
