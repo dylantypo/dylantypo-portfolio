@@ -2,6 +2,9 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
 	import { viewportManager } from '$lib/utils/viewport-manager';
+	import Camera from '$lib/icons/Camera.svelte';
+	import House from '$lib/icons/House.svelte';
+	import ArrowRight from '$lib/icons/ArrowRight.svelte';
 
 	let { onEnter } = $props<{ onEnter: () => void }>();
 
@@ -10,29 +13,34 @@
 	function checkFonts() {
 		if (!browser) return;
 
-		const fontTimeout = setTimeout(() => (ready = true), 600);
+		// Check if KenneyFuture is already loaded
+		if (document.fonts.check('16px KenneyFuture')) {
+			ready = true;
+			return;
+		}
 
-		document.fonts.ready
-			.then(() => {
-				clearTimeout(fontTimeout);
-				ready = true;
-			})
-			.catch(() => {
-				clearTimeout(fontTimeout);
-				ready = true;
-			});
+		// Fallback timeout for slow connections
+		const timeout = setTimeout(() => {
+			ready = true;
+		}, 800);
+
+		// Listen for font load
+		document.fonts.ready.then(() => {
+			clearTimeout(timeout);
+			ready = true;
+		});
 	}
 
 	onMount(() => {
 		if (!browser) return;
 
-		// 🎯 Initialize viewport manager first
+		// Initialize viewport manager first
 		viewportManager.init();
 
-		// 🔒 Use centralized body overflow management
+		// Use centralized body overflow management
 		viewportManager.setBodyOverflow('hidden', 'landing-page');
 
-		// 🚫 Prevent touch scrolling on mobile
+		// Prevent touch scrolling on mobile
 		const preventTouch = (e: TouchEvent) => {
 			if (e.touches.length > 1) return; // Allow pinch zoom
 			e.preventDefault();
@@ -49,32 +57,57 @@
 
 	onDestroy(() => {
 		if (!browser) return;
-		// 🔓 Remove body overflow using centralized manager
+		// Remove body overflow using centralized manager
 		viewportManager.removeBodyOverflow('landing-page');
 	});
 
 	function handleEnter() {
-		// 🔓 Remove body overflow before transitioning
+		// Remove body overflow before transitioning
 		viewportManager.removeBodyOverflow('landing-page');
 		onEnter();
 	}
+
+	function handlePhotoNav() {
+		viewportManager.removeBodyOverflow('landing-page');
+		window.location.href = '/contact';
+	}
 </script>
+
+<svelte:head>
+	<title>Dylan Posner | Data Scientist</title>
+	<meta
+		name="description"
+		content="Data Scientist with 3+ years experience. Python | AWS | Tableau expert."
+	/>
+	<meta property="og:title" content="Dylan Posner | Data Scientist" />
+	<meta
+		property="og:description"
+		content="Data Scientist with 3+ years experience. Python | AWS | Tableau expert."
+	/>
+</svelte:head>
 
 <div class="landing-container">
 	<!-- Welcome Text -->
 	<div class="welcome-text">Welcome 🌎</div>
 
-	<!-- Loading/Enter Button -->
-	<button
-		class="enter-button"
-		class:loading={!ready}
-		class:loaded={ready}
-		onclick={ready ? handleEnter : undefined}
-		disabled={!ready}
-		aria-label={ready ? 'Enter website' : 'Loading...'}
-	>
-		{ready ? '→' : '⏳'}
-	</button>
+	<!-- Button Pill or Loading -->
+	{#if ready}
+		<div class="button-pill">
+			<button
+				class="pill-button photo-button"
+				onclick={handlePhotoNav}
+				aria-label="Photography services"
+			>
+				<Camera />
+			</button>
+
+			<button class="pill-button main-button" onclick={handleEnter} aria-label="Enter portfolio">
+				<House /><ArrowRight size={10} />
+			</button>
+		</div>
+	{:else}
+		<div class="loading-state">⏳</div>
+	{/if}
 </div>
 
 <style>
@@ -111,50 +144,64 @@
 		overflow: hidden;
 	}
 
-	.enter-button {
+	.button-pill {
+		display: flex;
 		background-color: var(--color-fill);
-		border: none;
 		border-radius: 2rem;
+		overflow: hidden;
+		backdrop-filter: blur(8px);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		animation: slideUp 0.4s ease-out 0.2s both;
+	}
+
+	.pill-button {
+		background: none;
+		border: none;
 		color: var(--color-text-primary);
 		font-family: var(--font-family-base);
 		font-size: 1.2rem;
 		padding: 0.75rem 1.5rem;
 		cursor: pointer;
 		transition: all var(--transition-speed) ease;
+		touch-action: manipulation;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		gap: 0.5rem;
-		backdrop-filter: blur(4px);
-		touch-action: manipulation;
 	}
 
-	.enter-button.loading {
-		cursor: default;
-		opacity: 0.7;
+	.photo-button {
+		border-right: 1px solid rgba(255, 255, 255, 0.1);
 	}
 
-	.enter-button.loaded {
-		opacity: 1;
+	.pill-button:hover {
+		background-color: var(--color-hover);
 		transform: scale(1.02);
 	}
 
-	.enter-button.loaded:hover {
-		opacity: 1;
-		transform: translateY(-2px) scale(1.05);
+	.pill-button:active {
+		transform: scale(0.98);
 	}
 
-	.enter-button.loaded:active {
-		transform: translateY(0);
+	.pill-button:focus-visible {
+		border: 2px solid var(--color-focus);
+		outline: none;
+		position: relative;
 	}
 
-	.enter-button:focus-visible {
-		outline: 2px solid var(--color-focus);
-		outline-offset: 2px;
+	.photo-button:focus-visible {
+		border-radius: 2rem 0 0 2rem;
 	}
 
-	.enter-button:disabled {
-		pointer-events: none;
+	.main-button:focus-visible {
+		border-radius: 0 2rem 2rem 0;
+	}
+
+	.loading-state {
+		font-size: 1.5rem;
+		color: var(--color-text-primary);
+		opacity: 0.7;
+		animation: pulse 1.5s ease-in-out infinite;
 	}
 
 	@keyframes fadeIn {
@@ -168,12 +215,31 @@
 		}
 	}
 
-	/* 📱 Mobile adjustments */
+	@keyframes slideUp {
+		from {
+			opacity: 0;
+			transform: translateY(30px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes pulse {
+		0%,
+		100% {
+			opacity: 0.7;
+		}
+		50% {
+			opacity: 1;
+		}
+	}
+
+	/* Mobile adjustments */
 	@media (max-width: 768px) {
 		.landing-container {
 			gap: 2rem;
-			height: 100vh;
-			height: calc(var(--vh, 1vh) * 100);
 		}
 
 		.welcome-text {
@@ -182,13 +248,13 @@
 			max-width: 85vw;
 		}
 
-		.enter-button {
+		.pill-button {
 			font-size: 1rem;
 			padding: 0.65rem 1.2rem;
 		}
 	}
 
-	/* 🔄 Orientation change handling */
+	/* Orientation change handling */
 	@media (max-height: 500px) and (orientation: landscape) {
 		.landing-container {
 			gap: 1.5rem;
@@ -200,11 +266,12 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.welcome-text {
+		.welcome-text,
+		.button-pill,
+		.pill-button,
+		.loading-state {
 			animation: none;
-		}
-		.enter-button.loading {
-			animation: none;
+			transition: none;
 		}
 	}
 </style>
