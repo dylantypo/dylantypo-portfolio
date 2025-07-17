@@ -1,6 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Starfield from '$lib/components/starfield.svelte';
+	import ArrowRight from '$lib/icons/ArrowRight.svelte';
+	import Camera from '$lib/icons/Camera.svelte';
+	import House from '$lib/icons/House.svelte';
+	import MessageCircleMore from '$lib/icons/MessageCircleMore.svelte';
+	import Send from '$lib/icons/Send.svelte';
+	import AtSign from '$lib/icons/AtSign.svelte';
+	import TriangleAlert from '$lib/icons/TriangleAlert.svelte';
+	import Hourglass from '$lib/icons/Hourglass.svelte';
 
 	// Form state using Svelte 5 runes
 	let formData = $state({
@@ -144,14 +152,14 @@
 
 <main class="pics-container">
 	<nav class="breadcrumb">
-		<a href="/">🏠 Home</a>
-		<span class="separator">→</span>
-		<span class="current">📸 Photography</span>
+		<a href="/"><House size={10} /> Home</a>
+		<span class="separator"><ArrowRight size={10} /></span>
+		<span class="current"><Camera size={10} /> Photography</span>
 	</nav>
 
 	<section class="form-section">
 		<div class="form-container">
-			<h2 class="form-title">📋 Let's Plan Your Shoot</h2>
+			<h2 class="form-title">Let's Plan Your Shoot</h2>
 
 			<!-- FIXED: Use onsubmit handler directly -->
 			<form onsubmit={handleSubmit} class="contact-form">
@@ -185,7 +193,9 @@
 						autocomplete="email"
 					/>
 					{#if formData.contact.trim() !== '' && !isValidEmail(formData.contact)}
-						<div class="input-hint error">📧 Must be a valid email</div>
+						<div class="input-hint error">
+							Requires a valid email <TriangleAlert size={12} />
+						</div>
 					{/if}
 				</div>
 
@@ -243,7 +253,7 @@
 				</div>
 
 				<div class="form-group">
-					<label for="details" class="form-label">💭 Details</label>
+					<label for="details" class="form-label">Details <MessageCircleMore size={14} /></label>
 					<textarea
 						id="details"
 						bind:value={formData.details}
@@ -259,9 +269,9 @@
 					disabled={!validationState.isValid || isSubmitting}
 				>
 					{#if isSubmitting}
-						⏳ Sending...
+						<Hourglass size={10} /> Sending...
 					{:else}
-						📤 Send Inquiry
+						Send Inquiry <Send size={10} />
 					{/if}
 				</button>
 
@@ -277,11 +287,14 @@
 	<footer class="pics-footer">
 		<div class="footer-content">
 			<p>
-				📸 My Work: <a href="https://www.instagram.com/dylanposnerphoto/" target="_blank"
-					>@dylanposnerphoto</a
+				<Camera size={20} /> <br />
+				<a href="https://www.instagram.com/dylanposnerphoto/" target="_blank">@dylanposnerphoto</a>
+			</p>
+			<p>
+				<AtSign size={20} /> <br /><a href="mailto:dylantylerposner@gmail.com"
+					>dylantylerposner@gmail.com</a
 				>
 			</p>
-			<p>📧 My Email: <a href="mailto:dylantylerposner@gmail.com">dylantylerposner@gmail.com</a></p>
 		</div>
 	</footer>
 </main>

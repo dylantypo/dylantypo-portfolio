@@ -5,6 +5,8 @@
 	import Camera from '$lib/icons/Camera.svelte';
 	import House from '$lib/icons/House.svelte';
 	import ArrowRight from '$lib/icons/ArrowRight.svelte';
+	import Hourglass from '$lib/icons/Hourglass.svelte';
+	import Earth from '$lib/icons/Earth.svelte';
 
 	let { onEnter } = $props<{ onEnter: () => void }>();
 
@@ -106,7 +108,7 @@
 			</button>
 		</div>
 	{:else}
-		<div class="loading-state">⏳</div>
+		<div class="loading-state"><Hourglass /></div>
 	{/if}
 </div>
 
