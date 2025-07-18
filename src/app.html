@@ -12,7 +12,20 @@
 		<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
 
 		<!-- Critical Resources Only -->
-		<link rel="stylesheet" href="/css/global.css" />
+		<link
+			rel="preload"
+			href="/fonts/Kenney%20Future.woff2"
+			as="font"
+			type="font/woff2"
+			crossorigin
+		/>
+		<link
+			rel="preload"
+			href="/css/global.css"
+			as="style"
+			onload="this.onload=null;this.rel='stylesheet'"
+		/>
+		<noscript><link rel="stylesheet" href="/css/global.css" /></noscript>
 
 		<!-- Core Meta -->
 		<title>Dylan Posner | Data Scientist</title>

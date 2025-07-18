@@ -1,5 +1,5 @@
 <script lang="ts">
-	import gsap from 'gsap';
+	import { gsap } from 'gsap';
 	import { Draggable } from 'gsap/Draggable';
 	import { onMount, onDestroy } from 'svelte';
 	import Linkedin from '$lib/icons/Linkedin.svelte';

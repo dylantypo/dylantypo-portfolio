@@ -61,6 +61,11 @@ export default defineConfig(({ mode, command }) => {
 								return 'vendor';
 							}
 						}
+						if (id.includes('three/') && !id.includes('examples/')) return 'three-core';
+						if (id.includes('three/examples/jsm/renderers/')) return 'three-renderers';
+						if (id.includes('three/examples/jsm/controls/')) return 'three-controls';
+						if (id.includes('three/examples/jsm/geometries/')) return 'three-geometries';
+						if (id.includes('three/examples/jsm/loaders/')) return 'three-loaders';
 					}
 				}
 			}
